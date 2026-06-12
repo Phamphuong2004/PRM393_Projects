@@ -1,0 +1,26 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.PublicationTrendService = exports.FollowService = exports.NotificationService = exports.BookmarkService = exports.AnalysisRunService = exports.UserService = exports.TopicService = exports.JournalService = exports.KeywordService = exports.PaperService = exports.AuthService = void 0;
+var AuthService_1 = require("./AuthService");
+Object.defineProperty(exports, "AuthService", { enumerable: true, get: function () { return AuthService_1.AuthService; } });
+var PaperService_1 = require("./PaperService");
+Object.defineProperty(exports, "PaperService", { enumerable: true, get: function () { return PaperService_1.PaperService; } });
+var KeywordService_1 = require("./KeywordService");
+Object.defineProperty(exports, "KeywordService", { enumerable: true, get: function () { return KeywordService_1.KeywordService; } });
+var JournalService_1 = require("./JournalService");
+Object.defineProperty(exports, "JournalService", { enumerable: true, get: function () { return JournalService_1.JournalService; } });
+var TopicService_1 = require("./TopicService");
+Object.defineProperty(exports, "TopicService", { enumerable: true, get: function () { return TopicService_1.TopicService; } });
+var UserService_1 = require("./UserService");
+Object.defineProperty(exports, "UserService", { enumerable: true, get: function () { return UserService_1.UserService; } });
+var AnalysisRunService_1 = require("./AnalysisRunService");
+Object.defineProperty(exports, "AnalysisRunService", { enumerable: true, get: function () { return AnalysisRunService_1.AnalysisRunService; } });
+var BookmarkService_1 = require("./BookmarkService");
+Object.defineProperty(exports, "BookmarkService", { enumerable: true, get: function () { return BookmarkService_1.BookmarkService; } });
+var NotificationService_1 = require("./NotificationService");
+Object.defineProperty(exports, "NotificationService", { enumerable: true, get: function () { return NotificationService_1.NotificationService; } });
+var FollowService_1 = require("./FollowService");
+Object.defineProperty(exports, "FollowService", { enumerable: true, get: function () { return FollowService_1.FollowService; } });
+var PublicationTrendService_1 = require("./PublicationTrendService");
+Object.defineProperty(exports, "PublicationTrendService", { enumerable: true, get: function () { return PublicationTrendService_1.PublicationTrendService; } });
+//# sourceMappingURL=index.js.map
