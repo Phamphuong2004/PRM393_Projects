@@ -1,0 +1,145 @@
+
+import 'package:go_router/go_router.dart';
+import '../providers/auth_provider.dart';
+
+// Public Screens
+import '../../features/public/screens/landing_screen.dart';
+import '../../features/public/screens/features_screen.dart';
+import '../../features/public/screens/how_it_works_screen.dart';
+import '../../features/public/screens/reviews_screen.dart';
+import '../../features/auth/screens/welcome_screen.dart';
+import '../../features/auth/screens/login_screen.dart';
+import '../../features/auth/screens/register_screen.dart';
+
+// Dashboard Screens
+import '../../features/dashboard/screens/dashboard_shell.dart';
+import '../../features/dashboard/screens/home_dashboard_screen.dart';
+import '../../features/dashboard/screens/search_papers_screen.dart';
+import '../../features/dashboard/screens/trending_topics_screen.dart';
+import '../../features/dashboard/screens/bookmarks_screen.dart';
+import '../../features/dashboard/screens/following_screen.dart';
+import '../../features/dashboard/screens/notifications_screen.dart';
+import '../../features/dashboard/screens/profile_settings_screen.dart';
+
+// Admin Screens
+import '../../features/admin/screens/user_management_screen.dart';
+import '../../features/admin/screens/analytics_report_screen.dart';
+import '../../features/admin/screens/system_settings_screen.dart';
+
+class AppRouter {
+  static GoRouter router(AuthProvider authProvider) {
+    return GoRouter(
+      initialLocation: '/',
+      refreshListenable: authProvider,
+      redirect: (context, state) {
+        final isAuthenticated = authProvider.isAuthenticated;
+        final location = state.matchedLocation;
+        final isAuthRoute = location.startsWith('/auth');
+        final isAppRoute = location.startsWith('/app');
+
+        if (authProvider.isLoading) return null;
+
+        // If authenticated, prevent access to auth routes
+        if (isAuthenticated && isAuthRoute) {
+          return '/app';
+        }
+
+        // If unauthenticated, prevent access to app routes
+        if (!isAuthenticated && isAppRoute) {
+          return '/auth/login';
+        }
+
+        // Admin-only route protection
+        if (location.startsWith('/app/admin') && !authProvider.isAdmin) {
+          return '/app';
+        }
+
+        return null;
+      },
+      routes: [
+        // Public Flow
+        GoRoute(
+          path: '/',
+          builder: (context, state) => const LandingScreen(),
+        ),
+        GoRoute(
+          path: '/features',
+          builder: (context, state) => const FeaturesScreen(),
+        ),
+        GoRoute(
+          path: '/how-it-works',
+          builder: (context, state) => const HowItWorksScreen(),
+        ),
+        GoRoute(
+          path: '/reviews',
+          builder: (context, state) => const ReviewsScreen(),
+        ),
+
+        // Auth Flow
+        GoRoute(
+          path: '/auth/welcome',
+          builder: (context, state) => const WelcomeScreen(),
+        ),
+        GoRoute(
+          path: '/auth/login',
+          builder: (context, state) => const LoginScreen(),
+        ),
+        GoRoute(
+          path: '/auth/register',
+          builder: (context, state) => const RegisterScreen(),
+        ),
+
+        // Dashboard Flow (Authenticated)
+        ShellRoute(
+          builder: (context, state, child) {
+            return DashboardShell(child: child);
+          },
+          routes: [
+            GoRoute(
+              path: '/app',
+              builder: (context, state) => const HomeDashboardScreen(),
+            ),
+            GoRoute(
+              path: '/app/search',
+              builder: (context, state) => const SearchPapersScreen(),
+            ),
+            GoRoute(
+              path: '/app/trending',
+              builder: (context, state) => const TrendingTopicsScreen(),
+            ),
+            GoRoute(
+              path: '/app/bookmarks',
+              builder: (context, state) => const BookmarksScreen(),
+            ),
+            GoRoute(
+              path: '/app/following',
+              builder: (context, state) => const FollowingScreen(),
+            ),
+            GoRoute(
+              path: '/app/notifications',
+              builder: (context, state) => const NotificationsScreen(),
+            ),
+            GoRoute(
+              path: '/app/profile',
+              builder: (context, state) => const ProfileSettingsScreen(),
+            ),
+            // Admin Routes
+            GoRoute(
+              path: '/app/admin/users',
+              builder: (context, state) => const UserManagementScreen(),
+            ),
+            GoRoute(
+              path: '/app/admin/analytics',
+              builder: (context, state) => const AnalyticsReportScreen(),
+            ),
+            GoRoute(
+              path: '/app/admin/settings',
+              builder: (context, state) => const SystemSettingsScreen(),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
