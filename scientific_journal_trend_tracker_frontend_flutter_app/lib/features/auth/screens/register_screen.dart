@@ -42,7 +42,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
         fullName,
         institution.isNotEmpty ? institution : null,
       );
-      // Router will automatically redirect to '/' based on AuthProvider state
     } catch (e) {
       setState(() {
         _errorMessage = e.toString();
@@ -65,147 +64,222 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth > 800;
+
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
-        ),
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 16),
-              const Text(
-                'Create Account',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Join us to track the latest scientific trends.',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 32),
-              if (_errorMessage != null)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  margin: const EdgeInsets.only(bottom: 24),
-                  decoration: BoxDecoration(
-                    color: AppColors.error.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.error),
-                  ),
-                  child: Text(
-                    _errorMessage!,
-                    style: const TextStyle(color: AppColors.error),
-                  ),
-                ),
-              TextField(
-                controller: _fullNameController,
-                decoration: InputDecoration(
-                  labelText: 'Full Name *',
-                  prefixIcon: const Icon(Icons.person_outline),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  labelText: 'Email *',
-                  prefixIcon: const Icon(Icons.email_outlined),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _passwordController,
-                obscureText: true,
-                decoration: InputDecoration(
-                  labelText: 'Password *',
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _institutionController,
-                decoration: InputDecoration(
-                  labelText: 'Institution (Optional)',
-                  prefixIcon: const Icon(Icons.business_outlined),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _handleRegister,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+      backgroundColor: AppColors.bg,
+      body: isDesktop
+          ? Row(
+              children: [
+                Expanded(flex: 5, child: _buildVisualPanel()),
+                Expanded(
+                  flex: 4, 
+                  child: Center(
+                    child: SingleChildScrollView(
+                      child: _buildForm(isDesktop),
                     ),
                   ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Text(
-                          'Sign Up',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    'Already have an account? ',
-                    style: TextStyle(color: AppColors.textSecondary),
-                  ),
-                  TextButton(
-                    onPressed: () => context.pushReplacement('/auth/login'),
-                    child: const Text(
-                      'Log In',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
+              ],
+            )
+          : Stack(
+              children: [
+                _buildVisualPanel(),
+                SafeArea(
+                  child: Center(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(24),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: AppColors.glowShadow,
+                        ),
+                        child: _buildForm(isDesktop),
                       ),
                     ),
                   ),
+                ),
+                Positioned(
+                  top: 40,
+                  left: 16,
+                  child: IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    onPressed: () => context.canPop() ? context.pop() : context.go('/'),
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+
+  Widget _buildVisualPanel() {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: AppColors.gradientSecondary,
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            top: -50,
+            right: -50,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.1)),
+            ),
+          ),
+          Positioned(
+            bottom: 100,
+            left: -50,
+            child: Container(
+              width: 200,
+              height: 200,
+              decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.primary.withValues(alpha: 0.2)),
+            ),
+          ),
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(40),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: AppColors.softShadow,
+                    ),
+                    child: const Icon(Icons.person_add_rounded, size: 80, color: Colors.white),
+                  ),
+                  const SizedBox(height: 40),
+                  const Text(
+                    'Join the Community',
+                    style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: -1),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Create an account to start bookmarking papers, tracking trends, and receiving real-time alerts.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 18, color: Colors.white70, height: 1.5),
+                  ),
                 ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildForm(bool isDesktop) {
+    return Container(
+      padding: EdgeInsets.all(isDesktop ? 60 : 32),
+      constraints: const BoxConstraints(maxWidth: 500),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (isDesktop)
+            IconButton(
+              icon: const Icon(Icons.arrow_back),
+              padding: EdgeInsets.zero,
+              alignment: Alignment.centerLeft,
+              onPressed: () => context.canPop() ? context.pop() : context.go('/'),
+            ),
+          const SizedBox(height: 16),
+          Text(
+            'Create Account',
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Get started with a free account today.',
+            style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 32),
+          
+          if (_errorMessage != null)
+            Container(
+              padding: const EdgeInsets.all(16),
+              margin: const EdgeInsets.only(bottom: 24),
+              decoration: BoxDecoration(
+                color: AppColors.error.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.error.withValues(alpha: 0.5)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.error_outline_rounded, color: AppColors.error),
+                  const SizedBox(width: 12),
+                  Expanded(child: Text(_errorMessage!, style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.w600))),
+                ],
+              ),
+            ),
+            
+          const Text('Full Name *', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.textSecondary)),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _fullNameController,
+            decoration: const InputDecoration(prefixIcon: Icon(Icons.person_outline), hintText: 'Dr. Jane Doe'),
+          ),
+          
+          const SizedBox(height: 20),
+          const Text('Email Address *', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.textSecondary)),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
+            decoration: const InputDecoration(prefixIcon: Icon(Icons.email_outlined), hintText: 'jane@university.edu'),
+          ),
+          
+          const SizedBox(height: 20),
+          const Text('Password *', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.textSecondary)),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _passwordController,
+            obscureText: true,
+            decoration: const InputDecoration(prefixIcon: Icon(Icons.lock_outline), hintText: 'Create a strong password'),
+          ),
+
+          const SizedBox(height: 20),
+          const Text('Institution (Optional)', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.textSecondary)),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _institutionController,
+            decoration: const InputDecoration(prefixIcon: Icon(Icons.business_outlined), hintText: 'University or Research Lab'),
+          ),
+          
+          const SizedBox(height: 32),
+          SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: ElevatedButton(
+              onPressed: _isLoading ? null : _handleRegister,
+              child: _isLoading
+                  ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  : const Text('Sign Up', style: TextStyle(fontSize: 18)),
+            ),
+          ),
+          
+          const SizedBox(height: 32),
+          Wrap(
+            alignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              const Text('Already have an account? ', style: TextStyle(color: AppColors.textSecondary, fontSize: 15)),
+              TextButton(
+                onPressed: () => context.pushReplacement('/auth/login'),
+                child: const Text('Log In', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
               ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }

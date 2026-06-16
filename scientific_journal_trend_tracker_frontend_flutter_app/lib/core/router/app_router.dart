@@ -39,8 +39,8 @@ class AppRouter {
 
         if (authProvider.isLoading) return null;
 
-        // If authenticated, prevent access to auth routes
-        if (isAuthenticated && isAuthRoute) {
+        // If authenticated, prevent access to auth routes and the root landing page
+        if (isAuthenticated && (isAuthRoute || location == '/')) {
           return '/app';
         }
 
