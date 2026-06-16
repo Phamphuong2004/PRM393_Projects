@@ -89,7 +89,7 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
     final isDesktop = screenWidth > 800;
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: Colors.transparent, // Background handled by shell
       body: RefreshIndicator(
         onRefresh: _fetchData,
         color: AppColors.primary,
@@ -105,8 +105,8 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
                     opacity: _fadeAnimation,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 20.0,
-                        vertical: 24.0,
+                        horizontal: 24.0,
+                        vertical: 32.0,
                       ),
                       child: _buildDashboardContent(user, isDesktop),
                     ),
@@ -125,56 +125,79 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
         user?['fullName']?.toString().split(' ').first ?? 'Researcher';
 
     return SliverAppBar(
-      expandedHeight: 140,
+      expandedHeight: 160,
       floating: false,
       pinned: true,
       backgroundColor: AppColors.primary,
       elevation: 0,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(32),
+          bottomRight: Radius.circular(32),
+        ),
+      ),
       flexibleSpace: FlexibleSpaceBar(
-        titlePadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        titlePadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
         title: Text(
           'Welcome back,\n$firstName.',
           style: const TextStyle(
             color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-            height: 1.2,
+            fontWeight: FontWeight.w900,
+            fontSize: 24,
+            height: 1.1,
+            letterSpacing: -0.5,
           ),
         ),
-        background: Stack(
-          fit: StackFit.expand,
-          children: [
-            Container(
-              decoration: const BoxDecoration(
-                gradient: AppColors.gradientPrimary,
-              ),
-            ),
-            // Decorative geometric shapes for scientific feel
-            Positioned(
-              right: -50,
-              top: -50,
-              child: Container(
-                width: 150,
-                height: 150,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.1),
+        background: ClipRRect(
+          borderRadius: const BorderRadius.only(
+            bottomLeft: Radius.circular(32),
+            bottomRight: Radius.circular(32),
+          ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: AppColors.gradientPrimary,
                 ),
               ),
-            ),
-            Positioned(
-              right: 40,
-              bottom: -30,
-              child: Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.05),
+              // Decorative glowing orbs
+              Positioned(
+                right: -50,
+                top: -50,
+                child: Container(
+                  width: 200,
+                  height: 200,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        Colors.white.withValues(alpha: 0.15),
+                        Colors.white.withValues(alpha: 0.0),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ],
+              Positioned(
+                left: 100,
+                bottom: -80,
+                child: Container(
+                  width: 200,
+                  height: 200,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        AppColors.secondary.withValues(alpha: 0.2),
+                        AppColors.secondary.withValues(alpha: 0.0),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -187,7 +210,7 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
       physics: const NeverScrollableScrollPhysics(),
       mainAxisSpacing: 16,
       crossAxisSpacing: 16,
-      childAspectRatio: 1.4,
+      childAspectRatio: isDesktop ? 1.4 : 1.2,
       children: [
         _AnimatedMetricCard(
           title: 'Total Papers',
@@ -266,7 +289,7 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildMetricsGrid(totalPapers, totalCitations, isDesktop, user),
-        const SizedBox(height: 32),
+        const SizedBox(height: 40),
 
         // Chart Section
         if (_dashboardStats?['timelineData'] != null &&
@@ -275,9 +298,9 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
             title: 'Publication Timeline',
             icon: Icons.insights_rounded,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           _buildChartCard(),
-          const SizedBox(height: 32),
+          const SizedBox(height: 40),
         ],
 
         // Recent Papers Section
@@ -286,14 +309,14 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
           icon: Icons.history_edu_rounded,
           onSeeAll: () {},
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
         if (_recentPapers.isEmpty)
           const Center(
             child: Padding(
-              padding: EdgeInsets.all(16),
+              padding: EdgeInsets.all(32),
               child: Text(
                 'No papers found.',
-                style: TextStyle(color: AppColors.textSecondary),
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 16, fontWeight: FontWeight.w500),
               ),
             ),
           )
@@ -331,12 +354,12 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
     if (maxY == 0) maxY = 10;
 
     return Container(
-      height: 220,
-      padding: const EdgeInsets.all(20),
+      height: 260,
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: AppColors.softShadow,
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: AppColors.glassShadow,
       ),
       child: LineChart(
         LineChartData(
@@ -347,7 +370,7 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
                 ? (maxY / 4).ceilToDouble()
                 : 1,
             getDrawingHorizontalLine: (value) => FlLine(
-              color: AppColors.border,
+              color: AppColors.border.withValues(alpha: 0.5),
               strokeWidth: 1,
               dashArray: [5, 5],
             ),
@@ -370,20 +393,20 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
                     final yearInfo =
                         (timelineData[index]['year'] ?? timelineData[index]['_id'] ?? '').toString();
                     return Padding(
-                      padding: const EdgeInsets.only(top: 8.0),
+                      padding: const EdgeInsets.only(top: 12.0),
                       child: Text(
                         yearInfo,
                         style: const TextStyle(
-                          color: AppColors.textLight,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
+                          color: AppColors.textSecondary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     );
                   }
                   return const SizedBox.shrink();
                 },
-                reservedSize: 22,
+                reservedSize: 28,
               ),
             ),
             leftTitles: AxisTitles(
@@ -393,13 +416,13 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
                   return Text(
                     value.toInt().toString(),
                     style: const TextStyle(
-                      color: AppColors.textLight,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
+                      color: AppColors.textSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
                     ),
                   );
                 },
-                reservedSize: 28,
+                reservedSize: 32,
               ),
             ),
           ),
@@ -413,14 +436,24 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
               spots: spots,
               isCurved: true,
               color: AppColors.primaryLight,
-              barWidth: 3,
+              barWidth: 4,
               isStrokeCapRound: true,
-              dotData: const FlDotData(show: false),
+              dotData: FlDotData(
+                show: true,
+                getDotPainter: (spot, percent, barData, index) {
+                  return FlDotCirclePainter(
+                    radius: 4,
+                    color: AppColors.surface,
+                    strokeWidth: 3,
+                    strokeColor: AppColors.primaryLight,
+                  );
+                },
+              ),
               belowBarData: BarAreaData(
                 show: true,
                 gradient: LinearGradient(
                   colors: [
-                    AppColors.primaryLight.withValues(alpha: 0.3),
+                    AppColors.primaryLight.withValues(alpha: 0.2),
                     AppColors.primaryLight.withValues(alpha: 0.0),
                   ],
                   begin: Alignment.topCenter,
@@ -443,11 +476,12 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: AppColors.softShadow,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: AppColors.glassShadow,
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -456,26 +490,26 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: AppColors.primaryLight.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: const Icon(
                   Icons.article_rounded,
                   color: AppColors.primaryLight,
-                  size: 20,
+                  size: 24,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 16),
               Expanded(
                 child: Text(
                   title,
                   style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary,
-                    height: 1.3,
+                    height: 1.4,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -483,13 +517,13 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Row(
             children: [
               Expanded(
                 child: Wrap(
                   spacing: 8,
-                  runSpacing: 4,
+                  runSpacing: 8,
                   children: [
                     _buildTag(venue, AppColors.secondary),
                     if (year.isNotEmpty)
@@ -497,25 +531,32 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.format_quote_rounded,
-                    size: 14,
-                    color: AppColors.accent,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    citations,
-                    style: const TextStyle(
+              const SizedBox(width: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.accent.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.format_quote_rounded,
+                      size: 14,
                       color: AppColors.accent,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 4),
+                    Text(
+                      citations,
+                      style: const TextStyle(
+                        color: AppColors.accent,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -526,18 +567,18 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
 
   Widget _buildTag(String text, Color color, {bool isOutline = false}) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: isOutline ? Colors.transparent : color.withValues(alpha: 0.1),
         border: isOutline ? Border.all(color: AppColors.border) : null,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
-        text.length > 20 ? '${text.substring(0, 20)}...' : text,
+        text.length > 25 ? '${text.substring(0, 25)}...' : text,
         style: TextStyle(
-          color: isOutline ? color : color,
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
+          color: isOutline ? AppColors.textSecondary : color,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
@@ -567,15 +608,15 @@ class _AnimatedMetricCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: gradient,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: gradient.colors.first.withValues(alpha: 0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
+            color: gradient.colors.first.withValues(alpha: 0.25),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -587,12 +628,12 @@ class _AnimatedMetricCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                child: Icon(icon, color: Colors.white, size: 20),
+                child: Icon(icon, color: Colors.white, size: 24),
               ),
             ],
           ),
@@ -604,31 +645,34 @@ class _AnimatedMetricCard extends StatelessWidget {
                   stringValue!,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.5,
                   ),
                 )
               else
                 TweenAnimationBuilder<double>(
                   tween: Tween<double>(begin: 0, end: value.toDouble()),
-                  duration: const Duration(seconds: 1),
+                  duration: const Duration(milliseconds: 1200),
+                  curve: Curves.easeOutQuart,
                   builder: (context, val, child) {
                     return Text(
                       val.toInt().toString(),
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 28,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.5,
                       ),
                     );
                   },
                 ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               Text(
                 title,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.8),
-                  fontSize: 12,
+                  color: Colors.white.withValues(alpha: 0.85),
+                  fontSize: 13,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -655,14 +699,21 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, color: AppColors.primary, size: 22),
-        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: AppColors.primaryLight.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: AppColors.primary, size: 20),
+        ),
+        const SizedBox(width: 12),
         Expanded(
           child: Text(
             title,
             style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
               color: AppColors.textPrimary,
               letterSpacing: -0.5,
             ),
@@ -673,12 +724,13 @@ class _SectionHeader extends StatelessWidget {
             onPressed: onSeeAll,
             style: TextButton.styleFrom(
               foregroundColor: AppColors.primaryLight,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              minimumSize: Size.zero,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              backgroundColor: AppColors.primaryLight.withValues(alpha: 0.05),
             ),
             child: const Text(
               'See all',
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
             ),
           ),
       ],

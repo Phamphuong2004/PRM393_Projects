@@ -64,6 +64,15 @@ class AppColors {
       offset: const Offset(0, 8),
     ),
   ];
+
+  static List<BoxShadow> glassShadow = [
+    BoxShadow(
+      color: Colors.black.withValues(alpha: 0.05),
+      blurRadius: 24,
+      spreadRadius: -4,
+      offset: const Offset(0, 8),
+    ),
+  ];
 }
 
 class AppTheme {
