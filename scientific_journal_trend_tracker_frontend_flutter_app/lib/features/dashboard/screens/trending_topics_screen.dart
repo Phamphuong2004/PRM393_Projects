@@ -41,6 +41,12 @@ class _TrendingTopicsScreenState extends State<TrendingTopicsScreen> {
     }
   }
 
+  double _toDouble(dynamic val) {
+    if (val is num) return val.toDouble();
+    if (val is String) return double.tryParse(val) ?? 0.0;
+    return 0.0;
+  }
+
   @override
   Widget build(BuildContext context) {
     return RefreshIndicator(
@@ -91,11 +97,11 @@ class _TrendingTopicsScreenState extends State<TrendingTopicsScreen> {
                         child: BarChart(
                           BarChartData(
                             alignment: BarChartAlignment.spaceAround,
-                            maxY: (_trends.map((t) => ((t['paperCount'] ?? 0) as num).toDouble()).reduce((a, b) => a > b ? a : b)) * 1.2,
+                            maxY: (_trends.map((t) => _toDouble(t['paperCount'])).reduce((a, b) => a > b ? a : b)) * 1.2,
                             barGroups: _trends.asMap().entries.take(8).map((e) {
                               return BarChartGroupData(
                                 x: e.key,
-                                barRods: [BarChartRodData(toY: ((e.value['paperCount'] ?? 0) as num).toDouble(), color: AppColors.secondary, width: 16, borderRadius: BorderRadius.circular(4))],
+                                barRods: [BarChartRodData(toY: _toDouble(e.value['paperCount']), color: AppColors.secondary, width: 16, borderRadius: BorderRadius.circular(4))],
                               );
                             }).toList(),
                             titlesData: FlTitlesData(

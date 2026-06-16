@@ -250,7 +250,16 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
     final totalPapers = _dashboardStats?['totalPapers'] ?? _recentPapers.length;
     final totalCitations = _recentPapers.fold<int>(
       0,
-      (sum, p) => sum + (p.citationCount as int),
+      (sum, p) {
+        if (sum == null) return 0; // fallback just in case
+        if (p is Paper) {
+          return sum + p.citationCount;
+        } else if (p is Map) {
+          final cit = p['citationCount'];
+          return sum + ((cit is num) ? cit.toInt() : 0);
+        }
+        return sum;
+      },
     );
 
     return Column(
@@ -303,7 +312,18 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
 
     for (int i = 0; i < timelineData.length; i++) {
       final item = timelineData[i];
-      final count = (item['count'] as num).toDouble();
+      final paperCountVal = item['paperCount'];
+      final countVal = item['count'];
+      double count = 0.0;
+      if (paperCountVal is num) {
+        count = paperCountVal.toDouble();
+      } else if (paperCountVal is String) {
+        count = double.tryParse(paperCountVal) ?? 0.0;
+      } else if (countVal is num) {
+        count = countVal.toDouble();
+      } else if (countVal is String) {
+        count = double.tryParse(countVal) ?? 0.0;
+      }
       if (count > maxY) maxY = count;
       spots.add(FlSpot(i.toDouble(), count));
     }
@@ -348,7 +368,7 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
                       index < timelineData.length &&
                       index % 2 == 0) {
                     final yearInfo =
-                        timelineData[index]['_id']?.toString() ?? '';
+                        (timelineData[index]['year'] ?? timelineData[index]['_id'] ?? '').toString();
                     return Padding(
                       padding: const EdgeInsets.only(top: 8.0),
                       child: Text(
