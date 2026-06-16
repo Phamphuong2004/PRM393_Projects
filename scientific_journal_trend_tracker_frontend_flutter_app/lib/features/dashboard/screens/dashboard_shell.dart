@@ -11,101 +11,256 @@ class DashboardShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth > 800;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Journal Trends'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none),
-            onPressed: () => context.push('/app/notifications'),
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              authProvider.logout();
-              context.go('/');
-            },
-          ),
-        ],
-      ),
-      drawer: _buildDrawer(context, authProvider),
-      body: child,
-      bottomNavigationBar: _buildBottomNav(context),
+      backgroundColor: AppColors.bg,
+      appBar: isDesktop 
+          ? null // No top app bar on Desktop, we use side rail
+          : AppBar(
+              title: Text('Journal Trends', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+              backgroundColor: AppColors.bg,
+              elevation: 0,
+              actions: [
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: AppColors.softShadow,
+                  ),
+                  child: IconButton(
+                    icon: const Icon(Icons.notifications_none_rounded, color: AppColors.primary),
+                    onPressed: () => context.push('/app/notifications'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
+            ),
+      drawer: isDesktop ? null : _buildPremiumDrawer(context, authProvider),
+      body: isDesktop
+          ? Row(
+              children: [
+                _buildDesktopSideMenu(context, authProvider),
+                const VerticalDivider(width: 1, thickness: 1, color: AppColors.border),
+                Expanded(child: child),
+              ],
+            )
+          : child,
+      bottomNavigationBar: isDesktop ? null : _buildModernBottomNav(context),
     );
   }
 
-  Widget _buildDrawer(BuildContext context, AuthProvider authProvider) {
-    return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
+  Widget _buildDesktopSideMenu(BuildContext context, AuthProvider authProvider) {
+    final user = authProvider.user;
+    final fullName = user?['fullName'] ?? 'User';
+    final initial = fullName.isNotEmpty ? fullName[0].toUpperCase() : 'U';
+    
+    final String location = GoRouterState.of(context).matchedLocation;
+    
+    return Container(
+      width: 280,
+      color: AppColors.surface,
+      child: Column(
         children: [
-          UserAccountsDrawerHeader(
-            decoration: const BoxDecoration(color: AppColors.primary),
-            accountName: Text(authProvider.user?['fullName'] ?? 'User'),
-            accountEmail: Text(authProvider.user?['email'] ?? ''),
-            currentAccountPicture: CircleAvatar(
-              backgroundColor: Colors.white,
-              child: Text(
-                (authProvider.user?['fullName'] ?? 'U').substring(0, 1).toUpperCase(),
-                style: const TextStyle(fontSize: 24, color: AppColors.primary),
-              ),
+          // Branding & User Info
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: const BoxDecoration(
+              gradient: AppColors.gradientPrimary,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, boxShadow: AppColors.glowShadow),
+                  alignment: Alignment.center,
+                  child: Text(initial, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(fullName, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+                      const SizedBox(height: 4),
+                      Text((user?['role'] ?? 'User').toString().toUpperCase(), style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 11, fontWeight: FontWeight.w700)),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-          ListTile(
-            leading: const Icon(Icons.people_outline),
-            title: const Text('Following'),
-            onTap: () {
-              context.pop();
-              context.go('/app/following');
-            },
+          
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+              children: [
+                _buildSideMenuItem(context, 'Dashboard', Icons.dashboard_outlined, Icons.dashboard_rounded, '/app', location),
+                _buildSideMenuItem(context, 'Search Papers', Icons.search_outlined, Icons.search_rounded, '/app/search', location),
+                _buildSideMenuItem(context, 'Trending', Icons.trending_up_rounded, Icons.trending_up_rounded, '/app/trending', location),
+                _buildSideMenuItem(context, 'Bookmarks', Icons.bookmark_outline_rounded, Icons.bookmark_rounded, '/app/bookmarks', location),
+                
+                const Padding(padding: EdgeInsets.symmetric(vertical: 16), child: Divider(color: AppColors.border)),
+                
+                const Padding(
+                  padding: EdgeInsets.only(left: 16.0, bottom: 8.0),
+                  child: Text('PERSONAL', style: TextStyle(color: AppColors.textLight, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                ),
+                _buildSideMenuItem(context, 'Notifications', Icons.notifications_none_rounded, Icons.notifications_active_rounded, '/app/notifications', location),
+                _buildSideMenuItem(context, 'Following', Icons.people_outline_rounded, Icons.people_rounded, '/app/following', location),
+                _buildSideMenuItem(context, 'Profile Settings', Icons.person_outline_rounded, Icons.person_rounded, '/app/profile', location),
+                
+                if (authProvider.isAdmin) ...[
+                  const Padding(padding: EdgeInsets.symmetric(vertical: 16), child: Divider(color: AppColors.border)),
+                  const Padding(
+                    padding: EdgeInsets.only(left: 16.0, bottom: 8.0),
+                    child: Text('ADMINISTRATION', style: TextStyle(color: AppColors.textLight, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                  ),
+                  _buildSideMenuItem(context, 'User Management', Icons.manage_accounts_outlined, Icons.manage_accounts_rounded, '/app/admin/users', location),
+                  _buildSideMenuItem(context, 'Analytics Reports', Icons.analytics_outlined, Icons.analytics_rounded, '/app/admin/analytics', location),
+                  _buildSideMenuItem(context, 'System Settings', Icons.settings_outlined, Icons.settings_rounded, '/app/admin/settings', location),
+                ],
+              ],
+            ),
           ),
-          ListTile(
-            leading: const Icon(Icons.person_outline),
-            title: const Text('Profile Settings'),
-            onTap: () {
-              context.pop();
-              context.go('/app/profile');
-            },
+          
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: ListTile(
+              leading: const Icon(Icons.logout_rounded, color: AppColors.error),
+              title: const Text('Logout', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w600)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              hoverColor: AppColors.error.withValues(alpha: 0.1),
+              onTap: () {
+                authProvider.logout();
+                context.go('/');
+              },
+            ),
           ),
-          const Divider(),
-          if (authProvider.isAdmin) ...[
-            const Padding(
-              padding: EdgeInsets.only(left: 16.0, top: 16.0, bottom: 8.0),
-              child: Text('Admin', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
-            ),
-            ListTile(
-              leading: const Icon(Icons.manage_accounts_outlined),
-              title: const Text('User Management'),
-              onTap: () {
-                context.pop();
-                context.go('/app/admin/users');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.analytics_outlined),
-              title: const Text('Analytics Reports'),
-              onTap: () {
-                context.pop();
-                context.go('/app/admin/analytics');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.settings_outlined),
-              title: const Text('System Settings'),
-              onTap: () {
-                context.pop();
-                context.go('/app/admin/settings');
-              },
-            ),
-          ],
         ],
       ),
     );
   }
 
-  Widget _buildBottomNav(BuildContext context) {
-    // Determine selected index based on current location
+  Widget _buildSideMenuItem(BuildContext context, String title, IconData icon, IconData activeIcon, String path, String currentLocation) {
+    // Exact match for '/app' so it doesn't highlight when path is '/app/profile'
+    final isSelected = path == '/app' ? currentLocation == '/app' : currentLocation.startsWith(path);
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: Icon(isSelected ? activeIcon : icon, color: isSelected ? AppColors.primary : AppColors.textSecondary),
+        title: Text(title, style: TextStyle(color: isSelected ? AppColors.primary : AppColors.textPrimary, fontWeight: isSelected ? FontWeight.bold : FontWeight.w500)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        tileColor: isSelected ? AppColors.primaryLight.withValues(alpha: 0.1) : Colors.transparent,
+        hoverColor: isSelected ? null : AppColors.bg,
+        onTap: () => context.go(path),
+      ),
+    );
+  }
+
+  Widget _buildPremiumDrawer(BuildContext context, AuthProvider authProvider) {
+    final user = authProvider.user;
+    final fullName = user?['fullName'] ?? 'User';
+    final email = user?['email'] ?? '';
+    final initial = fullName.isNotEmpty ? fullName[0].toUpperCase() : 'U';
+
+    return Drawer(
+      backgroundColor: AppColors.surface,
+      elevation: 0,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(topRight: Radius.circular(32), bottomRight: Radius.circular(32)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.fromLTRB(24, 60, 24, 32),
+            decoration: const BoxDecoration(
+              gradient: AppColors.gradientPrimary,
+              borderRadius: BorderRadius.only(topRight: Radius.circular(32)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, boxShadow: AppColors.glowShadow),
+                  alignment: Alignment.center,
+                  child: Text(initial, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(fullName, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      Text(email, style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+              children: [
+                _buildDrawerItem(context, icon: Icons.people_outline_rounded, activeIcon: Icons.people_rounded, title: 'Following', path: '/app/following'),
+                _buildDrawerItem(context, icon: Icons.person_outline_rounded, activeIcon: Icons.person_rounded, title: 'Profile Settings', path: '/app/profile'),
+                const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Divider(color: AppColors.border)),
+                
+                if (authProvider.isAdmin) ...[
+                  const Padding(
+                    padding: EdgeInsets.only(left: 16.0, top: 8.0, bottom: 8.0),
+                    child: Text('ADMINISTRATION', style: TextStyle(color: AppColors.textLight, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                  ),
+                  _buildDrawerItem(context, icon: Icons.manage_accounts_outlined, activeIcon: Icons.manage_accounts_rounded, title: 'User Management', path: '/app/admin/users'),
+                  _buildDrawerItem(context, icon: Icons.analytics_outlined, activeIcon: Icons.analytics_rounded, title: 'Analytics Reports', path: '/app/admin/analytics'),
+                  _buildDrawerItem(context, icon: Icons.settings_outlined, activeIcon: Icons.settings_rounded, title: 'System Settings', path: '/app/admin/settings'),
+                  const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Divider(color: AppColors.border)),
+                ],
+                
+                ListTile(
+                  leading: const Icon(Icons.logout_rounded, color: AppColors.error),
+                  title: const Text('Logout', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w600)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  onTap: () {
+                    authProvider.logout();
+                    context.go('/');
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDrawerItem(BuildContext context, {required IconData icon, required IconData activeIcon, required String title, required String path}) {
+    final location = GoRouterState.of(context).matchedLocation;
+    final isSelected = location.startsWith(path);
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      child: ListTile(
+        leading: Icon(isSelected ? activeIcon : icon, color: isSelected ? AppColors.primary : AppColors.textSecondary),
+        title: Text(title, style: TextStyle(color: isSelected ? AppColors.primary : AppColors.textPrimary, fontWeight: isSelected ? FontWeight.bold : FontWeight.w500)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        tileColor: isSelected ? AppColors.primaryLight.withValues(alpha: 0.1) : Colors.transparent,
+        onTap: () {
+          context.pop();
+          context.go(path);
+        },
+      ),
+    );
+  }
+
+  Widget _buildModernBottomNav(BuildContext context) {
     final String location = GoRouterState.of(context).matchedLocation;
     int currentIndex = 0;
     if (location.startsWith('/app/search')) {
@@ -116,49 +271,30 @@ class DashboardShell extends StatelessWidget {
       currentIndex = 3;
     }
 
-    return BottomNavigationBar(
-      currentIndex: currentIndex,
-      type: BottomNavigationBarType.fixed,
-      selectedItemColor: AppColors.primary,
-      unselectedItemColor: Colors.grey,
-      onTap: (index) {
-        switch (index) {
-          case 0:
-            context.go('/app');
-            break;
-          case 1:
-            context.go('/app/search');
-            break;
-          case 2:
-            context.go('/app/trending');
-            break;
-          case 3:
-            context.go('/app/bookmarks');
-            break;
-        }
-      },
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.dashboard_outlined),
-          activeIcon: Icon(Icons.dashboard),
-          label: 'Dashboard',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.search_outlined),
-          activeIcon: Icon(Icons.search),
-          label: 'Search',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.trending_up_outlined),
-          activeIcon: Icon(Icons.trending_up),
-          label: 'Trending',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.bookmark_outline),
-          activeIcon: Icon(Icons.bookmark),
-          label: 'Bookmarks',
-        ),
-      ],
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        boxShadow: [
+          BoxShadow(color: AppColors.primaryDark.withValues(alpha: 0.05), blurRadius: 20, offset: const Offset(0, -5))
+        ],
+      ),
+      child: NavigationBar(
+        selectedIndex: currentIndex,
+        onDestinationSelected: (index) {
+          switch (index) {
+            case 0: context.go('/app'); break;
+            case 1: context.go('/app/search'); break;
+            case 2: context.go('/app/trending'); break;
+            case 3: context.go('/app/bookmarks'); break;
+          }
+        },
+        destinations: const [
+          NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard_rounded), label: 'Dashboard'),
+          NavigationDestination(icon: Icon(Icons.search_outlined), selectedIcon: Icon(Icons.search_rounded), label: 'Search'),
+          NavigationDestination(icon: Icon(Icons.trending_up_rounded), selectedIcon: Icon(Icons.trending_up_rounded), label: 'Trending'),
+          NavigationDestination(icon: Icon(Icons.bookmark_outline_rounded), selectedIcon: Icon(Icons.bookmark_rounded), label: 'Bookmarks'),
+        ],
+      ),
     );
   }
 }

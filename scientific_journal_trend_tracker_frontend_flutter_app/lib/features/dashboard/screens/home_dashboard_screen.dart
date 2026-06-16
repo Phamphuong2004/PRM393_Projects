@@ -1,249 +1,620 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../core/constants/theme.dart';
 import '../../../core/providers/auth_provider.dart';
-
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/models/paper.dart';
-import '../../../core/models/keyword.dart';
-import '../../../core/repositories/paper_repository.dart';
-import '../../../core/repositories/keyword_repository.dart';
 import '../../../core/repositories/dashboard_repository.dart';
+import '../../../core/repositories/paper_repository.dart';
+import '../../../core/models/paper.dart';
+import '../../../core/repositories/keyword_repository.dart';
+import 'package:provider/provider.dart' as prov;
 
 class HomeDashboardScreen extends ConsumerStatefulWidget {
   const HomeDashboardScreen({super.key});
 
   @override
-  ConsumerState<HomeDashboardScreen> createState() => _HomeDashboardScreenState();
+  ConsumerState<HomeDashboardScreen> createState() =>
+      _HomeDashboardScreenState();
 }
 
-class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
-  List<Paper> _recentPapers = [];
-  List<Keyword> _trendingKeywords = [];
-  Map<String, dynamic>? _dashboardStats;
-  bool _loading = true;
+class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
+    with SingleTickerProviderStateMixin {
+  bool _isLoading = true;
   String? _error;
+
+  Map<String, dynamic>? _dashboardStats;
+  List<dynamic> _recentPapers = [];
+  List<dynamic> _trendingKeywords = [];
+
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOut,
+    );
     _fetchData();
   }
 
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
   Future<void> _fetchData() async {
-    setState(() { _loading = true; _error = null; });
     try {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+
+      final dashboardRepo = ref.read(dashboardRepositoryProvider);
       final paperRepo = ref.read(paperRepositoryProvider);
       final keywordRepo = ref.read(keywordRepositoryProvider);
-      final dashboardRepo = ref.read(dashboardRepositoryProvider);
 
       final results = await Future.wait([
+        dashboardRepo.getDashboardStats(),
         paperRepo.getPapers(page: 1, limit: 5),
-        keywordRepo.getTrendingKeywords(limit: 10),
-        dashboardRepo.getDashboardStats().catchError((_) => <String, dynamic>{}),
+        keywordRepo.getTrendingKeywords(limit: 5),
       ]);
-      if (!mounted) return;
+
       setState(() {
-        _recentPapers = (results[0] as Map)['papers'] as List<Paper>? ?? [];
-        _trendingKeywords = results[1] as List<Keyword>? ?? [];
-        _dashboardStats = results[2] as Map<String, dynamic>?;
-        if (_dashboardStats?.isEmpty ?? false) _dashboardStats = null;
-        _loading = false;
+        _dashboardStats = Map<String, dynamic>.from(results[0] as Map);
+        _recentPapers = (results[1] as Map)['papers'] ?? [];
+        _trendingKeywords = results[2] as List;
+        _isLoading = false;
       });
+
+      _animationController.forward();
     } catch (e) {
-      if (!mounted) return;
-      setState(() { _error = e.toString(); _loading = false; });
+      setState(() {
+        _error = 'Failed to load dashboard data. Please try again.';
+        _isLoading = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthProvider>();
-    final user = auth.user;
+    final user = prov.Provider.of<AuthProvider>(context).user;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth > 800;
 
-    return RefreshIndicator(
-      onRefresh: _fetchData,
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // Welcome Banner
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: AppColors.gradientPrimary,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Welcome back, ${user?['fullName'] ?? 'Researcher'}! 👋',
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+    return Scaffold(
+      backgroundColor: AppColors.bg,
+      body: RefreshIndicator(
+        onRefresh: _fetchData,
+        color: AppColors.primary,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1200),
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                _buildSliverHeader(user, isDesktop),
+                SliverToBoxAdapter(
+                  child: FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20.0,
+                        vertical: 24.0,
+                      ),
+                      child: _buildDashboardContent(user, isDesktop),
+                    ),
+                  ),
                 ),
-                const SizedBox(height: 4),
-                const Text('Here\'s your research dashboard overview', style: TextStyle(color: Colors.white70)),
               ],
             ),
           ),
-          const SizedBox(height: 16),
+        ),
+      ),
+    );
+  }
 
-          if (_loading)
-            const Center(child: Padding(padding: EdgeInsets.all(48), child: CircularProgressIndicator()))
-          else if (_error != null)
+  Widget _buildSliverHeader(Map<String, dynamic>? user, bool isDesktop) {
+    final firstName =
+        user?['fullName']?.toString().split(' ').first ?? 'Researcher';
+
+    return SliverAppBar(
+      expandedHeight: 140,
+      floating: false,
+      pinned: true,
+      backgroundColor: AppColors.primary,
+      elevation: 0,
+      flexibleSpace: FlexibleSpaceBar(
+        titlePadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        title: Text(
+          'Welcome back,\n$firstName.',
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+            height: 1.2,
+          ),
+        ),
+        background: Stack(
+          fit: StackFit.expand,
+          children: [
             Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.error.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.error),
+              decoration: const BoxDecoration(
+                gradient: AppColors.gradientPrimary,
               ),
-              child: Text(_error!, style: const TextStyle(color: AppColors.error)),
-            )
-          else ...[
-            // Metrics Row
-            Row(
-              children: [
-                _MetricCard(label: 'Total Papers', value: '${_recentPapers.length}', gradient: AppColors.gradientPrimary),
-                const SizedBox(width: 12),
-                _MetricCard(
-                  label: 'Total Citations',
-                  value: '${_recentPapers.fold<int>(0, (sum, p) => sum + p.citationCount)}',
-                  gradient: AppColors.gradientPink,
-                ),
-              ],
             ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                _MetricCard(label: 'Trending Keywords', value: '${_trendingKeywords.length}', gradient: AppColors.gradientBlue),
-                const SizedBox(width: 12),
-                _MetricCard(label: 'Role', value: _normalizeRole(user?['role'] ?? 'User'), gradient: AppColors.gradientGreen),
-              ],
+            // Decorative geometric shapes for scientific feel
+            Positioned(
+              right: -50,
+              top: -50,
+              child: Container(
+                width: 150,
+                height: 150,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.1),
+                ),
+              ),
+            ),
+            Positioned(
+              right: 40,
+              bottom: -30,
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.05),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMetricsGrid(int totalPapers, int totalCitations, bool isDesktop, Map<String, dynamic>? user) {
+    return GridView.count(
+      crossAxisCount: isDesktop ? 4 : 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 16,
+      crossAxisSpacing: 16,
+      childAspectRatio: 1.4,
+      children: [
+        _AnimatedMetricCard(
+          title: 'Total Papers',
+          value: totalPapers,
+          icon: Icons.article_rounded,
+          gradient: AppColors.gradientPrimary,
+        ),
+        _AnimatedMetricCard(
+          title: 'Total Citations',
+          value: totalCitations,
+          icon: Icons.format_quote_rounded,
+          gradient: AppColors.gradientSecondary,
+        ),
+        _AnimatedMetricCard(
+          title: 'Trending Topics',
+          value: _trendingKeywords.length,
+          icon: Icons.local_fire_department_rounded,
+          gradient: AppColors.gradientTrend,
+        ),
+        _AnimatedMetricCard(
+          title: 'Account Role',
+          value: 0,
+          stringValue: _normalizeRole(user?['role'] ?? 'User'),
+          icon: Icons.shield_rounded,
+          gradient: AppColors.gradientPremiumDark,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDashboardContent(Map<String, dynamic>? user, bool isDesktop) {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Column(
+          children: [
+            const Icon(
+              Icons.error_outline_rounded,
+              size: 48,
+              color: AppColors.error,
             ),
             const SizedBox(height: 16),
-
-            // Publication Timeline Chart
-            if (_dashboardStats?['timelineData'] != null && (_dashboardStats!['timelineData'] as List).isNotEmpty) ...[
-              _SectionHeader(title: '📈 Publication Timeline'),
-              const SizedBox(height: 8),
-              Card(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: SizedBox(
-                    height: 200,
-                    child: _buildLineChart(_dashboardStats!['timelineData'] as List),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-
-            // Trending Keywords
-            if (_trendingKeywords.isNotEmpty) ...[
-              _SectionHeader(title: '🔥 Trending Keywords'),
-              const SizedBox(height: 8),
-              Card(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: _trendingKeywords.map<Widget>((kw) {
-                      return Chip(
-                        label: Text(kw.name),
-                        backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                        labelStyle: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-
-            // Recent Papers
-            _SectionHeader(title: '📄 Recent Publications'),
-            const SizedBox(height: 8),
-            ..._recentPapers.map<Widget>((paper) => _PaperCard(paper: paper)),
+            Text(
+              _error!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(onPressed: _fetchData, child: const Text('Retry')),
           ],
+        ),
+      );
+    }
+
+    final totalPapers = _dashboardStats?['totalPapers'] ?? _recentPapers.length;
+    final totalCitations = _recentPapers.fold<int>(
+      0,
+      (sum, p) => sum + (p.citationCount as int),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildMetricsGrid(totalPapers, totalCitations, isDesktop, user),
+        const SizedBox(height: 32),
+
+        // Chart Section
+        if (_dashboardStats?['timelineData'] != null &&
+            (_dashboardStats!['timelineData'] as List).isNotEmpty) ...[
+          _SectionHeader(
+            title: 'Publication Timeline',
+            icon: Icons.insights_rounded,
+          ),
+          const SizedBox(height: 16),
+          _buildChartCard(),
+          const SizedBox(height: 32),
+        ],
+
+        // Recent Papers Section
+        _SectionHeader(
+          title: 'Recent Publications',
+          icon: Icons.history_edu_rounded,
+          onSeeAll: () {},
+        ),
+        const SizedBox(height: 16),
+        if (_recentPapers.isEmpty)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Text(
+                'No papers found.',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+            ),
+          )
+        else
+          ..._recentPapers.map((paper) => _buildPaperCard(paper)),
+      ],
+    );
+  }
+
+  Widget _buildChartCard() {
+    final timelineData = _dashboardStats!['timelineData'] as List;
+
+    // Convert data to FlSpot list
+    List<FlSpot> spots = [];
+    double maxY = 0;
+
+    for (int i = 0; i < timelineData.length; i++) {
+      final item = timelineData[i];
+      final count = (item['count'] as num).toDouble();
+      if (count > maxY) maxY = count;
+      spots.add(FlSpot(i.toDouble(), count));
+    }
+
+    if (maxY == 0) maxY = 10;
+
+    return Container(
+      height: 220,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: AppColors.softShadow,
+      ),
+      child: LineChart(
+        LineChartData(
+          gridData: FlGridData(
+            show: true,
+            drawVerticalLine: false,
+            horizontalInterval: (maxY / 4).ceilToDouble() > 0
+                ? (maxY / 4).ceilToDouble()
+                : 1,
+            getDrawingHorizontalLine: (value) => FlLine(
+              color: AppColors.border,
+              strokeWidth: 1,
+              dashArray: [5, 5],
+            ),
+          ),
+          titlesData: FlTitlesData(
+            rightTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            topTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                getTitlesWidget: (value, meta) {
+                  final index = value.toInt();
+                  if (index >= 0 &&
+                      index < timelineData.length &&
+                      index % 2 == 0) {
+                    final yearInfo =
+                        timelineData[index]['_id']?.toString() ?? '';
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Text(
+                        yearInfo,
+                        style: const TextStyle(
+                          color: AppColors.textLight,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
+                reservedSize: 22,
+              ),
+            ),
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                getTitlesWidget: (value, meta) {
+                  return Text(
+                    value.toInt().toString(),
+                    style: const TextStyle(
+                      color: AppColors.textLight,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  );
+                },
+                reservedSize: 28,
+              ),
+            ),
+          ),
+          borderData: FlBorderData(show: false),
+          minX: 0,
+          maxX: (timelineData.length - 1).toDouble(),
+          minY: 0,
+          maxY: maxY * 1.2,
+          lineBarsData: [
+            LineChartBarData(
+              spots: spots,
+              isCurved: true,
+              color: AppColors.primaryLight,
+              barWidth: 3,
+              isStrokeCapRound: true,
+              dotData: const FlDotData(show: false),
+              belowBarData: BarAreaData(
+                show: true,
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.primaryLight.withValues(alpha: 0.3),
+                    AppColors.primaryLight.withValues(alpha: 0.0),
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPaperCard(dynamic paperObj) {
+    final paper = paperObj as Paper;
+    final title = paper.title;
+    final venue = paper.source ?? 'Unknown Venue';
+    final year = paper.publicationYear?.toString() ?? '';
+    final citations = paper.citationCount.toString();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: AppColors.softShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLight.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.article_rounded,
+                  color: AppColors.primaryLight,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                    height: 1.3,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    _buildTag(venue, AppColors.secondary),
+                    if (year.isNotEmpty)
+                      _buildTag(year, AppColors.textSecondary, isOutline: true),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.format_quote_rounded,
+                    size: 14,
+                    color: AppColors.accent,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    citations,
+                    style: const TextStyle(
+                      color: AppColors.accent,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildLineChart(List data) {
-    final spots = data.asMap().entries.map((e) {
-      final item = e.value;
-      return FlSpot(e.key.toDouble(), ((item['paperCount'] ?? 0) as num).toDouble());
-    }).toList();
-
-    return LineChart(
-      LineChartData(
-        gridData: const FlGridData(show: false),
-        titlesData: FlTitlesData(
-          leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              getTitlesWidget: (val, _) {
-                final idx = val.toInt();
-                if (idx < 0 || idx >= data.length) return const SizedBox();
-                return Text('${data[idx]['year'] ?? ''}', style: const TextStyle(fontSize: 10));
-              },
-            ),
-          ),
+  Widget _buildTag(String text, Color color, {bool isOutline = false}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: isOutline ? Colors.transparent : color.withValues(alpha: 0.1),
+        border: isOutline ? Border.all(color: AppColors.border) : null,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        text.length > 20 ? '${text.substring(0, 20)}...' : text,
+        style: TextStyle(
+          color: isOutline ? color : color,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
         ),
-        borderData: FlBorderData(show: false),
-        lineBarsData: [
-          LineChartBarData(
-            spots: spots,
-            isCurved: true,
-            color: AppColors.primary,
-            dotData: const FlDotData(show: false),
-            belowBarData: BarAreaData(show: true, color: AppColors.primary.withValues(alpha: 0.1)),
-          ),
-        ],
       ),
     );
   }
 
   String _normalizeRole(String role) {
-    switch (role.toLowerCase()) {
-      case 'admin': return 'Admin';
-      case 'researcher': return 'Researcher';
-      default: return 'User';
-    }
+    if (role.isEmpty) return 'User';
+    return role[0].toUpperCase() + role.substring(1).toLowerCase();
   }
 }
 
-class _MetricCard extends StatelessWidget {
-  final String label;
-  final String value;
+class _AnimatedMetricCard extends StatelessWidget {
+  final String title;
+  final int value;
+  final String? stringValue;
+  final IconData icon;
   final LinearGradient gradient;
-  const _MetricCard({required this.label, required this.value, required this.gradient});
+
+  const _AnimatedMetricCard({
+    required this.title,
+    required this.value,
+    this.stringValue,
+    required this.icon,
+    required this.gradient,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: gradient,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12)),
-            const SizedBox(height: 4),
-            Text(value, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-          ],
-        ),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: gradient,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: gradient.colors.first.withValues(alpha: 0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: Colors.white, size: 20),
+              ),
+            ],
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (stringValue != null)
+                Text(
+                  stringValue!,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                )
+              else
+                TweenAnimationBuilder<double>(
+                  tween: Tween<double>(begin: 0, end: value.toDouble()),
+                  duration: const Duration(seconds: 1),
+                  builder: (context, val, child) {
+                    return Text(
+                      val.toInt().toString(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    );
+                  },
+                ),
+              const SizedBox(height: 2),
+              Text(
+                title,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.8),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -251,50 +622,46 @@ class _MetricCard extends StatelessWidget {
 
 class _SectionHeader extends StatelessWidget {
   final String title;
-  const _SectionHeader({required this.title});
+  final IconData icon;
+  final VoidCallback? onSeeAll;
+
+  const _SectionHeader({
+    required this.title,
+    required this.icon,
+    this.onSeeAll,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary));
-  }
-}
-
-class _PaperCard extends StatelessWidget {
-  final Paper paper;
-  const _PaperCard({required this.paper});
-
-  @override
-  Widget build(BuildContext context) {
-    final title = paper.title;
-    final journal = paper.journalId != null 
-        ? (paper.journalId is Map ? paper.journalId['name'] : paper.journalId.toString()) 
-        : 'Unknown journal';
-    final year = paper.publicationYear?.toString() ?? '';
-    final citations = paper.citationCount;
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(12),
-        title: Text(
-          title,
-          style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.primary, fontSize: 14),
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 4),
-          child: Row(
-            children: [
-              const Icon(Icons.book_outlined, size: 12, color: AppColors.textSecondary),
-              const SizedBox(width: 4),
-              Expanded(child: Text('$journal • $year • $citations citations', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary), overflow: TextOverflow.ellipsis)),
-            ],
+    return Row(
+      children: [
+        Icon(icon, color: AppColors.primary, size: 22),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+              letterSpacing: -0.5,
+            ),
           ),
         ),
-      ),
+        if (onSeeAll != null)
+          TextButton(
+            onPressed: onSeeAll,
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.primaryLight,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              minimumSize: Size.zero,
+            ),
+            child: const Text(
+              'See all',
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+            ),
+          ),
+      ],
     );
   }
 }
-
