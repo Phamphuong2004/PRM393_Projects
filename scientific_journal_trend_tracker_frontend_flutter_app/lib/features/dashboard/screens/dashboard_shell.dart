@@ -17,25 +17,25 @@ class DashboardShell extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.bg,
       appBar: isDesktop 
-          ? null // No top app bar on Desktop, we use side rail
+          ? null 
           : AppBar(
-              title: Text('Journal Trends', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-              backgroundColor: AppColors.bg,
+              title: Text('Journal Trends', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -0.5)),
+              backgroundColor: AppColors.surface,
+              surfaceTintColor: Colors.transparent,
               elevation: 0,
+              centerTitle: false,
               actions: [
                 Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
+                    color: AppColors.bg,
                     borderRadius: BorderRadius.circular(12),
-                    boxShadow: AppColors.softShadow,
                   ),
                   child: IconButton(
                     icon: const Icon(Icons.notifications_none_rounded, color: AppColors.primary),
                     onPressed: () => context.push('/app/notifications'),
                   ),
                 ),
-                const SizedBox(width: 8),
               ],
             ),
       drawer: isDesktop ? null : _buildPremiumDrawer(context, authProvider),
@@ -44,7 +44,15 @@ class DashboardShell extends StatelessWidget {
               children: [
                 _buildDesktopSideMenu(context, authProvider),
                 const VerticalDivider(width: 1, thickness: 1, color: AppColors.border),
-                Expanded(child: child),
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.only(topLeft: Radius.circular(32), bottomLeft: Radius.circular(32)),
+                    child: Container(
+                      color: AppColors.bg,
+                      child: child,
+                    ),
+                  ),
+                ),
               ],
             )
           : child,
@@ -69,24 +77,25 @@ class DashboardShell extends StatelessWidget {
             padding: const EdgeInsets.all(24),
             decoration: const BoxDecoration(
               gradient: AppColors.gradientPrimary,
+              borderRadius: BorderRadius.only(bottomRight: Radius.circular(32)),
             ),
             child: Row(
               children: [
                 Container(
-                  width: 48,
-                  height: 48,
+                  width: 56,
+                  height: 56,
                   decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, boxShadow: AppColors.glowShadow),
                   alignment: Alignment.center,
-                  child: Text(initial, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                  child: Text(initial, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.primary)),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(fullName, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+                      Text(fullName, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800), maxLines: 1, overflow: TextOverflow.ellipsis),
                       const SizedBox(height: 4),
-                      Text((user?['role'] ?? 'User').toString().toUpperCase(), style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 11, fontWeight: FontWeight.w700)),
+                      Text((user?['role'] ?? 'User').toString().toUpperCase(), style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 1)),
                     ],
                   ),
                 ),
@@ -107,7 +116,7 @@ class DashboardShell extends StatelessWidget {
                 
                 const Padding(
                   padding: EdgeInsets.only(left: 16.0, bottom: 8.0),
-                  child: Text('PERSONAL', style: TextStyle(color: AppColors.textLight, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                  child: Text('PERSONAL', style: TextStyle(color: AppColors.textLight, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 1.2)),
                 ),
                 _buildSideMenuItem(context, 'Notifications', Icons.notifications_none_rounded, Icons.notifications_active_rounded, '/app/notifications', location),
                 _buildSideMenuItem(context, 'Following', Icons.people_outline_rounded, Icons.people_rounded, '/app/following', location),
@@ -117,7 +126,7 @@ class DashboardShell extends StatelessWidget {
                   const Padding(padding: EdgeInsets.symmetric(vertical: 16), child: Divider(color: AppColors.border)),
                   const Padding(
                     padding: EdgeInsets.only(left: 16.0, bottom: 8.0),
-                    child: Text('ADMINISTRATION', style: TextStyle(color: AppColors.textLight, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                    child: Text('ADMINISTRATION', style: TextStyle(color: AppColors.textLight, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 1.2)),
                   ),
                   _buildSideMenuItem(context, 'User Management', Icons.manage_accounts_outlined, Icons.manage_accounts_rounded, '/app/admin/users', location),
                   _buildSideMenuItem(context, 'Analytics Reports', Icons.analytics_outlined, Icons.analytics_rounded, '/app/admin/analytics', location),
@@ -130,10 +139,17 @@ class DashboardShell extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(16),
             child: ListTile(
-              leading: const Icon(Icons.logout_rounded, color: AppColors.error),
-              title: const Text('Logout', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w600)),
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.logout_rounded, color: AppColors.error, size: 20),
+              ),
+              title: const Text('Logout', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w700, fontSize: 15)),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              hoverColor: AppColors.error.withValues(alpha: 0.1),
+              hoverColor: AppColors.error.withValues(alpha: 0.05),
               onTap: () {
                 authProvider.logout();
                 context.go('/');
@@ -146,14 +162,13 @@ class DashboardShell extends StatelessWidget {
   }
 
   Widget _buildSideMenuItem(BuildContext context, String title, IconData icon, IconData activeIcon, String path, String currentLocation) {
-    // Exact match for '/app' so it doesn't highlight when path is '/app/profile'
     final isSelected = path == '/app' ? currentLocation == '/app' : currentLocation.startsWith(path);
     
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         leading: Icon(isSelected ? activeIcon : icon, color: isSelected ? AppColors.primary : AppColors.textSecondary),
-        title: Text(title, style: TextStyle(color: isSelected ? AppColors.primary : AppColors.textPrimary, fontWeight: isSelected ? FontWeight.bold : FontWeight.w500)),
+        title: Text(title, style: TextStyle(color: isSelected ? AppColors.primary : AppColors.textPrimary, fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600, fontSize: 15)),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         tileColor: isSelected ? AppColors.primaryLight.withValues(alpha: 0.1) : Colors.transparent,
         hoverColor: isSelected ? null : AppColors.bg,
@@ -196,9 +211,9 @@ class DashboardShell extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(fullName, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                      Text(fullName, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
                       const SizedBox(height: 4),
-                      Text(email, style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13)),
+                      Text(email, style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13, fontWeight: FontWeight.w500)),
                     ],
                   ),
                 ),
@@ -207,7 +222,7 @@ class DashboardShell extends StatelessWidget {
           ),
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               children: [
                 _buildDrawerItem(context, icon: Icons.people_outline_rounded, activeIcon: Icons.people_rounded, title: 'Following', path: '/app/following'),
                 _buildDrawerItem(context, icon: Icons.person_outline_rounded, activeIcon: Icons.person_rounded, title: 'Profile Settings', path: '/app/profile'),
@@ -216,7 +231,7 @@ class DashboardShell extends StatelessWidget {
                 if (authProvider.isAdmin) ...[
                   const Padding(
                     padding: EdgeInsets.only(left: 16.0, top: 8.0, bottom: 8.0),
-                    child: Text('ADMINISTRATION', style: TextStyle(color: AppColors.textLight, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                    child: Text('ADMINISTRATION', style: TextStyle(color: AppColors.textLight, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 1.2)),
                   ),
                   _buildDrawerItem(context, icon: Icons.manage_accounts_outlined, activeIcon: Icons.manage_accounts_rounded, title: 'User Management', path: '/app/admin/users'),
                   _buildDrawerItem(context, icon: Icons.analytics_outlined, activeIcon: Icons.analytics_rounded, title: 'Analytics Reports', path: '/app/admin/analytics'),
@@ -225,8 +240,12 @@ class DashboardShell extends StatelessWidget {
                 ],
                 
                 ListTile(
-                  leading: const Icon(Icons.logout_rounded, color: AppColors.error),
-                  title: const Text('Logout', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w600)),
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: AppColors.error.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                    child: const Icon(Icons.logout_rounded, color: AppColors.error, size: 20),
+                  ),
+                  title: const Text('Logout', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w700)),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   onTap: () {
                     authProvider.logout();
@@ -249,7 +268,7 @@ class DashboardShell extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 4),
       child: ListTile(
         leading: Icon(isSelected ? activeIcon : icon, color: isSelected ? AppColors.primary : AppColors.textSecondary),
-        title: Text(title, style: TextStyle(color: isSelected ? AppColors.primary : AppColors.textPrimary, fontWeight: isSelected ? FontWeight.bold : FontWeight.w500)),
+        title: Text(title, style: TextStyle(color: isSelected ? AppColors.primary : AppColors.textPrimary, fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600, fontSize: 15)),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         tileColor: isSelected ? AppColors.primaryLight.withValues(alpha: 0.1) : Colors.transparent,
         onTap: () {
@@ -274,12 +293,12 @@ class DashboardShell extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        boxShadow: [
-          BoxShadow(color: AppColors.primaryDark.withValues(alpha: 0.05), blurRadius: 20, offset: const Offset(0, -5))
-        ],
+        boxShadow: AppColors.glassShadow,
       ),
       child: NavigationBar(
+        height: 70,
         selectedIndex: currentIndex,
+        elevation: 0,
         onDestinationSelected: (index) {
           switch (index) {
             case 0: context.go('/app'); break;
