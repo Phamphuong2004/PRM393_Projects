@@ -1,8 +1,8 @@
 class ApiConstants {
   // Thay đổi URL này tùy theo môi trường bạn đang chạy:
-  static const String baseUrl = 'http://localhost:5000'; // Dùng cho chạy Web hoặc Windows Desktop
+  static const String baseUrl = 'https://prm393-projects-journal-tracking.up.railway.app'; // Dùng cho production (Railway)
+  // static const String baseUrl = 'http://localhost:5000'; // Dùng cho chạy Web hoặc Windows Desktop
   // static const String baseUrl = 'http://10.0.2.2:5000'; // Dùng cho máy ảo Android Emulator
-  // static const String baseUrl = 'https://wdp301-group04-journal-trends.up.railway.app'; // Dùng cho production
 
   // Auth
   static const String login = '/api/auth/login';
