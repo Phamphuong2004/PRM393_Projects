@@ -34,16 +34,18 @@ const seedData = async () => {
 
     console.log("Creating Institutions...");
     await Institution.insertMany([
-      { name: "FPT University", country: "Vietnam", city: "Ho Chi Minh City", website: "https://www.fpt.edu.vn" },
-      { name: "Vietnam National University, Hanoi", country: "Vietnam", city: "Hanoi", website: "https://vnu.edu.vn" },
-      { name: "Vietnam National University, Ho Chi Minh City", country: "Vietnam", city: "Ho Chi Minh City", website: "https://vnuhcm.edu.vn" },
-      { name: "Hanoi University of Science and Technology", country: "Vietnam", city: "Hanoi", website: "https://hust.edu.vn" },
-      { name: "Stanford University", country: "United States", city: "Stanford", website: "https://www.stanford.edu" },
-      { name: "Massachusetts Institute of Technology", country: "United States", city: "Cambridge", website: "https://www.mit.edu" },
-      { name: "New York University", country: "United States", city: "New York", website: "https://www.nyu.edu" },
-      { name: "University of Oxford", country: "United Kingdom", city: "Oxford", website: "https://www.ox.ac.uk" },
-      { name: "National University of Singapore", country: "Singapore", city: "Singapore", website: "https://nus.edu.sg" },
-      { name: "ETH Zurich", country: "Switzerland", city: "Zurich", website: "https://ethz.ch" },
+      { name: "FPT University", country: "Vietnam", city: "Hanoi", website: "https://www.fpt.edu.vn" },
+      { name: "Vietnam National University, Hanoi (VNU)", country: "Vietnam", city: "Hanoi", website: "https://vnu.edu.vn" },
+      { name: "Vietnam National University, Ho Chi Minh City (VNU-HCM)", country: "Vietnam", city: "Ho Chi Minh City", website: "https://vnuhcm.edu.vn" },
+      { name: "Hanoi University of Science and Technology (HUST)", country: "Vietnam", city: "Hanoi", website: "https://hust.edu.vn" },
+      { name: "Ho Chi Minh City University of Technology (HCMUT)", country: "Vietnam", city: "Ho Chi Minh City", website: "https://hcmut.edu.vn" },
+      { name: "National Economics University (NEU)", country: "Vietnam", city: "Hanoi", website: "https://neu.edu.vn" },
+      { name: "University of Economics Ho Chi Minh City (UEH)", country: "Vietnam", city: "Ho Chi Minh City", website: "https://ueh.edu.vn" },
+      { name: "Foreign Trade University (FTU)", country: "Vietnam", city: "Hanoi", website: "https://ftu.edu.vn" },
+      { name: "University of Danang (UDN)", country: "Vietnam", city: "Da Nang", website: "https://udn.vn" },
+      { name: "Can Tho University (CTU)", country: "Vietnam", city: "Can Tho", website: "https://www.ctu.edu.vn" },
+      { name: "Ton Duc Thang University (TDTU)", country: "Vietnam", city: "Ho Chi Minh City", website: "https://tdtu.edu.vn" },
+      { name: "Posts and Telecommunications Institute of Technology (PTIT)", country: "Vietnam", city: "Hanoi", website: "https://ptit.edu.vn" },
     ]);
 
     console.log("Creating System Administrator...");

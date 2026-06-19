@@ -528,37 +528,70 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
   Widget _divider() => Divider(height: 1, color: Colors.grey.shade100);
 
   Widget _buildInstitutionDropdown() {
-    // Build the option names; include the current value even if it isn't in the
-    // fetched list (e.g. legacy free-text institutions) so the dropdown is valid.
-    final names = _institutions.map((e) => e.name).toList();
-    if (_selectedInstitution != null &&
-        _selectedInstitution!.isNotEmpty &&
-        !names.contains(_selectedInstitution)) {
-      names.insert(0, _selectedInstitution!);
-    }
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Institution', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey.shade600)),
         const SizedBox(height: 6),
-        DropdownButtonFormField<String>(
-          initialValue: _selectedInstitution,
-          isExpanded: true,
-          style: const TextStyle(fontSize: 14, color: Color(0xFF1E293B)),
-          hint: Text('Select your institution', style: TextStyle(color: Colors.grey.shade400, fontSize: 13)),
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: Colors.grey.shade50,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade200)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade200)),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
-          ),
-          items: names
-              .map((name) => DropdownMenuItem(value: name, child: Text(name, overflow: TextOverflow.ellipsis)))
-              .toList(),
-          onChanged: (value) => setState(() => _selectedInstitution = value),
+        // Combobox: pick from the catalog OR type a custom institution.
+        Autocomplete<String>(
+          // Key changes once when the saved value loads, so the prefill applies.
+          key: ValueKey('inst_${_selectedInstitution ?? ''}'),
+          initialValue: TextEditingValue(text: _selectedInstitution ?? ''),
+          optionsBuilder: (TextEditingValue value) {
+            final names = _institutions.map((e) => e.name);
+            if (value.text.isEmpty) return names;
+            return names.where((n) => n.toLowerCase().contains(value.text.toLowerCase()));
+          },
+          onSelected: (value) => _selectedInstitution = value,
+          fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+            return TextField(
+              controller: controller,
+              focusNode: focusNode,
+              style: const TextStyle(fontSize: 14, color: Color(0xFF1E293B)),
+              onChanged: (v) {
+                final t = v.trim();
+                _selectedInstitution = t.isEmpty ? null : t;
+              },
+              decoration: InputDecoration(
+                hintText: 'Select or type your institution',
+                hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade200)),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade200)),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
+              ),
+            );
+          },
+          optionsViewBuilder: (context, onSelected, options) {
+            return Align(
+              alignment: Alignment.topLeft,
+              child: Material(
+                elevation: 4,
+                borderRadius: BorderRadius.circular(10),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 240, maxWidth: 400),
+                  child: ListView.builder(
+                    padding: EdgeInsets.zero,
+                    shrinkWrap: true,
+                    itemCount: options.length,
+                    itemBuilder: (context, index) {
+                      final option = options.elementAt(index);
+                      return InkWell(
+                        onTap: () => onSelected(option),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          child: Text(option, style: const TextStyle(fontSize: 14)),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ],
     );
