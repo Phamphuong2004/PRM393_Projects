@@ -22,6 +22,9 @@ class ApiConstants {
   // Journals
   static const String journals = '/api/journals';
 
+  // Institutions
+  static const String institutions = '/api/institutions';
+
   // Topics
   static const String topics = '/api/topics';
   static const String emergingTopics = '/api/topics/emerging/list';
