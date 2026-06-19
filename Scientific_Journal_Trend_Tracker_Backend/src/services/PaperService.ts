@@ -214,5 +214,7 @@ export class PaperService {
         delay *= 2;
       }
     }
+    
+    throw { status: 429, message: "External API error: Too Many Requests (Rate limit exceeded after retries)" };
   }
 }
