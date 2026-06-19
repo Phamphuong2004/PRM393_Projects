@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/theme.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/paper.dart';
 import '../../../core/repositories/paper_repository.dart';
+import 'paper_detail_screen.dart';
 
 class SearchPapersScreen extends ConsumerStatefulWidget {
   const SearchPapersScreen({super.key});
@@ -14,7 +16,6 @@ class SearchPapersScreen extends ConsumerStatefulWidget {
 
 class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
   final _searchController = TextEditingController();
-  final _yearController = TextEditingController();
   List<Paper> _results = [];
   int _page = 1;
   int _totalPages = 1;
@@ -22,7 +23,8 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
   bool _loading = false;
   String? _error;
   String _sort = '-publicationYear';
-  bool _isExternal = false;
+  String _selectedSource = 'Local Database';
+  String _selectedYear = 'All Years';
 
   static const _sortOptions = [
     ('-publicationYear', 'Newest first'),
@@ -41,13 +43,12 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
     setState(() { _loading = true; _error = null; });
     try {
       final q = _searchController.text.trim();
-      final yearStr = _yearController.text.trim();
-      final year = yearStr.isNotEmpty ? int.tryParse(yearStr) : null;
+      final year = _selectedYear != 'All Years' ? int.tryParse(_selectedYear) : null;
 
       final paperRepo = ref.read(paperRepositoryProvider);
       Map<String, dynamic> res;
       
-      if (_isExternal) {
+      if (_selectedSource != 'Local Database') {
         if (q.isEmpty) {
           setState(() {
             _results = [];
@@ -57,7 +58,7 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
           });
           return;
         }
-        res = await paperRepo.searchExternalPapers(q, limit: 15);
+        res = await paperRepo.searchExternalPapers(q, limit: 15, source: _selectedSource);
       } else {
         if (q.isNotEmpty) {
           res = await paperRepo.searchPapers(q, year: year);
@@ -83,24 +84,27 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
 
   void _reset() {
     _searchController.clear();
-    _yearController.clear();
-    setState(() { _sort = '-publicationYear'; _page = 1; _isExternal = false; });
+    setState(() { 
+      _sort = '-publicationYear'; 
+      _page = 1; 
+      _selectedSource = 'Local Database';
+      _selectedYear = 'All Years';
+    });
     _fetchPapers();
   }
 
   @override
   void dispose() {
     _searchController.dispose();
-    _yearController.dispose();
     super.dispose();
   }
 
   void _showPaperDetail(Paper paper) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _PaperDetailSheet(paper: paper),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PaperDetailScreen(paper: paper),
+      ),
     );
   }
 
@@ -126,128 +130,38 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
               const Text('Search by title, abstract, author, or journal', style: TextStyle(color: Colors.white70, fontSize: 13)),
               const SizedBox(height: 12),
               
-              // Search Mode Toggle
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _isExternal = false;
-                            _page = 1;
-                          });
-                          _fetchPapers();
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          decoration: BoxDecoration(
-                            color: !_isExternal ? Colors.white : Colors.transparent,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Center(
-                            child: Text(
-                              'Local Database',
-                              style: TextStyle(
-                                color: !_isExternal ? AppColors.primary : Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                        ),
+              // Search Bar & Filter Icon
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      style: const TextStyle(color: Colors.black),
+                      decoration: InputDecoration(
+                        hintText: 'Search papers, authors, journals...',
+                        prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       ),
+                      onSubmitted: (_) { setState(() => _page = 1); _fetchPapers(); },
                     ),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _isExternal = true;
-                            _page = 1;
-                          });
-                          _fetchPapers();
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          decoration: BoxDecoration(
-                            color: _isExternal ? Colors.white : Colors.transparent,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Center(
-                            child: Text(
-                              'Semantic Scholar',
-                              style: TextStyle(
-                                color: _isExternal ? AppColors.primary : Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ],
-                ),
+                    child: IconButton(
+                      icon: const Icon(Icons.tune, color: AppColors.primary),
+                      onPressed: _showFilterBottomSheet,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
-              
-              TextField(
-                controller: _searchController,
-                style: const TextStyle(color: Colors.black),
-                decoration: InputDecoration(
-                  hintText: _isExternal ? 'Search Semantic Scholar...' : 'Search papers, authors, journals...',
-                  prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                ),
-                onSubmitted: (_) { setState(() => _page = 1); _fetchPapers(); },
-              ),
-              if (!_isExternal) ...[
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _yearController,
-                        keyboardType: TextInputType.number,
-                        style: const TextStyle(color: Colors.black),
-                        decoration: InputDecoration(
-                          hintText: 'Year',
-                          filled: true,
-                          fillColor: Colors.white,
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      flex: 2,
-                      child: DropdownButtonFormField<String>(
-                        initialValue: _sort,
-                        dropdownColor: Colors.white,
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: Colors.white,
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-                        ),
-                        items: _sortOptions.map((o) => DropdownMenuItem(value: o.$1, child: Text(o.$2, style: const TextStyle(fontSize: 13)))).toList(),
-                        onChanged: (v) => setState(() => _sort = v!),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-              const SizedBox(height: 8),
               Row(
                 children: [
                   Expanded(
@@ -320,128 +234,262 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
         : 'Unknown journal';
     final year = paper.publicationYear?.toString() ?? '';
     final citations = paper.citationCount;
-    final keywordsList = paper.keywords ?? [];
-    final keywords = keywordsList.map((k) => k is Map ? k['name'].toString() : k.toString()).where((k) => k.isNotEmpty).toList();
+    final hasOpenAlex = paper.externalIdOpenalexId != null && paper.externalIdOpenalexId!.isNotEmpty;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: const BorderSide(color: Color(0x1A4F46E5))),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            GestureDetector(
-              onTap: () => _showPaperDetail(paper),
-              child: Text(paper.title, style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.primary, fontSize: 14)),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: [
-                _InfoChip(icon: Icons.person_outline, label: authors.isNotEmpty ? authors : 'Unknown', color: const Color(0xFF667EEA)),
-                if (journal.isNotEmpty) _InfoChip(icon: Icons.book_outlined, label: journal, color: const Color(0xFFF5576C)),
-                if (year != '') _InfoChip(icon: Icons.calendar_today, label: year, color: const Color(0xFF4FACFE)),
-                _InfoChip(icon: Icons.format_quote_outlined, label: '$citations citations', color: const Color(0xFF43E97B)),
-              ],
-            ),
-            if (keywords.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 4,
-                children: keywords.take(4).map((k) => Chip(label: Text(k, style: const TextStyle(fontSize: 11)), padding: EdgeInsets.zero, materialTapTargetSize: MaterialTapTargetSize.shrinkWrap)).toList(),
-              ),
-            ],
-            if (paper.abstract != null) ...[
-              const SizedBox(height: 8),
-              Text(paper.abstract!, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.5)),
-            ],
-            const SizedBox(height: 8),
-            ElevatedButton(
-              onPressed: () => _showPaperDetail(paper),
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-              child: const Text('View Detail'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _InfoChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  const _InfoChip({required this.icon, required this.label, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: color),
-          const SizedBox(width: 4),
-          Flexible(child: Text(label, style: TextStyle(fontSize: 12, color: color), overflow: TextOverflow.ellipsis)),
-        ],
-      ),
-    );
-  }
-}
-
-class _PaperDetailSheet extends StatelessWidget {
-  final Paper paper;
-  const _PaperDetailSheet({required this.paper});
-
-  @override
-  Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.7,
-      minChildSize: 0.4,
-      maxChildSize: 0.95,
-      expand: false,
-      builder: (_, controller) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: ListView(
-          controller: controller,
-          padding: const EdgeInsets.all(20),
-          children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Expanded(
-                  child: Text(
-                    'Paper Detail',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => _showPaperDetail(paper),
+                    child: Text(
+                      paper.title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF4F46E5),
+                        fontSize: 18,
+                        height: 1.3,
+                      ),
+                    ),
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(context),
+                if (hasOpenAlex || _selectedSource != 'Local Database') ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF4F46E5).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      hasOpenAlex ? 'OpenAlex' : _selectedSource,
+                      style: const TextStyle(
+                        color: Color(0xFF4F46E5),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            if (paper.doi != null && paper.doi!.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                'DOI: ${paper.doi}',
+                style: const TextStyle(
+                  color: Color(0xFF8B5CF6),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+            const SizedBox(height: 8),
+            Text(
+              '$authors · ${year.isNotEmpty ? year : "N/A"} · $citations citations · $journal',
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 14,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              paper.abstract?.isNotEmpty == true ? paper.abstract! : 'No abstract available.',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade700,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Divider(height: 1),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                TextButton.icon(
+                  onPressed: () {},
+                  icon: const Icon(Icons.bookmark_border, size: 18),
+                  label: const Text('Save'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.grey.shade700,
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(60, 36),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                if (paper.url != null && paper.url!.isNotEmpty)
+                  TextButton.icon(
+                    onPressed: () async {
+                      final url = Uri.parse(paper.url!);
+                      if (await canLaunchUrl(url)) {
+                        await launchUrl(url);
+                      }
+                    },
+                    icon: const Icon(Icons.open_in_new, size: 18),
+                    label: const Text('Source'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.grey.shade700,
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(60, 36),
+                    ),
+                  ),
+                const Spacer(),
+                TextButton(
+                  onPressed: () => _showPaperDetail(paper),
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFF8B5CF6),
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(60, 36),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Text('View Details', style: TextStyle(fontWeight: FontWeight.w600)),
+                      SizedBox(width: 4),
+                      Icon(Icons.arrow_forward, size: 16),
+                    ],
+                  ),
                 ),
               ],
             ),
-            const Divider(),
-            Text(paper.title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.primary)),
-            const SizedBox(height: 12),
-            if (paper.abstract != null) ...[
-              const Text('Abstract', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              Text(paper.abstract!, style: const TextStyle(height: 1.6, color: AppColors.textSecondary)),
-            ],
-            if (paper.doi != null) ...[
-              const SizedBox(height: 12),
-              Text('DOI: ${paper.doi}', style: const TextStyle(color: AppColors.primary, decoration: TextDecoration.underline)),
-            ],
           ],
         ),
       ),
     );
+  }
+
+  void _showFilterBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            return Container(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              decoration: const BoxDecoration(
+                color: Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.tune, color: AppColors.primary),
+                        const SizedBox(width: 8),
+                        const Text('Filters', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                    const Divider(),
+                    const SizedBox(height: 16),
+                    const Text('SOURCE', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      initialValue: _selectedSource,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      ),
+                      items: ['Local Database', 'OpenAlex', 'Semantic Scholar', 'Crossref', 'IEEE Xplore', 'Exa Research']
+                          .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                          .toList(),
+                      onChanged: (val) => setModalState(() => _selectedSource = val!),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text('YEAR', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      initialValue: _selectedYear,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      ),
+                      items: ['All Years', ...List.generate(30, (i) => (DateTime.now().year - i).toString())]
+                          .map((y) => DropdownMenuItem(value: y, child: Text(y)))
+                          .toList(),
+                      onChanged: (val) => setModalState(() => _selectedYear = val!),
+                    ),
+                    if (_selectedSource == 'Local Database') ...[
+                      const SizedBox(height: 20),
+                      const Text('SORT BY', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        initialValue: _sort,
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        ),
+                        items: _sortOptions.map((o) => DropdownMenuItem(value: o.$1, child: Text(o.$2))).toList(),
+                        onChanged: (v) => setModalState(() => _sort = v!),
+                      ),
+                    ],
+                    const SizedBox(height: 32),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          setState(() => _page = 1);
+                          _fetchPapers();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: const Text('Apply Filters', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    ).then((_) {
+      if (mounted) setState(() {});
+    });
   }
 }
