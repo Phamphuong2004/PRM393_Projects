@@ -1,4 +1,5 @@
 import { Paper, Author, Journal, Keyword, Topic } from "../models";
+import axios from "axios";
 
 type PaperSearchSortField = "publicationYear" | "citationCount";
 
@@ -146,5 +147,48 @@ export class PaperService {
       .sort({ publicationYear: -1 });
 
     return papers;
+  }
+
+  static async searchExternalPapers(query: string, limit: number = 10) {
+    try {
+      const apiKey = process.env.SEMANTIC_SCHOLAR_API_KEY;
+      const response = await axios.get(`https://api.semanticscholar.org/graph/v1/paper/search`, {
+        params: {
+          query,
+          limit,
+          fields: "title,abstract,url,year,externalIds,authors,citationCount,venue"
+        },
+        headers: {
+          ...(apiKey && { "x-api-key": apiKey })
+        },
+        validateStatus: () => true
+      });
+
+      if (response.status !== 200) {
+        throw { status: response.status, message: "External API error: " + response.statusText };
+      }
+
+      const rawData = response.data.data || [];
+      const papers = rawData.map((item: any) => ({
+        _id: item.paperId,
+        title: item.title,
+        abstract: item.abstract,
+        doi: item.externalIds?.DOI,
+        url: item.url,
+        publicationYear: item.year,
+        citationCount: item.citationCount || 0,
+        source: item.venue || "Semantic Scholar",
+        authors: item.authors?.map((a: any) => ({ fullName: a.name })) || []
+      }));
+
+      return {
+        papers,
+        total: response.data.total || papers.length,
+        pages: 1
+      };
+    } catch (error: any) {
+      if (error.status) throw error;
+      throw { status: 500, message: "Failed to fetch external papers: " + error.message };
+    }
   }
 }

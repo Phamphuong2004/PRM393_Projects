@@ -13,6 +13,7 @@ class ApiConstants {
   // Papers
   static const String papers = '/api/papers';
   static const String searchPapers = '/api/papers/search/query';
+  static const String searchExternalPapers = '/api/papers/external/search';
 
   // Keywords
   static const String keywords = '/api/keywords';
@@ -45,4 +46,12 @@ class ApiConstants {
 
   // Dashboard
   static const String dashboardStats = '/api/dashboard/stats';
+
+  // Analysis Runs
+  static const String analysisRuns = '/api/analysis-runs';
+
+  // Admin
+  static const String adminUsers = '/api/admin/users';
+  static const String adminSources = '/api/admin/sources';
+  static const String adminSync = '/api/admin/sync';
 }

@@ -274,7 +274,6 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
     final totalCitations = _recentPapers.fold<int>(
       0,
       (sum, p) {
-        if (sum == null) return 0; // fallback just in case
         if (p is Paper) {
           return sum + p.citationCount;
         } else if (p is Map) {
