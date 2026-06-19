@@ -56,11 +56,11 @@ class PaperRepository {
     }
   }
 
-  Future<Map<String, dynamic>> searchExternalPapers(String query, {int limit = 10}) async {
+  Future<Map<String, dynamic>> searchExternalPapers(String query, {int limit = 10, String? source}) async {
     try {
       final response = await _dio.get(
         ApiConstants.searchExternalPapers,
-        queryParameters: {'q': query, 'limit': limit},
+        queryParameters: {'q': query, 'limit': limit, if (source != null) 'source': source},
       );
       
       final papersJson = (response.data['papers'] as List?) ?? (response.data['data'] as List?) ?? [];
