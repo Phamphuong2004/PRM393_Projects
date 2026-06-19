@@ -23,6 +23,7 @@ abstract class Paper with _$Paper {
     required String title,
     String? abstract,
     String? doi,
+    String? url,
     int? publicationYear,
     @JsonKey(name: 'citationCount') @Default(0) int citationCount,
     @JsonKey(name: 'externalId_openalexId') String? externalIdOpenalexId,
