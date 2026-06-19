@@ -15,8 +15,8 @@ class AuthProvider with ChangeNotifier {
   bool get isAuthenticated => _token != null;
   
   String get role => _user?['role'] ?? 'User';
-  bool get isAdmin => role == 'Admin';
-  bool get isResearcher => role == 'Researcher';
+  bool get isAdmin => role.toLowerCase() == 'admin';
+  bool get isResearcher => role.toLowerCase() == 'researcher';
 
   AuthProvider() {
     _loadUser();

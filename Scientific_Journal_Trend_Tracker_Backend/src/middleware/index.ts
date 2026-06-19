@@ -7,6 +7,7 @@ export {
   validateCreateKeyword,
   validateCreateJournal,
   validateCreateTopic,
+  validateCreateAuthor,
   validateChangePassword,
   validatePaginationQuery,
   validateIdParam,
