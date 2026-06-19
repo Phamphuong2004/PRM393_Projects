@@ -969,7 +969,7 @@ const swaggerSpec = {
     schemas: {
       RegisterRequest: {
         type: "object",
-        required: ["email", "password", "fullName"],
+        required: ["email", "password", "fullName", "institution", "role"],
         properties: {
           email: {
             type: "string",
@@ -984,6 +984,15 @@ const swaggerSpec = {
           fullName: {
             type: "string",
             example: "Nguyen Van A",
+          },
+          institution: {
+            type: "string",
+            example: "Example University",
+          },
+          role: {
+            type: "string",
+            enum: ["admin", "researcher", "student"],
+            example: "researcher",
           },
         },
       },

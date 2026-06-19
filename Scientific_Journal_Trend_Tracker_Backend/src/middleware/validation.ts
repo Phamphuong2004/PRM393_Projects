@@ -13,6 +13,19 @@ export const validateRegister = [
     .isLength({ min: 6 })
     .withMessage("Password must be at least 6 characters"),
   body("fullName").notEmpty().withMessage("Full name is required"),
+  body("role")
+    .notEmpty()
+    .withMessage("Role is required")
+    .bail()
+    .isIn(["admin", "researcher", "student"])
+    .withMessage("Role must be 'admin', 'researcher', or 'student'"),
+  body("institution")
+    .notEmpty()
+    .withMessage("Institution is required")
+    .bail()
+    .isString()
+    .withMessage("Institution must be a string")
+    .trim(),
 ];
 
 export const validateLogin = [
