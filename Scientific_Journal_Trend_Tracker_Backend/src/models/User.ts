@@ -16,7 +16,7 @@ export interface IUser extends Document {
   email: string;
   password: string;
   fullName: string;
-  role: "admin" | "researcher" | "user";
+  role: "admin" | "researcher" | "student";
   institution?: string;
   bio?: string;
   interests: string[];
@@ -51,7 +51,7 @@ const userSchema = new Schema<IUser>(
     },
     role: {
       type: String,
-      enum: ["admin", "researcher", "user"],
+      enum: ["admin", "researcher", "student"],
       default: "researcher",
     },
     institution: String,
