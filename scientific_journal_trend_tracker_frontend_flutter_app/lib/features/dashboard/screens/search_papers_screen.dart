@@ -5,6 +5,7 @@ import '../../../core/constants/theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/paper.dart';
 import '../../../core/repositories/paper_repository.dart';
+import 'paper_detail_screen.dart';
 
 class SearchPapersScreen extends ConsumerStatefulWidget {
   const SearchPapersScreen({super.key});
@@ -99,11 +100,11 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
   }
 
   void _showPaperDetail(Paper paper) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _PaperDetailSheet(paper: paper),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PaperDetailScreen(paper: paper),
+      ),
     );
   }
 
@@ -418,7 +419,7 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
                     const Text('SOURCE', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
-                      value: _selectedSource,
+                      initialValue: _selectedSource,
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: Colors.white,
@@ -434,7 +435,7 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
                     const Text('YEAR', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
-                      value: _selectedYear,
+                      initialValue: _selectedYear,
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: Colors.white,
@@ -451,7 +452,7 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
                       const Text('SORT BY', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
-                        value: _sort,
+                        initialValue: _sort,
                         decoration: InputDecoration(
                           filled: true,
                           fillColor: Colors.white,
@@ -490,81 +491,5 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
     ).then((_) {
       if (mounted) setState(() {});
     });
-  }
-}
-
-class _InfoChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  const _InfoChip({required this.icon, required this.label, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: color),
-          const SizedBox(width: 4),
-          Flexible(child: Text(label, style: TextStyle(fontSize: 12, color: color), overflow: TextOverflow.ellipsis)),
-        ],
-      ),
-    );
-  }
-}
-
-class _PaperDetailSheet extends StatelessWidget {
-  final Paper paper;
-  const _PaperDetailSheet({required this.paper});
-
-  @override
-  Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.7,
-      minChildSize: 0.4,
-      maxChildSize: 0.95,
-      expand: false,
-      builder: (_, controller) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: ListView(
-          controller: controller,
-          padding: const EdgeInsets.all(20),
-          children: [
-            Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    'Paper Detail',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-            const Divider(),
-            Text(paper.title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.primary)),
-            const SizedBox(height: 12),
-            if (paper.abstract != null) ...[
-              const Text('Abstract', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              Text(paper.abstract!, style: const TextStyle(height: 1.6, color: AppColors.textSecondary)),
-            ],
-            if (paper.doi != null) ...[
-              const SizedBox(height: 12),
-              Text('DOI: ${paper.doi}', style: const TextStyle(color: AppColors.primary, decoration: TextDecoration.underline)),
-            ],
-          ],
-        ),
-      ),
-    );
   }
 }

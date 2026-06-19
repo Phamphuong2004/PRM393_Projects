@@ -60,7 +60,7 @@ class PaperRepository {
     try {
       final response = await _dio.get(
         ApiConstants.searchExternalPapers,
-        queryParameters: {'q': query, 'limit': limit, if (source != null) 'source': source},
+        queryParameters: {'q': query, 'limit': limit, 'source': source},
       );
       
       final papersJson = (response.data['papers'] as List?) ?? (response.data['data'] as List?) ?? [];
