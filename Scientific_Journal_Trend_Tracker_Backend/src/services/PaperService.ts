@@ -5,6 +5,18 @@ type PaperSearchSortField = "publicationYear" | "citationCount";
 
 type PaperSearchSortDirection = 1 | -1;
 
+function reconstructOpenAlexAbstract(invertedIndex: any): string | null {
+  if (!invertedIndex) return null;
+  const wordPositions: { word: string; pos: number }[] = [];
+  for (const [word, positions] of Object.entries(invertedIndex)) {
+    for (const pos of (positions as number[])) {
+      wordPositions.push({ word, pos });
+    }
+  }
+  wordPositions.sort((a, b) => a.pos - b.pos);
+  return wordPositions.map(wp => wp.word).join(' ');
+}
+
 export class PaperService {
   static async getAllPapers(page: number, limit: number) {
     const skip = (page - 1) * limit;
@@ -159,7 +171,7 @@ export class PaperService {
         const papers = response.data.results.map((item: any) => ({
           _id: item.id,
           title: item.title,
-          abstract: item.abstract_inverted_index ? "Abstract available on OpenAlex." : null,
+          abstract: reconstructOpenAlexAbstract(item.abstract_inverted_index),
           doi: item.doi?.replace('https://doi.org/', ''),
           url: item.doi || item.id,
           publicationYear: item.publication_year,
