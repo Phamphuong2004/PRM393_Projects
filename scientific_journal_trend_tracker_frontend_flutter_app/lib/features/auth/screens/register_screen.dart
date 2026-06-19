@@ -433,31 +433,65 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       children: [
         const Text('Institution (Optional)', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.textPrimary)),
         const SizedBox(height: 8),
-        DropdownButtonFormField<String>(
-          initialValue: _selectedInstitution,
-          isExpanded: true,
-          style: const TextStyle(fontWeight: FontWeight.w500, color: AppColors.textPrimary),
-          hint: Text(
-            _loadingInstitutions ? 'Loading institutions...' : 'Select your institution',
-            style: TextStyle(color: AppColors.textLight.withValues(alpha: 0.8)),
-          ),
-          decoration: InputDecoration(
-            prefixIcon: const Icon(Icons.business_outlined, color: AppColors.textSecondary),
-            filled: true,
-            fillColor: AppColors.bg,
-            contentPadding: const EdgeInsets.all(20),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: AppColors.primary, width: 2),
-            ),
-          ),
-          items: _institutions
-              .map((inst) => DropdownMenuItem(value: inst.name, child: Text(inst.name, overflow: TextOverflow.ellipsis)))
-              .toList(),
-          onChanged: _loadingInstitutions
-              ? null
-              : (value) => setState(() => _selectedInstitution = value),
+        // Combobox: pick from the catalog OR type a custom institution.
+        Autocomplete<String>(
+          optionsBuilder: (TextEditingValue value) {
+            final names = _institutions.map((e) => e.name);
+            if (value.text.isEmpty) return names;
+            return names.where((n) => n.toLowerCase().contains(value.text.toLowerCase()));
+          },
+          onSelected: (value) => _selectedInstitution = value,
+          fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+            return TextField(
+              controller: controller,
+              focusNode: focusNode,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+              onChanged: (v) {
+                final t = v.trim();
+                _selectedInstitution = t.isEmpty ? null : t;
+              },
+              decoration: InputDecoration(
+                prefixIcon: const Icon(Icons.business_outlined, color: AppColors.textSecondary),
+                hintText: _loadingInstitutions ? 'Loading...' : 'Select or type your institution',
+                hintStyle: TextStyle(color: AppColors.textLight.withValues(alpha: 0.8)),
+                filled: true,
+                fillColor: AppColors.bg,
+                contentPadding: const EdgeInsets.all(20),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                ),
+              ),
+            );
+          },
+          optionsViewBuilder: (context, onSelected, options) {
+            return Align(
+              alignment: Alignment.topLeft,
+              child: Material(
+                elevation: 4,
+                borderRadius: BorderRadius.circular(12),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 240, maxWidth: 440),
+                  child: ListView.builder(
+                    padding: EdgeInsets.zero,
+                    shrinkWrap: true,
+                    itemCount: options.length,
+                    itemBuilder: (context, index) {
+                      final option = options.elementAt(index);
+                      return InkWell(
+                        onTap: () => onSelected(option),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          child: Text(option, style: const TextStyle(fontWeight: FontWeight.w500)),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ],
     );
