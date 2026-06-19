@@ -5,6 +5,18 @@ type PaperSearchSortField = "publicationYear" | "citationCount";
 
 type PaperSearchSortDirection = 1 | -1;
 
+function reconstructOpenAlexAbstract(invertedIndex: any): string | null {
+  if (!invertedIndex) return null;
+  const wordPositions: { word: string; pos: number }[] = [];
+  for (const [word, positions] of Object.entries(invertedIndex)) {
+    for (const pos of (positions as number[])) {
+      wordPositions.push({ word, pos });
+    }
+  }
+  wordPositions.sort((a, b) => a.pos - b.pos);
+  return wordPositions.map(wp => wp.word).join(' ');
+}
+
 export class PaperService {
   static async getAllPapers(page: number, limit: number) {
     const skip = (page - 1) * limit;
@@ -149,7 +161,66 @@ export class PaperService {
     return papers;
   }
 
-  static async searchExternalPapers(query: string, limit: number = 10) {
+  static async searchExternalPapers(query: string, limit: number = 10, source: string = "Semantic Scholar") {
+    if (source === "OpenAlex") {
+      try {
+        const response = await axios.get(`https://api.openalex.org/works`, {
+          params: { search: query, "per-page": limit }
+        });
+        
+        const papers = response.data.results.map((item: any) => ({
+          _id: item.id,
+          title: item.title,
+          abstract: reconstructOpenAlexAbstract(item.abstract_inverted_index),
+          doi: item.doi?.replace('https://doi.org/', ''),
+          url: item.doi || item.id,
+          publicationYear: item.publication_year,
+          citationCount: item.cited_by_count || 0,
+          source: item.primary_location?.source?.display_name || "OpenAlex",
+          externalIdOpenalexId: item.id,
+          authors: item.authorships?.map((a: any) => ({ fullName: a.author.display_name })) || []
+        }));
+        
+        return {
+          papers,
+          total: response.data.meta.count || papers.length,
+          pages: 1
+        };
+      } catch (error: any) {
+        throw { status: 500, message: "Failed to fetch from OpenAlex: " + error.message };
+      }
+    } else if (source === "Crossref") {
+      try {
+        const response = await axios.get(`https://api.crossref.org/works`, {
+          params: { query, rows: limit }
+        });
+        
+        const items = response.data.message.items || [];
+        const papers = items.map((item: any) => ({
+          _id: item.DOI || Math.random().toString(),
+          title: item.title?.[0] || "Unknown Title",
+          abstract: item.abstract?.replace(/<[^>]*>?/gm, ''), // strip xml/html tags
+          doi: item.DOI,
+          url: item.URL,
+          publicationYear: item.published?.["date-parts"]?.[0]?.[0] || item.created?.["date-parts"]?.[0]?.[0],
+          citationCount: item["is-referenced-by-count"] || 0,
+          source: item["container-title"]?.[0] || "Crossref",
+          authors: item.author?.map((a: any) => ({ fullName: `${a.given || ''} ${a.family || ''}`.trim() })) || []
+        }));
+        
+        return {
+          papers,
+          total: response.data.message["total-results"] || papers.length,
+          pages: 1
+        };
+      } catch (error: any) {
+        throw { status: 500, message: "Failed to fetch from Crossref: " + error.message };
+      }
+    } else if (source === "IEEE Xplore" || source === "Exa Research") {
+       return { papers: [], total: 0, pages: 1 };
+    }
+
+    // Default: Semantic Scholar
     const apiKey = process.env.SEMANTIC_SCHOLAR_API_KEY;
     const maxRetries = 3;
     let delay = 1000;

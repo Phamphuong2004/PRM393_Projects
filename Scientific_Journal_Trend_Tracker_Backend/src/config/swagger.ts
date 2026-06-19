@@ -25,6 +25,7 @@ const swaggerSpec = {
     { name: "Papers" },
     { name: "Keywords" },
     { name: "Journals" },
+    { name: "Institutions" },
     { name: "Topics" },
     { name: "Users" },
     { name: "AnalysisRuns" },
@@ -369,6 +370,85 @@ const swaggerSpec = {
       delete: {
         tags: ["Journals"],
         summary: "Delete journal",
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+          },
+        ],
+        responses: { "200": { description: "OK" } },
+      },
+    },
+    "/api/institutions": {
+      get: {
+        tags: ["Institutions"],
+        summary: "List institutions (for register/profile dropdown)",
+        security: [],
+        parameters: [
+          {
+            name: "search",
+            in: "query",
+            required: false,
+            schema: { type: "string" },
+          },
+        ],
+        responses: { "200": { description: "OK" } },
+      },
+      post: {
+        tags: ["Institutions"],
+        summary: "Create institution (admin only)",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/InstitutionWriteRequest" },
+            },
+          },
+        },
+        responses: { "201": { description: "Created" } },
+      },
+    },
+    "/api/institutions/{id}": {
+      get: {
+        tags: ["Institutions"],
+        summary: "Get institution by ID",
+        security: [],
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+          },
+        ],
+        responses: { "200": { description: "OK" } },
+      },
+      put: {
+        tags: ["Institutions"],
+        summary: "Update institution (admin only)",
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/InstitutionWriteRequest" },
+            },
+          },
+        },
+        responses: { "200": { description: "OK" } },
+      },
+      delete: {
+        tags: ["Institutions"],
+        summary: "Delete institution (admin only)",
         parameters: [
           {
             name: "id",
@@ -985,6 +1065,15 @@ const swaggerSpec = {
             type: "string",
             example: "Nguyen Van A",
           },
+          institution: {
+            type: "string",
+            example: "Example University",
+          },
+          role: {
+            type: "string",
+            enum: ["admin", "researcher", "student"],
+            example: "researcher",
+          },
         },
       },
       LoginRequest: {
@@ -1082,6 +1171,17 @@ const swaggerSpec = {
           isTracked: { type: "boolean", example: true },
           source: { type: "string", example: "manual" },
           externalId: { type: "string", example: "journal-123" },
+        },
+      },
+      InstitutionWriteRequest: {
+        type: "object",
+        required: ["name"],
+        properties: {
+          name: { type: "string", example: "FPT University" },
+          country: { type: "string", example: "Vietnam" },
+          city: { type: "string", example: "Ho Chi Minh City" },
+          website: { type: "string", example: "https://www.fpt.edu.vn" },
+          isActive: { type: "boolean", example: true },
         },
       },
       TopicWriteRequest: {

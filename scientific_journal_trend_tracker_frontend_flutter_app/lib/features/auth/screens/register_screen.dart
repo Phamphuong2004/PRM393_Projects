@@ -1,32 +1,87 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/theme.dart';
+import '../../../core/models/institution.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/repositories/institution_repository.dart';
 
-class RegisterScreen extends StatefulWidget {
+class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _institutionController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  String _selectedRole = 'researcher';
+  int _passwordScore = 0;
+  List<Institution> _institutions = [];
+  String? _selectedInstitution;
+  bool _loadingInstitutions = true;
   bool _isLoading = false;
   String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInstitutions();
+  }
+
+  Future<void> _loadInstitutions() async {
+    try {
+      final repo = ref.read(institutionRepositoryProvider);
+      final list = await repo.getInstitutions();
+      if (mounted) {
+        setState(() {
+          _institutions = list;
+          _loadingInstitutions = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingInstitutions = false);
+    }
+  }
+
+  // Tính độ mạnh mật khẩu: 0..4 dựa trên độ dài và độ đa dạng ký tự.
+  int _calcPasswordScore(String password) {
+    if (password.isEmpty) return 0;
+    var score = 0;
+    if (password.length >= 8) score++;
+    if (RegExp(r'[A-Z]').hasMatch(password) &&
+        RegExp(r'[a-z]').hasMatch(password)) {
+      score++;
+    }
+    if (RegExp(r'\d').hasMatch(password)) score++;
+    if (RegExp(r'[^A-Za-z0-9]').hasMatch(password)) score++;
+    return score;
+  }
 
   Future<void> _handleRegister() async {
     final fullName = _fullNameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
-    final institution = _institutionController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
+    final institution = _selectedInstitution;
 
     if (fullName.isEmpty || email.isEmpty || password.isEmpty) {
       setState(() => _errorMessage = 'Please fill in all required fields.');
+      return;
+    }
+
+    if (password != confirmPassword) {
+      setState(() => _errorMessage = 'Passwords do not match.');
+      return;
+    }
+
+    if (_calcPasswordScore(password) < 2) {
+      setState(() => _errorMessage =
+          'Password is too weak. Use at least 8 characters with letters, numbers or symbols.');
       return;
     }
 
@@ -37,10 +92,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     try {
       await context.read<AuthProvider>().register(
-        email, 
-        password, 
+        email,
+        password,
         fullName,
-        institution.isNotEmpty ? institution : null,
+        role: _selectedRole,
+        institution: institution,
       );
     } catch (e) {
       setState(() {
@@ -58,7 +114,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _fullNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
-    _institutionController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -267,15 +323,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 hint: 'Create a strong password',
                 icon: Icons.lock_outline_rounded,
                 obscureText: true,
+                onChanged: (value) =>
+                    setState(() => _passwordScore = _calcPasswordScore(value)),
               ),
+              if (_passwordController.text.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                _buildPasswordStrength(),
+              ],
               const SizedBox(height: 20),
               _buildTextField(
-                controller: _institutionController,
-                label: 'Institution (Optional)',
-                hint: 'University or Research Lab',
-                icon: Icons.business_outlined,
+                controller: _confirmPasswordController,
+                label: 'Confirm Password *',
+                hint: 'Re-enter your password',
+                icon: Icons.lock_reset_rounded,
+                obscureText: true,
+                onChanged: (_) => setState(() {}),
               ),
-              
+              if (_confirmPasswordController.text.isNotEmpty &&
+                  _confirmPasswordController.text != _passwordController.text) ...[
+                const SizedBox(height: 8),
+                const Text(
+                  'Passwords do not match',
+                  style: TextStyle(color: AppColors.error, fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+              ],
+              const SizedBox(height: 20),
+              _buildInstitutionSelector(),
+              const SizedBox(height: 20),
+              _buildRoleSelector(),
+
               const SizedBox(height: 40),
               SizedBox(
                 width: double.infinity,
@@ -315,6 +391,150 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
+  Widget _buildRoleSelector() {
+    const roles = <Map<String, String>>[
+      {'value': 'researcher', 'label': 'Researcher'},
+      {'value': 'student', 'label': 'Student'},
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Role *', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.textPrimary)),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          initialValue: _selectedRole,
+          style: const TextStyle(fontWeight: FontWeight.w500, color: AppColors.textPrimary),
+          decoration: InputDecoration(
+            prefixIcon: const Icon(Icons.badge_outlined, color: AppColors.textSecondary),
+            filled: true,
+            fillColor: AppColors.bg,
+            contentPadding: const EdgeInsets.all(20),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: AppColors.primary, width: 2),
+            ),
+          ),
+          items: roles
+              .map((r) => DropdownMenuItem(value: r['value'], child: Text(r['label']!)))
+              .toList(),
+          onChanged: (value) {
+            if (value != null) setState(() => _selectedRole = value);
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInstitutionSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Institution (Optional)', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.textPrimary)),
+        const SizedBox(height: 8),
+        // Combobox: pick from the catalog OR type a custom institution.
+        Autocomplete<String>(
+          optionsBuilder: (TextEditingValue value) {
+            final names = _institutions.map((e) => e.name);
+            if (value.text.isEmpty) return names;
+            return names.where((n) => n.toLowerCase().contains(value.text.toLowerCase()));
+          },
+          onSelected: (value) => _selectedInstitution = value,
+          fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+            return TextField(
+              controller: controller,
+              focusNode: focusNode,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+              onChanged: (v) {
+                final t = v.trim();
+                _selectedInstitution = t.isEmpty ? null : t;
+              },
+              decoration: InputDecoration(
+                prefixIcon: const Icon(Icons.business_outlined, color: AppColors.textSecondary),
+                hintText: _loadingInstitutions ? 'Loading...' : 'Select or type your institution',
+                hintStyle: TextStyle(color: AppColors.textLight.withValues(alpha: 0.8)),
+                filled: true,
+                fillColor: AppColors.bg,
+                contentPadding: const EdgeInsets.all(20),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                ),
+              ),
+            );
+          },
+          optionsViewBuilder: (context, onSelected, options) {
+            return Align(
+              alignment: Alignment.topLeft,
+              child: Material(
+                elevation: 4,
+                borderRadius: BorderRadius.circular(12),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 240, maxWidth: 440),
+                  child: ListView.builder(
+                    padding: EdgeInsets.zero,
+                    shrinkWrap: true,
+                    itemCount: options.length,
+                    itemBuilder: (context, index) {
+                      final option = options.elementAt(index);
+                      return InkWell(
+                        onTap: () => onSelected(option),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          child: Text(option, style: const TextStyle(fontWeight: FontWeight.w500)),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPasswordStrength() {
+    const labels = ['Very Weak', 'Weak', 'Fair', 'Good', 'Strong'];
+    const colors = [
+      AppColors.error,
+      AppColors.error,
+      Colors.orange,
+      Colors.amber,
+      Colors.green,
+    ];
+    final score = _passwordScore.clamp(0, 4);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: List.generate(4, (i) {
+            final active = i < score;
+            return Expanded(
+              child: Container(
+                height: 6,
+                margin: EdgeInsets.only(right: i < 3 ? 6 : 0),
+                decoration: BoxDecoration(
+                  color: active ? colors[score] : AppColors.textLight.withValues(alpha: 0.25),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            );
+          }),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Strength: ${labels[score]}',
+          style: TextStyle(color: colors[score], fontSize: 13, fontWeight: FontWeight.w700),
+        ),
+      ],
+    );
+  }
+
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
@@ -322,6 +542,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     required IconData icon,
     bool obscureText = false,
     TextInputType? keyboardType,
+    ValueChanged<String>? onChanged,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -332,6 +553,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           controller: controller,
           obscureText: obscureText,
           keyboardType: keyboardType,
+          onChanged: onChanged,
           style: const TextStyle(fontWeight: FontWeight.w500),
           decoration: InputDecoration(
             prefixIcon: Icon(icon, color: AppColors.textSecondary),

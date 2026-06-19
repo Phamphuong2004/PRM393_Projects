@@ -5,6 +5,7 @@ export {
   type Follow,
 } from "./User";
 export { default as Journal, type IJournal } from "./Journal";
+export { default as Institution, type IInstitution } from "./Institution";
 export { default as Author, type IAuthor } from "./Author";
 export { default as Keyword, type IKeyword } from "./Keyword";
 export { default as Paper, type IPaper } from "./Paper";

@@ -114,13 +114,15 @@ class AuthApi {
   static Future<dynamic> register(
     String email,
     String password,
-    String fullName, [
+    String fullName, {
+    String role = 'researcher',
     String? institution,
-  ]) {
+  }) {
     final data = <String, dynamic>{
       'email': email,
       'password': password,
       'fullName': fullName,
+      'role': role,
     };
     if (institution != null) data['institution'] = institution;
     return api.post(ApiConstants.register, data);

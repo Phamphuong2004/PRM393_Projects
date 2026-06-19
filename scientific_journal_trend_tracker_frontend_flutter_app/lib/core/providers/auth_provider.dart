@@ -66,13 +66,13 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  Future<void> register(String email, String password, String fullName, [String? institution]) async {
+  Future<void> register(String email, String password, String fullName, {String role = 'researcher', String? institution}) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      await AuthApi.register(email, password, fullName, institution);
+      await AuthApi.register(email, password, fullName, role: role, institution: institution);
       await login(email, password);
     } catch (e) {
       _error = e.toString();
