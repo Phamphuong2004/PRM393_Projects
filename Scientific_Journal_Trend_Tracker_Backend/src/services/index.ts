@@ -2,6 +2,7 @@ export { AuthService } from "./AuthService";
 export { PaperService } from "./PaperService";
 export { KeywordService } from "./KeywordService";
 export { JournalService } from "./JournalService";
+export { InstitutionService } from "./InstitutionService";
 export { TopicService } from "./TopicService";
 export { UserService } from "./UserService";
 export { AnalysisRunService } from "./AnalysisRunService";

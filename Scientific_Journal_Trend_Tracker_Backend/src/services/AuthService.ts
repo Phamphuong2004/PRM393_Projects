@@ -3,7 +3,13 @@ import jwt from "jsonwebtoken";
 import User from "../models/User";
 
 export class AuthService {
-  static async register(email: string, password: string, fullName: string) {
+  static async register(
+    email: string,
+    password: string,
+    fullName: string,
+    role?: string,
+    institution?: string,
+  ) {
     // Check if user exists
     let user = await User.findOne({ email });
     if (user) {
@@ -16,11 +22,13 @@ export class AuthService {
     );
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create user
+    // Create user (role defaults to "researcher" via schema if not provided)
     user = new User({
       email,
       password: hashedPassword,
       fullName,
+      ...(role ? { role } : {}),
+      ...(institution ? { institution } : {}),
     });
 
     await user.save();
@@ -39,6 +47,7 @@ export class AuthService {
         email: user.email,
         fullName: user.fullName,
         role: user.role,
+        institution: user.institution,
       },
     };
   }
@@ -74,6 +83,7 @@ export class AuthService {
         email: user.email,
         fullName: user.fullName,
         role: user.role,
+        institution: user.institution,
       },
     };
   }

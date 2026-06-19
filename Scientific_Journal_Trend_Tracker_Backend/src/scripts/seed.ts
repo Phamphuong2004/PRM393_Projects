@@ -5,6 +5,7 @@ import Journal from "../models/Journal";
 import Author from "../models/Author";
 import Keyword from "../models/Keyword";
 import Paper from "../models/Paper";
+import Institution from "../models/Institution";
 import bcrypt from "bcryptjs";
 
 // Load environment variables
@@ -29,6 +30,21 @@ const seedData = async () => {
     await Author.deleteMany({});
     await Keyword.deleteMany({});
     await Paper.deleteMany({});
+    await Institution.deleteMany({});
+
+    console.log("Creating Institutions...");
+    await Institution.insertMany([
+      { name: "FPT University", country: "Vietnam", city: "Ho Chi Minh City", website: "https://www.fpt.edu.vn" },
+      { name: "Vietnam National University, Hanoi", country: "Vietnam", city: "Hanoi", website: "https://vnu.edu.vn" },
+      { name: "Vietnam National University, Ho Chi Minh City", country: "Vietnam", city: "Ho Chi Minh City", website: "https://vnuhcm.edu.vn" },
+      { name: "Hanoi University of Science and Technology", country: "Vietnam", city: "Hanoi", website: "https://hust.edu.vn" },
+      { name: "Stanford University", country: "United States", city: "Stanford", website: "https://www.stanford.edu" },
+      { name: "Massachusetts Institute of Technology", country: "United States", city: "Cambridge", website: "https://www.mit.edu" },
+      { name: "New York University", country: "United States", city: "New York", website: "https://www.nyu.edu" },
+      { name: "University of Oxford", country: "United Kingdom", city: "Oxford", website: "https://www.ox.ac.uk" },
+      { name: "National University of Singapore", country: "Singapore", city: "Singapore", website: "https://nus.edu.sg" },
+      { name: "ETH Zurich", country: "Switzerland", city: "Zurich", website: "https://ethz.ch" },
+    ]);
 
     console.log("Creating System Administrator...");
     const salt = await bcrypt.genSalt(10);
@@ -60,7 +76,7 @@ const seedData = async () => {
       email: "student@example.com",
       password: hashedPassword,
       fullName: "Test Student",
-      role: "user",
+      role: "student",
       isActive: true,
       emailVerified: true,
       interests: ["Computer Vision", "Deep Learning"]
