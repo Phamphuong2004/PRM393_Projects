@@ -188,6 +188,27 @@ const swaggerSpec = {
         responses: { "200": { description: "OK" } },
       },
     },
+    "/api/papers/external/search": {
+      get: {
+        tags: ["Papers"],
+        summary: "Search papers externally (e.g. Semantic Scholar)",
+        parameters: [
+          {
+            name: "q",
+            in: "query",
+            required: true,
+            schema: { type: "string" },
+          },
+          {
+            name: "limit",
+            in: "query",
+            required: false,
+            schema: { type: "integer", default: 10 },
+          },
+        ],
+        responses: { "200": { description: "OK" } },
+      },
+    },
     "/api/keywords": {
       get: {
         tags: ["Keywords"],
