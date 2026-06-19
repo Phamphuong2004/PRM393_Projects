@@ -11,7 +11,7 @@ const swaggerSpec = {
   servers: [
     {
       url: isProduction
-        ? "https://wdp301-group04-journal-trends.up.railway.app"
+        ? "https://prm393-projects-journal-tracking.up.railway.app"
         : "http://localhost:5000",
       description: isProduction
         ? "Production server (Railway)"
