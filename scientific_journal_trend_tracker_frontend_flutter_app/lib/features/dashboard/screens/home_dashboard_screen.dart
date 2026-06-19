@@ -51,6 +51,7 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
 
   Future<void> _fetchData() async {
     try {
+      if (!mounted) return;
       setState(() {
         _isLoading = true;
         _error = null;
@@ -66,6 +67,7 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
         keywordRepo.getTrendingKeywords(limit: 5),
       ]);
 
+      if (!mounted) return;
       setState(() {
         _dashboardStats = Map<String, dynamic>.from(results[0] as Map);
         _recentPapers = (results[1] as Map)['papers'] ?? [];
@@ -75,6 +77,7 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
 
       _animationController.forward();
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = 'Failed to load dashboard data. Please try again.';
         _isLoading = false;
@@ -210,7 +213,7 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
       physics: const NeverScrollableScrollPhysics(),
       mainAxisSpacing: 16,
       crossAxisSpacing: 16,
-      childAspectRatio: isDesktop ? 1.4 : 1.2,
+      childAspectRatio: isDesktop ? 1.4 : 1.0,
       children: [
         _AnimatedMetricCard(
           title: 'Total Papers',
