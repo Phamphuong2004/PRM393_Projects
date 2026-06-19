@@ -18,6 +18,7 @@ const swaggerSpec = {
         : "Local development server",
     },
   ],
+  security: [{ bearerAuth: [] }],
   tags: [
     { name: "Health" },
     { name: "Auth" },
@@ -37,6 +38,7 @@ const swaggerSpec = {
       get: {
         tags: ["Health"],
         summary: "Health check",
+        security: [],
         responses: {
           "200": {
             description: "Service is healthy",
@@ -48,6 +50,7 @@ const swaggerSpec = {
       post: {
         tags: ["Auth"],
         summary: "Register a new user",
+        security: [],
         requestBody: {
           required: true,
           content: {
@@ -63,6 +66,7 @@ const swaggerSpec = {
       post: {
         tags: ["Auth"],
         summary: "Login and receive JWT",
+        security: [],
         requestBody: {
           required: true,
           content: {
