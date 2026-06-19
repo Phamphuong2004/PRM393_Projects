@@ -22,7 +22,7 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
   bool _loading = false;
   String? _error;
   String _sort = '-publicationYear';
-  Paper? _selectedPaper;
+  bool _isExternal = false;
 
   static const _sortOptions = [
     ('-publicationYear', 'Newest first'),
@@ -47,10 +47,23 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
       final paperRepo = ref.read(paperRepositoryProvider);
       Map<String, dynamic> res;
       
-      if (q.isNotEmpty) {
-        res = await paperRepo.searchPapers(q, year: year);
+      if (_isExternal) {
+        if (q.isEmpty) {
+          setState(() {
+            _results = [];
+            _totalPages = 1;
+            _totalResults = 0;
+            _loading = false;
+          });
+          return;
+        }
+        res = await paperRepo.searchExternalPapers(q, limit: 15);
       } else {
-        res = await paperRepo.getPapers(page: _page, limit: 10);
+        if (q.isNotEmpty) {
+          res = await paperRepo.searchPapers(q, year: year);
+        } else {
+          res = await paperRepo.getPapers(page: _page, limit: 10);
+        }
       }
 
       if (!mounted) return;
@@ -71,7 +84,7 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
   void _reset() {
     _searchController.clear();
     _yearController.clear();
-    setState(() { _sort = '-publicationYear'; _page = 1; });
+    setState(() { _sort = '-publicationYear'; _page = 1; _isExternal = false; });
     _fetchPapers();
   }
 
@@ -80,6 +93,15 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
     _searchController.dispose();
     _yearController.dispose();
     super.dispose();
+  }
+
+  void _showPaperDetail(Paper paper) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _PaperDetailSheet(paper: paper),
+    );
   }
 
   @override
@@ -103,11 +125,83 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
               const SizedBox(height: 4),
               const Text('Search by title, abstract, author, or journal', style: TextStyle(color: Colors.white70, fontSize: 13)),
               const SizedBox(height: 12),
+              
+              // Search Mode Toggle
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _isExternal = false;
+                            _page = 1;
+                          });
+                          _fetchPapers();
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          decoration: BoxDecoration(
+                            color: !_isExternal ? Colors.white : Colors.transparent,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Center(
+                            child: Text(
+                              'Local Database',
+                              style: TextStyle(
+                                color: !_isExternal ? AppColors.primary : Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _isExternal = true;
+                            _page = 1;
+                          });
+                          _fetchPapers();
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          decoration: BoxDecoration(
+                            color: _isExternal ? Colors.white : Colors.transparent,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Center(
+                            child: Text(
+                              'Semantic Scholar',
+                              style: TextStyle(
+                                color: _isExternal ? AppColors.primary : Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              
               TextField(
                 controller: _searchController,
                 style: const TextStyle(color: Colors.black),
                 decoration: InputDecoration(
-                  hintText: 'Search papers, authors, journals...',
+                  hintText: _isExternal ? 'Search Semantic Scholar...' : 'Search papers, authors, journals...',
                   prefixIcon: const Icon(Icons.search, color: Colors.grey),
                   filled: true,
                   fillColor: Colors.white,
@@ -116,41 +210,43 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
                 ),
                 onSubmitted: (_) { setState(() => _page = 1); _fetchPapers(); },
               ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _yearController,
-                      keyboardType: TextInputType.number,
-                      style: const TextStyle(color: Colors.black),
-                      decoration: InputDecoration(
-                        hintText: 'Year',
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              if (!_isExternal) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _yearController,
+                        keyboardType: TextInputType.number,
+                        style: const TextStyle(color: Colors.black),
+                        decoration: InputDecoration(
+                          hintText: 'Year',
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    flex: 2,
-                    child: DropdownButtonFormField<String>(
-                      initialValue: _sort,
-                      dropdownColor: Colors.white,
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      flex: 2,
+                      child: DropdownButtonFormField<String>(
+                        initialValue: _sort,
+                        dropdownColor: Colors.white,
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                        ),
+                        items: _sortOptions.map((o) => DropdownMenuItem(value: o.$1, child: Text(o.$2, style: const TextStyle(fontSize: 13)))).toList(),
+                        onChanged: (v) => setState(() => _sort = v!),
                       ),
-                      items: _sortOptions.map((o) => DropdownMenuItem(value: o.$1, child: Text(o.$2, style: const TextStyle(fontSize: 13)))).toList(),
-                      onChanged: (v) => setState(() => _sort = v!),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -210,10 +306,6 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
                           },
                         ),
         ),
-
-        // Paper Detail Sheet
-        if (_selectedPaper != null)
-          _PaperDetailSheet(paper: _selectedPaper!, onClose: () => setState(() => _selectedPaper = null)),
       ],
     );
   }
@@ -240,7 +332,7 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             GestureDetector(
-              onTap: () => setState(() => _selectedPaper = paper),
+              onTap: () => _showPaperDetail(paper),
               child: Text(paper.title, style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.primary, fontSize: 14)),
             ),
             const SizedBox(height: 8),
@@ -267,7 +359,7 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
             ],
             const SizedBox(height: 8),
             ElevatedButton(
-              onPressed: () => setState(() => _selectedPaper = paper),
+              onPressed: () => _showPaperDetail(paper),
               style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
               child: const Text('View Detail'),
             ),
@@ -303,50 +395,53 @@ class _InfoChip extends StatelessWidget {
 
 class _PaperDetailSheet extends StatelessWidget {
   final Paper paper;
-  final VoidCallback onClose;
-  const _PaperDetailSheet({required this.paper, required this.onClose});
+  const _PaperDetailSheet({required this.paper});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onClose,
-      child: Container(
-        color: Colors.black54,
-        child: GestureDetector(
-          onTap: () {},
-          child: DraggableScrollableSheet(
-            initialChildSize: 0.7,
-            minChildSize: 0.4,
-            maxChildSize: 0.95,
-            builder: (_, controller) => Container(
-              decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-              child: ListView(
-                controller: controller,
-                padding: const EdgeInsets.all(20),
-                children: [
-                  Row(children: [
-                    const Expanded(child: Text('Paper Detail', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
-                    IconButton(icon: const Icon(Icons.close), onPressed: onClose),
-                  ]),
-                  const Divider(),
-                  Text(paper.title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.primary)),
-                  const SizedBox(height: 12),
-                  if (paper.abstract != null) ...[
-                    const Text('Abstract', style: TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
-                    Text(paper.abstract!, style: const TextStyle(height: 1.6, color: AppColors.textSecondary)),
-                  ],
-                  if (paper.doi != null) ...[
-                    const SizedBox(height: 12),
-                    Text('DOI: ${paper.doi}', style: const TextStyle(color: AppColors.primary, decoration: TextDecoration.underline)),
-                  ],
-                ],
-              ),
+    return DraggableScrollableSheet(
+      initialChildSize: 0.7,
+      minChildSize: 0.4,
+      maxChildSize: 0.95,
+      expand: false,
+      builder: (_, controller) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: ListView(
+          controller: controller,
+          padding: const EdgeInsets.all(20),
+          children: [
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Paper Detail',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
             ),
-          ),
+            const Divider(),
+            Text(paper.title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.primary)),
+            const SizedBox(height: 12),
+            if (paper.abstract != null) ...[
+              const Text('Abstract', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Text(paper.abstract!, style: const TextStyle(height: 1.6, color: AppColors.textSecondary)),
+            ],
+            if (paper.doi != null) ...[
+              const SizedBox(height: 12),
+              Text('DOI: ${paper.doi}', style: const TextStyle(color: AppColors.primary, decoration: TextDecoration.underline)),
+            ],
+          ],
         ),
       ),
     );
   }
 }
-
