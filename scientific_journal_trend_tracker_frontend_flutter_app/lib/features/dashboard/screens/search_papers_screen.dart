@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/theme.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -320,48 +321,145 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
         : 'Unknown journal';
     final year = paper.publicationYear?.toString() ?? '';
     final citations = paper.citationCount;
-    final keywordsList = paper.keywords ?? [];
-    final keywords = keywordsList.map((k) => k is Map ? k['name'].toString() : k.toString()).where((k) => k.isNotEmpty).toList();
+    final hasOpenAlex = paper.externalIdOpenalexId != null && paper.externalIdOpenalexId!.isNotEmpty;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: const BorderSide(color: Color(0x1A4F46E5))),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            GestureDetector(
-              onTap: () => _showPaperDetail(paper),
-              child: Text(paper.title, style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.primary, fontSize: 14)),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _InfoChip(icon: Icons.person_outline, label: authors.isNotEmpty ? authors : 'Unknown', color: const Color(0xFF667EEA)),
-                if (journal.isNotEmpty) _InfoChip(icon: Icons.book_outlined, label: journal, color: const Color(0xFFF5576C)),
-                if (year != '') _InfoChip(icon: Icons.calendar_today, label: year, color: const Color(0xFF4FACFE)),
-                _InfoChip(icon: Icons.format_quote_outlined, label: '$citations citations', color: const Color(0xFF43E97B)),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => _showPaperDetail(paper),
+                    child: Text(
+                      paper.title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF4F46E5),
+                        fontSize: 18,
+                        height: 1.3,
+                      ),
+                    ),
+                  ),
+                ),
+                if (hasOpenAlex) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF4F46E5).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Text(
+                      'OpenAlex',
+                      style: TextStyle(
+                        color: Color(0xFF4F46E5),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
-            if (keywords.isNotEmpty) ...[
+            if (paper.doi != null && paper.doi!.isNotEmpty) ...[
               const SizedBox(height: 8),
-              Wrap(
-                spacing: 4,
-                children: keywords.take(4).map((k) => Chip(label: Text(k, style: const TextStyle(fontSize: 11)), padding: EdgeInsets.zero, materialTapTargetSize: MaterialTapTargetSize.shrinkWrap)).toList(),
+              Text(
+                'DOI: ${paper.doi}',
+                style: const TextStyle(
+                  color: Color(0xFF8B5CF6),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
-            if (paper.abstract != null) ...[
-              const SizedBox(height: 8),
-              Text(paper.abstract!, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.5)),
-            ],
             const SizedBox(height: 8),
-            ElevatedButton(
-              onPressed: () => _showPaperDetail(paper),
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-              child: const Text('View Detail'),
+            Text(
+              '$authors · ${year.isNotEmpty ? year : "N/A"} · $citations citations · $journal',
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 14,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              paper.abstract?.isNotEmpty == true ? paper.abstract! : 'No abstract available.',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade700,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Divider(height: 1),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                TextButton.icon(
+                  onPressed: () {},
+                  icon: const Icon(Icons.bookmark_border, size: 18),
+                  label: const Text('Save'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.grey.shade700,
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(60, 36),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                if (paper.url != null && paper.url!.isNotEmpty)
+                  TextButton.icon(
+                    onPressed: () async {
+                      final url = Uri.parse(paper.url!);
+                      if (await canLaunchUrl(url)) {
+                        await launchUrl(url);
+                      }
+                    },
+                    icon: const Icon(Icons.open_in_new, size: 18),
+                    label: const Text('Source'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.grey.shade700,
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(60, 36),
+                    ),
+                  ),
+                const Spacer(),
+                TextButton(
+                  onPressed: () => _showPaperDetail(paper),
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFF8B5CF6),
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(60, 36),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Text('View Details', style: TextStyle(fontWeight: FontWeight.w600)),
+                      SizedBox(width: 4),
+                      Icon(Icons.arrow_forward, size: 16),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ],
         ),
