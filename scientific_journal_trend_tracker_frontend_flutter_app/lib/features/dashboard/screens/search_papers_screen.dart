@@ -23,6 +23,7 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
   String? _error;
   String _sort = '-publicationYear';
   Paper? _selectedPaper;
+  bool _isExternal = false;
 
   static const _sortOptions = [
     ('-publicationYear', 'Newest first'),
@@ -47,10 +48,23 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
       final paperRepo = ref.read(paperRepositoryProvider);
       Map<String, dynamic> res;
       
-      if (q.isNotEmpty) {
-        res = await paperRepo.searchPapers(q, year: year);
+      if (_isExternal) {
+        if (q.isEmpty) {
+          setState(() {
+            _results = [];
+            _totalPages = 1;
+            _totalResults = 0;
+            _loading = false;
+          });
+          return;
+        }
+        res = await paperRepo.searchExternalPapers(q, limit: 15);
       } else {
-        res = await paperRepo.getPapers(page: _page, limit: 10);
+        if (q.isNotEmpty) {
+          res = await paperRepo.searchPapers(q, year: year);
+        } else {
+          res = await paperRepo.getPapers(page: _page, limit: 10);
+        }
       }
 
       if (!mounted) return;
@@ -71,7 +85,7 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
   void _reset() {
     _searchController.clear();
     _yearController.clear();
-    setState(() { _sort = '-publicationYear'; _page = 1; });
+    setState(() { _sort = '-publicationYear'; _page = 1; _isExternal = false; });
     _fetchPapers();
   }
 
@@ -103,11 +117,83 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
               const SizedBox(height: 4),
               const Text('Search by title, abstract, author, or journal', style: TextStyle(color: Colors.white70, fontSize: 13)),
               const SizedBox(height: 12),
+              
+              // Search Mode Toggle
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _isExternal = false;
+                            _page = 1;
+                          });
+                          _fetchPapers();
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          decoration: BoxDecoration(
+                            color: !_isExternal ? Colors.white : Colors.transparent,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Center(
+                            child: Text(
+                              'Local Database',
+                              style: TextStyle(
+                                color: !_isExternal ? AppColors.primary : Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _isExternal = true;
+                            _page = 1;
+                          });
+                          _fetchPapers();
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          decoration: BoxDecoration(
+                            color: _isExternal ? Colors.white : Colors.transparent,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Center(
+                            child: Text(
+                              'Semantic Scholar',
+                              style: TextStyle(
+                                color: _isExternal ? AppColors.primary : Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              
               TextField(
                 controller: _searchController,
                 style: const TextStyle(color: Colors.black),
                 decoration: InputDecoration(
-                  hintText: 'Search papers, authors, journals...',
+                  hintText: _isExternal ? 'Search Semantic Scholar...' : 'Search papers, authors, journals...',
                   prefixIcon: const Icon(Icons.search, color: Colors.grey),
                   filled: true,
                   fillColor: Colors.white,
@@ -116,41 +202,43 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
                 ),
                 onSubmitted: (_) { setState(() => _page = 1); _fetchPapers(); },
               ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _yearController,
-                      keyboardType: TextInputType.number,
-                      style: const TextStyle(color: Colors.black),
-                      decoration: InputDecoration(
-                        hintText: 'Year',
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              if (!_isExternal) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _yearController,
+                        keyboardType: TextInputType.number,
+                        style: const TextStyle(color: Colors.black),
+                        decoration: InputDecoration(
+                          hintText: 'Year',
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    flex: 2,
-                    child: DropdownButtonFormField<String>(
-                      initialValue: _sort,
-                      dropdownColor: Colors.white,
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      flex: 2,
+                      child: DropdownButtonFormField<String>(
+                        initialValue: _sort,
+                        dropdownColor: Colors.white,
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                        ),
+                        items: _sortOptions.map((o) => DropdownMenuItem(value: o.$1, child: Text(o.$2, style: const TextStyle(fontSize: 13)))).toList(),
+                        onChanged: (v) => setState(() => _sort = v!),
                       ),
-                      items: _sortOptions.map((o) => DropdownMenuItem(value: o.$1, child: Text(o.$2, style: const TextStyle(fontSize: 13)))).toList(),
-                      onChanged: (v) => setState(() => _sort = v!),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 8),
               Row(
                 children: [
