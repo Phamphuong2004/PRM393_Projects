@@ -22,7 +22,6 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
   bool _loading = false;
   String? _error;
   String _sort = '-publicationYear';
-  Paper? _selectedPaper;
   bool _isExternal = false;
 
   static const _sortOptions = [
@@ -94,6 +93,15 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
     _searchController.dispose();
     _yearController.dispose();
     super.dispose();
+  }
+
+  void _showPaperDetail(Paper paper) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _PaperDetailSheet(paper: paper),
+    );
   }
 
   @override
@@ -298,10 +306,6 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
                           },
                         ),
         ),
-
-        // Paper Detail Sheet
-        if (_selectedPaper != null)
-          _PaperDetailSheet(paper: _selectedPaper!, onClose: () => setState(() => _selectedPaper = null)),
       ],
     );
   }
@@ -328,7 +332,7 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             GestureDetector(
-              onTap: () => setState(() => _selectedPaper = paper),
+              onTap: () => _showPaperDetail(paper),
               child: Text(paper.title, style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.primary, fontSize: 14)),
             ),
             const SizedBox(height: 8),
@@ -355,7 +359,7 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
             ],
             const SizedBox(height: 8),
             ElevatedButton(
-              onPressed: () => setState(() => _selectedPaper = paper),
+              onPressed: () => _showPaperDetail(paper),
               style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
               child: const Text('View Detail'),
             ),
@@ -391,50 +395,53 @@ class _InfoChip extends StatelessWidget {
 
 class _PaperDetailSheet extends StatelessWidget {
   final Paper paper;
-  final VoidCallback onClose;
-  const _PaperDetailSheet({required this.paper, required this.onClose});
+  const _PaperDetailSheet({required this.paper});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onClose,
-      child: Container(
-        color: Colors.black54,
-        child: GestureDetector(
-          onTap: () {},
-          child: DraggableScrollableSheet(
-            initialChildSize: 0.7,
-            minChildSize: 0.4,
-            maxChildSize: 0.95,
-            builder: (_, controller) => Container(
-              decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-              child: ListView(
-                controller: controller,
-                padding: const EdgeInsets.all(20),
-                children: [
-                  Row(children: [
-                    const Expanded(child: Text('Paper Detail', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
-                    IconButton(icon: const Icon(Icons.close), onPressed: onClose),
-                  ]),
-                  const Divider(),
-                  Text(paper.title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.primary)),
-                  const SizedBox(height: 12),
-                  if (paper.abstract != null) ...[
-                    const Text('Abstract', style: TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
-                    Text(paper.abstract!, style: const TextStyle(height: 1.6, color: AppColors.textSecondary)),
-                  ],
-                  if (paper.doi != null) ...[
-                    const SizedBox(height: 12),
-                    Text('DOI: ${paper.doi}', style: const TextStyle(color: AppColors.primary, decoration: TextDecoration.underline)),
-                  ],
-                ],
-              ),
+    return DraggableScrollableSheet(
+      initialChildSize: 0.7,
+      minChildSize: 0.4,
+      maxChildSize: 0.95,
+      expand: false,
+      builder: (_, controller) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: ListView(
+          controller: controller,
+          padding: const EdgeInsets.all(20),
+          children: [
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Paper Detail',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
             ),
-          ),
+            const Divider(),
+            Text(paper.title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.primary)),
+            const SizedBox(height: 12),
+            if (paper.abstract != null) ...[
+              const Text('Abstract', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Text(paper.abstract!, style: const TextStyle(height: 1.6, color: AppColors.textSecondary)),
+            ],
+            if (paper.doi != null) ...[
+              const SizedBox(height: 12),
+              Text('DOI: ${paper.doi}', style: const TextStyle(color: AppColors.primary, decoration: TextDecoration.underline)),
+            ],
+          ],
         ),
       ),
     );
   }
 }
-

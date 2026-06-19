@@ -296,7 +296,7 @@ class DashboardShell extends StatelessWidget {
         boxShadow: AppColors.glassShadow,
       ),
       child: NavigationBar(
-        height: 70,
+        height: 80,
         selectedIndex: currentIndex,
         elevation: 0,
         onDestinationSelected: (index) {
