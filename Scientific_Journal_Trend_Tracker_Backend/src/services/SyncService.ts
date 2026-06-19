@@ -33,11 +33,15 @@ export class SyncService {
         console.log(`Syncing keyword: ${keyword.name}`);
         // 2. Call external API (Semantic Scholar - simplified)
         // Note: Semantic Scholar has rate limits. Using a basic search query.
+        const apiKey = process.env.SEMANTIC_SCHOLAR_API_KEY;
         const response = await axios.get(`https://api.semanticscholar.org/graph/v1/paper/search`, {
           params: {
             query: keyword.name,
             limit: 10,
             fields: "title,abstract,url,year,externalIds,authors,citationCount"
+          },
+          headers: {
+            ...(apiKey && { "x-api-key": apiKey })
           },
           validateStatus: () => true // Handle rate limits gracefully
         });
