@@ -85,7 +85,6 @@ class AppTheme {
         secondary: AppColors.secondary,
         surface: AppColors.surface,
         error: AppColors.error,
-        background: AppColors.bg,
       ),
       scaffoldBackgroundColor: AppColors.bg,
       textTheme: GoogleFonts.interTextTheme().copyWith(

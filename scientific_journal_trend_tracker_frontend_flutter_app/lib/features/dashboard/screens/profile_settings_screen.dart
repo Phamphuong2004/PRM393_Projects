@@ -281,7 +281,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.5)),
-          if (action != null) action,
+          ?action,
         ],
       ),
     );

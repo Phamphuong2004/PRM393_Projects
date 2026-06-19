@@ -86,6 +86,17 @@ class ApiService {
     return _processResponse(response);
   }
 
+  Future<dynamic> patch(String endpoint, Map<String, dynamic> body) async {
+    final uri = Uri.parse('${ApiConstants.baseUrl}$endpoint');
+    final headers = await _getHeaders();
+    final response = await http.patch(
+      uri,
+      headers: headers,
+      body: json.encode(body),
+    );
+    return _processResponse(response);
+  }
+
   Future<dynamic> delete(String endpoint) async {
     final uri = Uri.parse('${ApiConstants.baseUrl}$endpoint');
     final headers = await _getHeaders();
@@ -139,8 +150,25 @@ class PapersApi {
     return api.get(url);
   }
 
+  static Future<dynamic> searchExternal(String q, {int limit = 10}) {
+    String url = '${ApiConstants.searchExternalPapers}?q=${Uri.encodeComponent(q)}&limit=$limit';
+    return api.get(url);
+  }
+
   static Future<dynamic> getById(String id) {
     return api.get('${ApiConstants.papers}/$id');
+  }
+
+  static Future<dynamic> create(Map<String, dynamic> data) {
+    return api.post(ApiConstants.papers, data);
+  }
+
+  static Future<dynamic> update(String id, Map<String, dynamic> data) {
+    return api.put('${ApiConstants.papers}/$id', data);
+  }
+
+  static Future<dynamic> delete(String id) {
+    return api.delete('${ApiConstants.papers}/$id');
   }
 }
 
@@ -160,6 +188,22 @@ class KeywordsApi {
 
   static Future<dynamic> trending({int limit = 20}) {
     return api.get('${ApiConstants.trendingKeywords}?limit=$limit');
+  }
+
+  static Future<dynamic> getById(String id) {
+    return api.get('${ApiConstants.keywords}/$id');
+  }
+
+  static Future<dynamic> create(Map<String, dynamic> data) {
+    return api.post(ApiConstants.keywords, data);
+  }
+
+  static Future<dynamic> update(String id, Map<String, dynamic> data) {
+    return api.put('${ApiConstants.keywords}/$id', data);
+  }
+
+  static Future<dynamic> delete(String id) {
+    return api.delete('${ApiConstants.keywords}/$id');
   }
 }
 
@@ -277,6 +321,18 @@ class JournalsApi {
   static Future<dynamic> getById(String id) {
     return api.get('${ApiConstants.journals}/$id');
   }
+
+  static Future<dynamic> create(Map<String, dynamic> data) {
+    return api.post(ApiConstants.journals, data);
+  }
+
+  static Future<dynamic> update(String id, Map<String, dynamic> data) {
+    return api.put('${ApiConstants.journals}/$id', data);
+  }
+
+  static Future<dynamic> delete(String id) {
+    return api.delete('${ApiConstants.journals}/$id');
+  }
 }
 
 // ─────────────────────────────────────────────────────────
@@ -298,5 +354,88 @@ class TrendsApi {
 class DashboardApi {
   static Future<dynamic> getDashboardStats() {
     return api.get(ApiConstants.dashboardStats);
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+// TOPICS
+// ─────────────────────────────────────────────────────────
+class TopicsApi {
+  static Future<dynamic> list({int page = 1, int limit = 20}) {
+    return api.get('${ApiConstants.topics}?page=$page&limit=$limit');
+  }
+
+  static Future<dynamic> emerging({int limit = 10}) {
+    return api.get('${ApiConstants.emergingTopics}?limit=$limit');
+  }
+
+  static Future<dynamic> getById(String id) {
+    return api.get('${ApiConstants.topics}/$id');
+  }
+
+  static Future<dynamic> create(Map<String, dynamic> data) {
+    return api.post(ApiConstants.topics, data);
+  }
+
+  static Future<dynamic> update(String id, Map<String, dynamic> data) {
+    return api.put('${ApiConstants.topics}/$id', data);
+  }
+
+  static Future<dynamic> delete(String id) {
+    return api.delete('${ApiConstants.topics}/$id');
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+// ANALYSIS RUNS
+// ─────────────────────────────────────────────────────────
+class AnalysisRunsApi {
+  static Future<dynamic> list({int page = 1, int limit = 10}) {
+    return api.get('${ApiConstants.analysisRuns}?page=$page&limit=$limit');
+  }
+
+  static Future<dynamic> create(Map<String, dynamic> data) {
+    return api.post(ApiConstants.analysisRuns, data);
+  }
+
+  static Future<dynamic> getById(String id) {
+    return api.get('${ApiConstants.analysisRuns}/$id');
+  }
+
+  static Future<dynamic> delete(String id) {
+    return api.delete('${ApiConstants.analysisRuns}/$id');
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+// ADMIN
+// ─────────────────────────────────────────────────────────
+class AdminApi {
+  static Future<dynamic> updateUserStatus(String id, String status) {
+    return api.patch('${ApiConstants.adminUsers}/$id/status', {'status': status});
+  }
+
+  static Future<dynamic> updateUserRole(String id, String role) {
+    return api.patch('${ApiConstants.adminUsers}/$id/role', {'role': role});
+  }
+
+  static Future<dynamic> getSources() {
+    return api.get(ApiConstants.adminSources);
+  }
+
+  static Future<dynamic> createSource(Map<String, dynamic> data) {
+    return api.post(ApiConstants.adminSources, data);
+  }
+
+  static Future<dynamic> updateSource(String id, Map<String, dynamic> data) {
+    return api.put('${ApiConstants.adminSources}/$id', data);
+  }
+
+  static Future<dynamic> deleteSource(String id) {
+    return api.delete('${ApiConstants.adminSources}/$id');
+  }
+
+  static Future<dynamic> triggerSync() {
+    return api.post(ApiConstants.adminSync, {});
   }
 }
