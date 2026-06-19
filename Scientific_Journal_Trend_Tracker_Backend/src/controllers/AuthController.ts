@@ -13,7 +13,7 @@ export class AuthController {
         return;
       }
 
-      const { email, password, fullName } = req.body;
+      const { email, password, fullName, role, institution } = req.body;
 
       // Check if user exists
       let user = await User.findOne({ email });
@@ -33,6 +33,8 @@ export class AuthController {
         email,
         password: hashedPassword,
         fullName,
+        ...(role ? { role } : {}),
+        ...(institution ? { institution } : {}),
       });
 
       await user.save();
@@ -52,6 +54,7 @@ export class AuthController {
           email: user.email,
           fullName: user.fullName,
           role: user.role,
+          institution: user.institution,
         },
       });
     } catch (error) {
