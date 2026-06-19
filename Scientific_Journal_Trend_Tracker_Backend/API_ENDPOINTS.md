@@ -96,6 +96,21 @@
 - `DELETE /api/follows/tracked-runs/:analysisRunId` - Untrack (auth required)
 - `PUT /api/follows/tracked-runs/:analysisRunId/notify` - Update notify preference (auth required)
 
+## Authors
+
+- `GET /api/authors` - Get all authors (paginated, search query)
+- `GET /api/authors/:id` - Get author by ID
+- `POST /api/authors` - Create new author (auth + researcher/admin role)
+- `PUT /api/authors/:id` - Update author (auth + researcher/admin role)
+- `DELETE /api/authors/:id` - Delete author (auth + admin role)
+
+## Sync Logs
+
+- `GET /api/sync-logs` - Get sync execution logs (auth + admin only, paginated, status filter)
+- `GET /api/sync-logs/:id` - Get sync log details (auth + admin only)
+- `DELETE /api/sync-logs/:id` - Delete a sync log (auth + admin only)
+- `DELETE /api/sync-logs` - Clear all sync logs (auth + admin only)
+
 ## Request Examples
 
 ### Register

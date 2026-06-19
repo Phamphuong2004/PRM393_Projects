@@ -9,6 +9,8 @@ Backend API for the Scientific Journal Trend Tracker application built with Node
 ✅ **Keyword Tracking** - Track research keywords and trending topics
 ✅ **Journal Management** - Manage academic journals and their metadata
 ✅ **Topic Analysis** - Analyze emerging research topics and trends
+✅ **Author Management** - CRUD operations for authors and metadata tracking
+✅ **Sync Log Tracking** - Log execution and errors for external API integrations
 ✅ **MongoDB Integration** - Full MongoDB Atlas support with Mongoose ODM
 
 ## Tech Stack
@@ -128,6 +130,21 @@ npm run lint
 - `PUT /api/topics/:id` - Update topic
 - `DELETE /api/topics/:id` - Delete topic
 - `GET /api/topics/emerging/list` - Get emerging topics
+
+### Authors
+
+- `GET /api/authors` - Get all authors (paginated, search query)
+- `GET /api/authors/:id` - Get author by ID
+- `POST /api/authors` - Create new author (auth required)
+- `PUT /api/authors/:id` - Update author (auth required)
+- `DELETE /api/authors/:id` - Delete author (auth + admin)
+
+### Sync Logs
+
+- `GET /api/sync-logs` - Get sync execution logs (auth + admin only, paginated)
+- `GET /api/sync-logs/:id` - Get sync log details (auth + admin only)
+- `DELETE /api/sync-logs/:id` - Delete a sync log (auth + admin only)
+- `DELETE /api/sync-logs` - Clear all sync logs (auth + admin only)
 
 ## Database Models
 

@@ -10,3 +10,5 @@ export { BookmarkService } from "./BookmarkService";
 export { NotificationService } from "./NotificationService";
 export { FollowService } from "./FollowService";
 export { PublicationTrendService } from "./PublicationTrendService";
+export { AuthorService } from "./AuthorService";
+export { SyncLogService } from "./SyncLogService";
