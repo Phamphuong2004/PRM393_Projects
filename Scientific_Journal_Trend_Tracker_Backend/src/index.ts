@@ -32,7 +32,11 @@ app.use(helmet({
 }));
 app.use(
   cors({
-    origin: true, // Reflects the request origin (acts like '*' but allows credentials)
+    origin: function (origin, callback) {
+      callback(null, true);
+    },
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"],
     credentials: true,
   }),
 );
