@@ -1,4 +1,5 @@
 import { Paper, Author, Journal, Keyword, Topic } from "../models";
+import axios from "axios";
 
 type PaperSearchSortField = "publicationYear" | "citationCount";
 
@@ -146,5 +147,74 @@ export class PaperService {
       .sort({ publicationYear: -1 });
 
     return papers;
+  }
+
+  static async searchExternalPapers(query: string, limit: number = 10) {
+    const apiKey = process.env.SEMANTIC_SCHOLAR_API_KEY;
+    const maxRetries = 3;
+    let delay = 1000;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const response = await axios.get(`https://api.semanticscholar.org/graph/v1/paper/search`, {
+          params: {
+            query,
+            limit,
+            fields: "title,abstract,url,year,externalIds,authors,citationCount,venue"
+          },
+          headers: {
+            ...(apiKey && { "x-api-key": apiKey })
+          },
+          validateStatus: () => true
+        });
+
+        if (response.status === 429) {
+          console.warn(`[Semantic Scholar API] 429 Too Many Requests (attempt ${attempt}/${maxRetries}). Retrying...`);
+          const retryAfter = response.headers["retry-after"];
+          const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : delay;
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          delay *= 2;
+          continue;
+        }
+
+        if (response.status !== 200) {
+          throw { 
+            status: response.status, 
+            message: `External API error: ${response.data?.message || response.statusText || response.status}` 
+          };
+        }
+
+        const rawData = response.data.data || [];
+        const papers = rawData.map((item: any) => ({
+          _id: item.paperId,
+          title: item.title,
+          abstract: item.abstract,
+          doi: item.externalIds?.DOI,
+          url: item.url,
+          publicationYear: item.year,
+          citationCount: item.citationCount || 0,
+          source: item.venue || "Semantic Scholar",
+          authors: item.authors?.map((a: any) => ({ fullName: a.name })) || []
+        }));
+
+        return {
+          papers,
+          total: response.data.total || papers.length,
+          pages: 1
+        };
+      } catch (error: any) {
+        if (error.status) throw error;
+        
+        if (attempt === maxRetries) {
+          throw { status: 500, message: "Failed to fetch external papers: " + error.message };
+        }
+        
+        console.warn(`[Semantic Scholar API] Error (attempt ${attempt}/${maxRetries}): ${error.message}. Retrying...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        delay *= 2;
+      }
+    }
+    
+    throw { status: 429, message: "External API error: Too Many Requests (Rate limit exceeded after retries)" };
   }
 }

@@ -1,4 +1,4 @@
-﻿import { Router, Request, Response } from "express";
+import { Router, Request, Response } from "express";
 import {
   authMiddleware,
   roleMiddleware,
@@ -36,6 +36,28 @@ router.get("/", async (req: Request, res: Response): Promise<void> => {
     res.status(error.status || 500).json({ message: error.message });
   }
 });
+
+// External Search papers
+router.get(
+  "/external/search",
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { q, limit } = req.query;
+
+      if (!q || !String(q).trim()) {
+        res.status(400).json({ message: "Search query is required" });
+        return;
+      }
+
+      const parsedLimit = limit ? parseInt(limit as string) : 10;
+      const result = await PaperService.searchExternalPapers(String(q), parsedLimit);
+
+      res.json(result);
+    } catch (error: any) {
+      res.status(error.status || 500).json({ message: error.message });
+    }
+  },
+);
 
 // Get paper by ID
 router.get(
