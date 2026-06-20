@@ -68,4 +68,18 @@ class FollowRepository {
       rethrow;
     }
   }
+
+  Future<void> updateTrackedRunNotification(
+    String analysisRunId,
+    bool notifyEnabled,
+  ) async {
+    try {
+      await _dio.put(
+        '${ApiConstants.follows}/tracked-runs/$analysisRunId/notify',
+        data: {'notifyEnabled': notifyEnabled},
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

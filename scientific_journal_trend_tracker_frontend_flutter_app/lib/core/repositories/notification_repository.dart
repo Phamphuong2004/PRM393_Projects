@@ -63,4 +63,12 @@ class NotificationRepository {
       rethrow;
     }
   }
+
+  Future<void> clearAll() async {
+    try {
+      await _dio.delete(ApiConstants.notifications);
+    } catch (e) {
+      rethrow;
+    }
+  }
 }
