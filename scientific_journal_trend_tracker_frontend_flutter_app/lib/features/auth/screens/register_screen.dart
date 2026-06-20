@@ -21,6 +21,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _confirmPasswordController = TextEditingController();
   String _selectedRole = 'researcher';
   int _passwordScore = 0;
+  bool _obscurePassword = true;
+  bool _obscureConfirm = true;
   List<Institution> _institutions = [];
   String? _selectedInstitution;
   bool _loadingInstitutions = true;
@@ -322,7 +324,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 label: 'Password *',
                 hint: 'Create a strong password',
                 icon: Icons.lock_outline_rounded,
-                obscureText: true,
+                obscureText: _obscurePassword,
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscurePassword
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                    color: AppColors.textSecondary,
+                  ),
+                  tooltip: _obscurePassword ? 'Show password' : 'Hide password',
+                  onPressed: () =>
+                      setState(() => _obscurePassword = !_obscurePassword),
+                ),
                 onChanged: (value) =>
                     setState(() => _passwordScore = _calcPasswordScore(value)),
               ),
@@ -336,7 +349,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 label: 'Confirm Password *',
                 hint: 'Re-enter your password',
                 icon: Icons.lock_reset_rounded,
-                obscureText: true,
+                obscureText: _obscureConfirm,
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscureConfirm
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                    color: AppColors.textSecondary,
+                  ),
+                  tooltip: _obscureConfirm ? 'Show password' : 'Hide password',
+                  onPressed: () =>
+                      setState(() => _obscureConfirm = !_obscureConfirm),
+                ),
                 onChanged: (_) => setState(() {}),
               ),
               if (_confirmPasswordController.text.isNotEmpty &&
@@ -543,6 +567,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     bool obscureText = false,
     TextInputType? keyboardType,
     ValueChanged<String>? onChanged,
+    Widget? suffixIcon,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -557,6 +582,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           style: const TextStyle(fontWeight: FontWeight.w500),
           decoration: InputDecoration(
             prefixIcon: Icon(icon, color: AppColors.textSecondary),
+            suffixIcon: suffixIcon,
             hintText: hint,
             hintStyle: TextStyle(color: AppColors.textLight.withValues(alpha: 0.8)),
             filled: true,

@@ -49,7 +49,7 @@ export class ExternalApiClient {
 
 export const createApiClient = (source: string, apiKey?: string) => {
   const baseURLs: Record<string, string> = {
-    openalexo: "https://api.openalex.org/v1",
+    openalex: "https://api.openalex.org/v1",
     semanticscholar: "https://api.semanticscholar.org/graph/v1",
     crossref: "https://api.crossref.org/v1",
   };

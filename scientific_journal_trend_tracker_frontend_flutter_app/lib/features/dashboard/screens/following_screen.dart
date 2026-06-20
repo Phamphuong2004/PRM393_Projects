@@ -68,6 +68,43 @@ class _FollowingScreenState extends ConsumerState<FollowingScreen> {
     }
   }
 
+  Future<void> _toggleRunNotify(String analysisRunId, bool current) async {
+    final newValue = !current;
+
+    void apply(bool value) {
+      final run = _trackedRuns.firstWhere(
+        (r) => r['analysisRunId'] == analysisRunId,
+        orElse: () => null,
+      );
+      if (run != null) run['notifyEnabled'] = value;
+    }
+
+    // Optimistic update
+    setState(() => apply(newValue));
+
+    try {
+      await ref
+          .read(followRepositoryProvider)
+          .updateTrackedRunNotification(analysisRunId, newValue);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(newValue ? 'Alerts turned on' : 'Alerts turned off'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      // Revert on failure
+      setState(() => apply(current));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to update alerts'), backgroundColor: AppColors.error),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -242,7 +279,16 @@ class _FollowingScreenState extends ConsumerState<FollowingScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 4),
+                  if (isRun)
+                    IconButton(
+                      onPressed: () => _toggleRunNotify(id, notify),
+                      icon: Icon(
+                        notify ? Icons.notifications_active_rounded : Icons.notifications_off_rounded,
+                        color: notify ? AppColors.success : AppColors.textLight,
+                      ),
+                      tooltip: notify ? 'Turn alerts off' : 'Turn alerts on',
+                    ),
                   IconButton(
                     onPressed: () => _unfollow(id, isRun),
                     icon: const Icon(Icons.bookmark_remove_rounded, color: AppColors.error),
