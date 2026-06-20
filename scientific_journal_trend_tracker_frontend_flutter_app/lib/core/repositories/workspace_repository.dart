@@ -38,6 +38,74 @@ class WorkspaceRepository {
     }
   }
 
+  Future<Map<String, dynamic>> getWorkspaceDetails(String id) async {
+    try {
+      final response = await _dio.get('${ApiConstants.workspaces}/$id');
+      return response.data['data'];
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> getWorkspacePapers(String id, {int page = 1, int limit = 20}) async {
+    try {
+      final response = await _dio.get('${ApiConstants.workspaces}/$id/papers?page=$page&limit=$limit');
+      return response.data;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> addPaperToWorkspace(String id, String paperId) async {
+    try {
+      await _dio.post('${ApiConstants.workspaces}/$id/papers', data: {'paper': paperId});
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> addWorkspaceMember(String id, String email, String role) async {
+    try {
+      await _dio.post('${ApiConstants.workspaces}/$id/members', data: {'email': email, 'role': role});
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> getWorkspaceNotes(String id) async {
+    try {
+      final response = await _dio.get('${ApiConstants.workspaces}/$id/notes');
+      return response.data;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> createWorkspaceNote(String id, String paperId, String content) async {
+    try {
+      await _dio.post('${ApiConstants.workspaces}/$id/notes', data: {'paperId': paperId, 'content': content});
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> getWorkspaceAlerts(String id) async {
+    try {
+      final response = await _dio.get('${ApiConstants.workspaces}/$id/alerts');
+      return response.data;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> createWorkspaceAlert(String id, String query, String frequency) async {
+    try {
+      await _dio.post('${ApiConstants.workspaces}/$id/alerts', data: {'query': query, 'frequency': frequency});
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<Map<String, dynamic>> uploadPaperPdf({
     required String workspaceId,
     required String paperId,

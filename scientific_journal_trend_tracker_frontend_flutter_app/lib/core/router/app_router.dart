@@ -24,6 +24,7 @@ import '../../features/dashboard/screens/authors_screen.dart';
 
 // Workspace Screens
 import '../../features/workspaces/screens/workspace_list_screen.dart';
+import '../../features/workspaces/screens/workspace_detail_screen.dart';
 import '../../features/workspaces/screens/upload_pdf_screen.dart';
 
 // Admin Screens
@@ -137,6 +138,13 @@ class AppRouter {
             GoRoute(
               path: '/app/workspaces',
               builder: (context, state) => const WorkspaceListScreen(),
+            ),
+            GoRoute(
+              path: '/app/workspaces/:workspaceId',
+              builder: (context, state) {
+                final workspaceId = state.pathParameters['workspaceId']!;
+                return WorkspaceDetailScreen(workspaceId: workspaceId);
+              },
             ),
             GoRoute(
               path: '/app/workspaces/:workspaceId/papers/:paperId/upload-pdf',
