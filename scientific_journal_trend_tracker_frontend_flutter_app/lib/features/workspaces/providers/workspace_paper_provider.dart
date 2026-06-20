@@ -16,15 +16,22 @@ class UploadPdfNotifier extends Notifier<UploadPdfState> {
     return UploadPdfState();
   }
 
-  Future<void> uploadPdf(String workspaceId, String paperId, File pdfFile) async {
+  Future<void> uploadPdf(
+    String workspaceId,
+    String paperId, {
+    File? file,
+    List<int>? bytes,
+    required String fileName,
+  }) async {
     state = UploadPdfState(isLoading: true);
-
     try {
       final repository = ref.read(workspaceRepositoryProvider);
       await repository.uploadPaperPdf(
         workspaceId: workspaceId,
         paperId: paperId,
-        pdfFile: pdfFile,
+        file: file,
+        bytes: bytes,
+        fileName: fileName,
       );
       state = UploadPdfState(isLoading: false, isSuccess: true);
     } catch (e) {
