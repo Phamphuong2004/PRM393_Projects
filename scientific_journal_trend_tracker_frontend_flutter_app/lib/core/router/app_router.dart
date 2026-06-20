@@ -108,7 +108,10 @@ class AppRouter {
             ),
             GoRoute(
               path: '/app/search',
-              builder: (context, state) => const SearchPapersScreen(),
+              builder: (context, state) {
+                final workspaceId = state.uri.queryParameters['workspaceId'];
+                return SearchPapersScreen(workspaceId: workspaceId);
+              },
             ),
             GoRoute(
               path: '/app/trending',

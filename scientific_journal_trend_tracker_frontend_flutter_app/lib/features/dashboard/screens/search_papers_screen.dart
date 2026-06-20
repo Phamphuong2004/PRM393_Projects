@@ -1,16 +1,19 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/constants/theme.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/paper.dart';
 import '../../../core/repositories/bookmark_repository.dart';
 import '../../../core/repositories/paper_repository.dart';
+import '../../../core/repositories/workspace_repository.dart';
 import 'paper_detail_screen.dart';
 
 class SearchPapersScreen extends ConsumerStatefulWidget {
-  const SearchPapersScreen({super.key});
+  final String? workspaceId;
+  const SearchPapersScreen({super.key, this.workspaceId});
 
   @override
   ConsumerState<SearchPapersScreen> createState() => _SearchPapersScreenState();
@@ -31,6 +34,9 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
   // Bookmark UI state
   final Set<String> _savedIds = {};
   final Set<String> _savingIds = {};
+  final Set<String> _addingToWorkspaceIds = {};
+  final Set<String> _addedToWorkspaceIds = {};
+  
   // MongoDB ObjectId = 24 hex chars. External results (OpenAlex/Crossref/...)
   // carry a non-ObjectId id and are NOT in the local library, so they can't be bookmarked.
   static final _objectIdRegex = RegExp(r'^[0-9a-fA-F]{24}$');
@@ -47,6 +53,26 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
     super.initState();
     _fetchPapers();
     _syncSavedIds();
+    _syncWorkspacePapers();
+  }
+
+  Future<void> _syncWorkspacePapers() async {
+    if (widget.workspaceId == null) return;
+    try {
+      final res = await ref.read(workspaceRepositoryProvider).getWorkspacePapers(widget.workspaceId!, limit: 100);
+      if (!mounted) return;
+      final papers = res['data'] as List<dynamic>? ?? [];
+      setState(() {
+        for (var p in papers) {
+          if (p['paper'] != null) {
+             final paperId = p['paper']['_id'] ?? p['paper'];
+             if (paperId is String) {
+               _addedToWorkspaceIds.add(paperId);
+             }
+          }
+        }
+      });
+    } catch (_) {}
   }
 
   // Rebuild the "Saved" state from the server so it survives leaving/reopening
@@ -145,6 +171,25 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
     );
   }
 
+  Future<void> _handleAddToWorkspace(Paper paper) async {
+    if (widget.workspaceId == null) return;
+    if (_addingToWorkspaceIds.contains(paper.id)) return;
+
+    setState(() => _addingToWorkspaceIds.add(paper.id));
+    try {
+      await ref.read(workspaceRepositoryProvider).addPaperToWorkspace(widget.workspaceId!, paper);
+      if (!mounted) return;
+      setState(() => _addedToWorkspaceIds.add(paper.id));
+      _showSnack('Added to workspace!', AppColors.success);
+    } catch (e) {
+      if (!mounted) return;
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      _showSnack(msg, Colors.red.shade700);
+    } finally {
+      if (mounted) setState(() => _addingToWorkspaceIds.remove(paper.id));
+    }
+  }
+
   Future<void> _handleSave(Paper paper) async {
     if (_savedIds.contains(paper.id) || _savingIds.contains(paper.id)) return;
 
@@ -203,6 +248,20 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (widget.workspaceId != null) ...[
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      padding: EdgeInsets.zero,
+                      alignment: Alignment.centerLeft,
+                      onPressed: () => context.pop(),
+                    ),
+                    const Text('Back to Workspace', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+                const SizedBox(height: 12),
+              ],
               const Text('Discovery Engine', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white)),
               const SizedBox(height: 4),
               const Text('Search by title, abstract, author, or journal', style: TextStyle(color: Colors.white70, fontSize: 13)),
@@ -452,6 +511,25 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
               children: [
                 Builder(
                   builder: (_) {
+                    if (widget.workspaceId != null) {
+                      final isAdding = _addingToWorkspaceIds.contains(paper.id);
+                      final isAdded = _addedToWorkspaceIds.contains(paper.id);
+
+                      return TextButton.icon(
+                        onPressed: (isAdding || isAdded) ? null : () => _handleAddToWorkspace(paper),
+                        icon: isAdding
+                            ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                            : Icon(isAdded ? Icons.check : Icons.add, size: 18),
+                        label: Text(isAdded ? 'Added' : 'Add to Workspace'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: isAdded ? Colors.green : const Color(0xFF4F46E5),
+                          disabledForegroundColor: isAdded ? Colors.green : Colors.grey,
+                          padding: EdgeInsets.zero,
+                          minimumSize: const Size(60, 36),
+                        ),
+                      );
+                    }
+
                     final saved = _savedIds.contains(paper.id);
                     final saving = _savingIds.contains(paper.id);
                     return TextButton.icon(
