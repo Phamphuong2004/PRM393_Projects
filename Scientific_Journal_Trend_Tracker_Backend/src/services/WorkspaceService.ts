@@ -48,7 +48,7 @@ export class WorkspaceService {
     const memberCount = workspace.members.length;
 
     const [papers, notes] = await Promise.all([
-      WorkspacePaper.find({ workspace: workspaceId }).populate("paper", "title doi publicationYear authors").lean(),
+      WorkspacePaper.find({ workspace: workspaceId }).populate("paper", "title doi publicationYear authors pdfUrl").lean(),
       WorkspaceNote.countDocuments({ workspace: workspaceId }),
     ]);
 
