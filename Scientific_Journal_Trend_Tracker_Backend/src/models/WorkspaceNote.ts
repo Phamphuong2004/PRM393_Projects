@@ -15,7 +15,7 @@ const workspaceNoteSchema = new Schema<IWorkspaceNote>(
   {
     workspace: { type: Schema.Types.ObjectId, ref: "Workspace", required: true },
     paper: { type: Schema.Types.ObjectId, ref: "Paper" },
-    title: { type: String, required: true, trim: true },
+    title: { type: String, trim: true, default: "" },
     content: { type: String, required: true },
     tags: [{ type: String, trim: true }],
     createdBy: { type: Schema.Types.ObjectId, ref: "user", required: true },
