@@ -17,6 +17,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _passwordController = TextEditingController();
   final _institutionController = TextEditingController();
   bool _isLoading = false;
+  bool _obscurePassword = true;
   String? _errorMessage;
 
   Future<void> _handleRegister() async {
@@ -266,7 +267,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 label: 'Password *',
                 hint: 'Create a strong password',
                 icon: Icons.lock_outline_rounded,
-                obscureText: true,
+                obscureText: _obscurePassword,
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscurePassword
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                    color: AppColors.textSecondary,
+                  ),
+                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                ),
               ),
               const SizedBox(height: 20),
               _buildTextField(
@@ -322,6 +332,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     required IconData icon,
     bool obscureText = false,
     TextInputType? keyboardType,
+    Widget? suffixIcon,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -335,6 +346,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           style: const TextStyle(fontWeight: FontWeight.w500),
           decoration: InputDecoration(
             prefixIcon: Icon(icon, color: AppColors.textSecondary),
+            suffixIcon: suffixIcon,
             hintText: hint,
             hintStyle: TextStyle(color: AppColors.textLight.withValues(alpha: 0.8)),
             filled: true,
