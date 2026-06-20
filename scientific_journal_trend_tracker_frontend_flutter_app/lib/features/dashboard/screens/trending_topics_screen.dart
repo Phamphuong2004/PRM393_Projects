@@ -15,11 +15,65 @@ class _TrendingTopicsScreenState extends State<TrendingTopicsScreen> {
   List<dynamic> _trends = [];
   bool _loading = true;
   String? _error;
+  final Set<String> _followedKeywordIds = {};
 
   @override
   void initState() {
     super.initState();
     _fetchData();
+    _loadFollowedKeywords();
+  }
+
+  String? _followTargetId(dynamic f) {
+    final t = f['targetId'];
+    if (t is Map) return t['_id']?.toString();
+    return t?.toString();
+  }
+
+  Future<void> _loadFollowedKeywords() async {
+    try {
+      final follows = await FollowsApi.list();
+      if (!mounted || follows is! List) return;
+      setState(() {
+        _followedKeywordIds
+          ..clear()
+          ..addAll(follows
+              .where((f) => f['targetType'] == 'Keyword')
+              .map(_followTargetId)
+              .whereType<String>());
+      });
+    } catch (_) {
+      // Non-blocking: keep current state if follows can't be loaded.
+    }
+  }
+
+  void _snack(String msg, Color color) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), backgroundColor: color, behavior: SnackBarBehavior.floating),
+    );
+  }
+
+  Future<void> _toggleFollowKeyword(dynamic kw) async {
+    final id = kw['_id']?.toString();
+    if (id == null) return;
+    final name = kw['name'] ?? 'keyword';
+    final alreadyFollowed = _followedKeywordIds.contains(id);
+    try {
+      if (alreadyFollowed) {
+        await FollowsApi.unfollow(id);
+        if (!mounted) return;
+        setState(() => _followedKeywordIds.remove(id));
+        _snack('Unfollowed "$name"', AppColors.textSecondary);
+      } else {
+        await FollowsApi.follow('Keyword', id);
+        if (!mounted) return;
+        setState(() => _followedKeywordIds.add(id));
+        _snack('Following "$name"', AppColors.success);
+      }
+    } catch (e) {
+      _snack('Action failed. Please try again.', AppColors.error);
+    }
   }
 
   Future<void> _fetchData() async {
@@ -153,18 +207,33 @@ class _TrendingTopicsScreenState extends State<TrendingTopicsScreen> {
                         runSpacing: 8,
                         children: _keywords.map<Widget>((kw) {
                           final score = kw['trendScore'];
+                          final id = kw['_id']?.toString();
+                          final followed = id != null && _followedKeywordIds.contains(id);
                           return GestureDetector(
+                            onTap: id == null ? null : () => _toggleFollowKeyword(kw),
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               decoration: BoxDecoration(
                                 color: const Color(0xFF43E97B),
                                 borderRadius: BorderRadius.circular(20),
                               ),
-                              child: Column(
+                              child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Text(kw['name'] ?? '', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
-                                  if (score != null) Text('Score: $score', style: const TextStyle(color: Colors.white70, fontSize: 10)),
+                                  Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(kw['name'] ?? '', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
+                                      if (score != null) Text('Score: $score', style: const TextStyle(color: Colors.white70, fontSize: 10)),
+                                    ],
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Icon(
+                                    followed ? Icons.check_circle : Icons.add_circle_outline,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
                                 ],
                               ),
                             ),
