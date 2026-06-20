@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/network_provider.dart';
 import '../constants/api_constants.dart';
 import '../models/workspace.dart';
+import '../models/paper.dart';
 
 final workspaceRepositoryProvider = Provider<WorkspaceRepository>((ref) {
   final dio = ref.watch(dioProvider);
@@ -56,11 +57,50 @@ class WorkspaceRepository {
     }
   }
 
-  Future<void> addPaperToWorkspace(String id, String paperId) async {
+  Future<void> addPaperToWorkspace(String id, Paper paper) async {
     try {
-      await _dio.post('${ApiConstants.workspaces}/$id/papers', data: {'paper': paperId});
-    } catch (e) {
-      rethrow;
+      final isMongoId = RegExp(r'^[0-9a-fA-F]{24}$').hasMatch(paper.id);
+      if (isMongoId) {
+        await _dio.post('${ApiConstants.workspaces}/$id/papers', data: {'paperId': paper.id});
+      } else {
+        // External paper: clean the payload so Mongoose doesn't choke on
+        // non-ObjectId _id values in the root doc or nested author objects.
+        final paperJson = paper.toJson();
+        paperJson.remove('_id');          // root _id
+        paperJson.remove('createdAt');
+        paperJson.remove('updatedAt');
+
+        // Clean authors: remove _id if null/invalid ObjectId
+        final mongoIdRe = RegExp(r'^[0-9a-fA-F]{24}$');
+        if (paperJson['authors'] is List) {
+          paperJson['authors'] = (paperJson['authors'] as List).map((a) {
+            if (a is Map) {
+              final m = Map<String, dynamic>.from(a);
+              final authorId = m['_id']?.toString() ?? '';
+              if (!mongoIdRe.hasMatch(authorId)) m.remove('_id');
+              return m;
+            }
+            return a;
+          }).toList();
+        }
+
+        await _dio.post('${ApiConstants.workspaces}/$id/papers', data: {'paper': paperJson});
+      }
+    } on DioException catch (e) {
+      final serverMsg = e.response?.data?['message']?.toString() ?? '';
+      switch (e.response?.statusCode) {
+        case 403:
+          throw Exception('You don\'t have permission to add papers to this workspace.');
+        case 409:
+          throw Exception('This paper is already in the workspace.');
+        default:
+          if (serverMsg.contains('E11000') || serverMsg.contains('duplicate key')) {
+            throw Exception('This paper already exists in the database. It may have been added from another source.');
+          } else if (serverMsg.contains('validation failed')) {
+            throw Exception('Could not save this paper — some fields were incompatible. Try a paper from Local Database instead.');
+          }
+          throw Exception(serverMsg.isNotEmpty ? serverMsg : 'Failed to add paper. Please check your connection.');
+      }
     }
   }
 

@@ -121,34 +121,10 @@ class WorkspacePapersTab extends ConsumerWidget {
   const WorkspacePapersTab({super.key, required this.workspaceId});
 
   void _showAddPaperDialog(BuildContext context, WidgetRef ref) {
-    final idCtrl = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Add Paper via ID'),
-        content: TextField(
-          controller: idCtrl,
-          decoration: const InputDecoration(labelText: 'Paper ID', border: OutlineInputBorder()),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () async {
-              if (idCtrl.text.isNotEmpty) {
-                try {
-                  await ref.read(workspaceRepositoryProvider).addPaperToWorkspace(workspaceId, idCtrl.text.trim());
-                  ref.invalidate(workspacePapersProvider(workspaceId));
-                  Navigator.pop(ctx);
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-                }
-              }
-            },
-            child: const Text('Add Paper'),
-          ),
-        ],
-      ),
-    );
+    context.push('/app/search?workspaceId=$workspaceId').then((_) {
+      // Refresh papers when coming back
+      ref.invalidate(workspacePapersProvider(workspaceId));
+    });
   }
 
   @override

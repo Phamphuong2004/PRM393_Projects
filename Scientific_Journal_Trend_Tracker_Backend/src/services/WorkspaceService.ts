@@ -77,7 +77,17 @@ export class WorkspaceService {
     let paperId = data.paperId;
 
     if (!paperId && data.paper) {
-      const newPaper = new Paper({ ...data.paper, source: data.paper.source || "manual" });
+      const paperData = { ...data.paper, source: data.paper.source || "manual" };
+
+      // Remove null/empty external ID fields so sparse unique indexes are not violated
+      const externalIdFields = ['externalId_openalexId', 'externalId_semanticScholarId', 'externalId_crossref'];
+      for (const field of externalIdFields) {
+        if (paperData[field] == null || paperData[field] === '') {
+          delete paperData[field];
+        }
+      }
+
+      const newPaper = new Paper(paperData);
       await newPaper.save();
       paperId = newPaper._id;
     }
