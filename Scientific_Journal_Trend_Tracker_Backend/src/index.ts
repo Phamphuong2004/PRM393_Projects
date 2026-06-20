@@ -23,6 +23,8 @@ import followsRoutes from "./routes/follows";
 import publicationTrendsRoutes from "./routes/publicationTrends";
 import dashboardRoutes from "./routes/dashboard";
 import adminRoutes from "./routes/admin";
+import authorsRoutes from "./routes/authors";
+import syncLogsRoutes from "./routes/syncLogs";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -123,6 +125,8 @@ app.use("/api/follows", followsRoutes);
 app.use("/api/publication-trends", publicationTrendsRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/authors", authorsRoutes);
+app.use("/api/sync-logs", syncLogsRoutes);
 
 // API Documentation
 app.get("/api", (req, res) => {
@@ -144,6 +148,8 @@ app.get("/api", (req, res) => {
       "publication-trends": "/api/publication-trends",
       dashboard: "/api/dashboard",
       admin: "/api/admin",
+      authors: "/api/authors",
+      "sync-logs": "/api/sync-logs",
     },
   });
 });

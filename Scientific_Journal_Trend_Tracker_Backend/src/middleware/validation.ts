@@ -53,6 +53,10 @@ export const validateCreateTopic = [
   body("seedKeyword").notEmpty().withMessage("Seed keyword is required"),
 ];
 
+export const validateCreateAuthor = [
+  body("fullName").notEmpty().withMessage("Author full name is required"),
+];
+
 export const validateChangePassword = [
   body("currentPassword")
     .notEmpty()
