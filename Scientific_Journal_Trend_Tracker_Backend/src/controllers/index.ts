@@ -9,4 +9,6 @@ export { AnalysisRunController } from "./AnalysisRunController";
 export { BookmarkController } from "./BookmarkController";
 export { NotificationController } from "./NotificationController";
 export { FollowController } from "./FollowController";
+export { WorkspaceController } from "./WorkspaceController";
+
 export { PublicationTrendController } from "./PublicationTrendController";

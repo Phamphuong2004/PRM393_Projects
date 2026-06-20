@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express from "express";
+import path from "path";
 import cors from "cors";
 import helmet from "helmet";
 import { connectDB } from "./config/database";
@@ -25,6 +26,7 @@ import dashboardRoutes from "./routes/dashboard";
 import adminRoutes from "./routes/admin";
 import authorsRoutes from "./routes/authors";
 import syncLogsRoutes from "./routes/syncLogs";
+import workspacesRoutes from "./routes/workspaces";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -45,6 +47,9 @@ app.use(
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve uploaded files (PDFs, etc.) as static assets
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 // Request logging middleware
 app.use(requestLogger);
@@ -127,6 +132,7 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/authors", authorsRoutes);
 app.use("/api/sync-logs", syncLogsRoutes);
+app.use("/api/v1/workspaces", workspacesRoutes);
 
 // API Documentation
 app.get("/api", (req, res) => {

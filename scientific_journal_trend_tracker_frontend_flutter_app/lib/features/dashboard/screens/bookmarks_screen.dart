@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/theme.dart';
-import '../../../core/models/bookmark.dart';
+import '../../../core/models/paper.dart';
 import '../../../core/repositories/bookmark_repository.dart';
 
 class BookmarksScreen extends ConsumerStatefulWidget {
@@ -12,7 +13,7 @@ class BookmarksScreen extends ConsumerStatefulWidget {
 }
 
 class _BookmarksScreenState extends ConsumerState<BookmarksScreen> {
-  List<Bookmark> _bookmarks = [];
+  List<Paper> _bookmarks = [];
   bool _isLoading = true;
   String? _error;
 
@@ -127,20 +128,20 @@ class _BookmarksScreenState extends ConsumerState<BookmarksScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         itemCount: _bookmarks.length,
         itemBuilder: (context, index) {
-          final bookmark = _bookmarks[index];
-          return _buildBookmarkCard(bookmark);
+          final paper = _bookmarks[index];
+          return _buildBookmarkCard(paper);
         },
       ),
     );
   }
 
-  Widget _buildBookmarkCard(Bookmark bookmark) {
-    // In our model, paper is a dynamic map
-    final paperMap = bookmark.paperId is Map ? bookmark.paperId as Map<String, dynamic> : {};
-    final title = paperMap['title'] ?? 'Untitled Paper';
-    final venue = paperMap['venue'] ?? 'Unknown Venue';
-    final year = paperMap['year']?.toString() ?? '';
-    final url = paperMap['url']?.toString() ?? '';
+  Widget _buildBookmarkCard(Paper paper) {
+    final title = paper.title;
+    final venue = paper.source ??
+        (paper.journalId is Map ? paper.journalId['name']?.toString() : null) ??
+        'Unknown Source';
+    final year = paper.publicationYear?.toString() ?? '';
+    final url = paper.url ?? '';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -206,7 +207,7 @@ class _BookmarksScreenState extends ConsumerState<BookmarksScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Saved ${_formatDate(bookmark.createdAt ?? DateTime.now())}',
+                      '${paper.citationCount} citations',
                       style: const TextStyle(color: AppColors.textLight, fontSize: 12, fontWeight: FontWeight.w500),
                     ),
                     Row(
@@ -214,12 +215,12 @@ class _BookmarksScreenState extends ConsumerState<BookmarksScreen> {
                         if (url.isNotEmpty)
                           IconButton(
                             icon: const Icon(Icons.open_in_new_rounded, size: 20, color: AppColors.primaryLight),
-                            onPressed: () {},
+                            onPressed: () => _openUrl(url),
                             tooltip: 'Open Link',
                           ),
                         IconButton(
                           icon: const Icon(Icons.bookmark_remove_rounded, size: 22, color: AppColors.error),
-                          onPressed: () => _removeBookmark(bookmark.id),
+                          onPressed: () => _removeBookmark(paper.id),
                           tooltip: 'Remove Bookmark',
                         ),
                       ],
@@ -249,7 +250,10 @@ class _BookmarksScreenState extends ConsumerState<BookmarksScreen> {
     );
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
+  Future<void> _openUrl(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri != null && await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 }
