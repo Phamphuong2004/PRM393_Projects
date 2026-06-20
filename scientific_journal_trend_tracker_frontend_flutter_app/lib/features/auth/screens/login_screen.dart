@@ -15,7 +15,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
-  bool _obscurePassword = true;
   String? _errorMessage;
 
   Future<void> _handleLogin() async {
@@ -252,16 +251,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 label: 'Password',
                 hint: 'Enter your password',
                 icon: Icons.lock_outline_rounded,
-                obscureText: _obscurePassword,
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscurePassword
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
-                    color: AppColors.textSecondary,
-                  ),
-                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                ),
+                obscureText: true,
               ),
               
               const SizedBox(height: 16),
@@ -323,7 +313,6 @@ class _LoginScreenState extends State<LoginScreen> {
     required IconData icon,
     bool obscureText = false,
     TextInputType? keyboardType,
-    Widget? suffixIcon,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -337,7 +326,6 @@ class _LoginScreenState extends State<LoginScreen> {
           style: const TextStyle(fontWeight: FontWeight.w500),
           decoration: InputDecoration(
             prefixIcon: Icon(icon, color: AppColors.textSecondary),
-            suffixIcon: suffixIcon,
             hintText: hint,
             hintStyle: TextStyle(color: AppColors.textLight.withValues(alpha: 0.8)),
             filled: true,

@@ -20,10 +20,12 @@ import '../../features/dashboard/screens/bookmarks_screen.dart';
 import '../../features/dashboard/screens/following_screen.dart';
 import '../../features/dashboard/screens/notifications_screen.dart';
 import '../../features/dashboard/screens/profile_settings_screen.dart';
+import '../../features/dashboard/screens/authors_screen.dart';
 
 // Admin Screens
 import '../../features/admin/screens/user_management_screen.dart';
 import '../../features/admin/screens/analytics_report_screen.dart';
+import '../../features/admin/screens/sync_logs_screen.dart';
 import '../../features/admin/screens/system_settings_screen.dart';
 
 class AppRouter {
@@ -123,6 +125,10 @@ class AppRouter {
               path: '/app/profile',
               builder: (context, state) => const ProfileSettingsScreen(),
             ),
+            GoRoute(
+              path: '/app/authors',
+              builder: (context, state) => const AuthorsScreen(),
+            ),
             // Admin Routes
             GoRoute(
               path: '/app/admin/users',
@@ -131,6 +137,10 @@ class AppRouter {
             GoRoute(
               path: '/app/admin/analytics',
               builder: (context, state) => const AnalyticsReportScreen(),
+            ),
+            GoRoute(
+              path: '/app/admin/sync-logs',
+              builder: (context, state) => const SyncLogsScreen(),
             ),
             GoRoute(
               path: '/app/admin/settings',

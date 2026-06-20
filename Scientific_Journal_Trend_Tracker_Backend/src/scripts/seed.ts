@@ -5,6 +5,7 @@ import Journal from "../models/Journal";
 import Author from "../models/Author";
 import Keyword from "../models/Keyword";
 import Paper from "../models/Paper";
+import Institution from "../models/Institution";
 import bcrypt from "bcryptjs";
 
 // Load environment variables
@@ -29,6 +30,23 @@ const seedData = async () => {
     await Author.deleteMany({});
     await Keyword.deleteMany({});
     await Paper.deleteMany({});
+    await Institution.deleteMany({});
+
+    console.log("Creating Institutions...");
+    await Institution.insertMany([
+      { name: "FPT University", country: "Vietnam", city: "Hanoi", website: "https://www.fpt.edu.vn" },
+      { name: "Vietnam National University, Hanoi (VNU)", country: "Vietnam", city: "Hanoi", website: "https://vnu.edu.vn" },
+      { name: "Vietnam National University, Ho Chi Minh City (VNU-HCM)", country: "Vietnam", city: "Ho Chi Minh City", website: "https://vnuhcm.edu.vn" },
+      { name: "Hanoi University of Science and Technology (HUST)", country: "Vietnam", city: "Hanoi", website: "https://hust.edu.vn" },
+      { name: "Ho Chi Minh City University of Technology (HCMUT)", country: "Vietnam", city: "Ho Chi Minh City", website: "https://hcmut.edu.vn" },
+      { name: "National Economics University (NEU)", country: "Vietnam", city: "Hanoi", website: "https://neu.edu.vn" },
+      { name: "University of Economics Ho Chi Minh City (UEH)", country: "Vietnam", city: "Ho Chi Minh City", website: "https://ueh.edu.vn" },
+      { name: "Foreign Trade University (FTU)", country: "Vietnam", city: "Hanoi", website: "https://ftu.edu.vn" },
+      { name: "University of Danang (UDN)", country: "Vietnam", city: "Da Nang", website: "https://udn.vn" },
+      { name: "Can Tho University (CTU)", country: "Vietnam", city: "Can Tho", website: "https://www.ctu.edu.vn" },
+      { name: "Ton Duc Thang University (TDTU)", country: "Vietnam", city: "Ho Chi Minh City", website: "https://tdtu.edu.vn" },
+      { name: "Posts and Telecommunications Institute of Technology (PTIT)", country: "Vietnam", city: "Hanoi", website: "https://ptit.edu.vn" },
+    ]);
 
     console.log("Creating System Administrator...");
     const salt = await bcrypt.genSalt(10);
@@ -60,7 +78,7 @@ const seedData = async () => {
       email: "student@example.com",
       password: hashedPassword,
       fullName: "Test Student",
-      role: "user",
+      role: "student",
       isActive: true,
       emailVerified: true,
       interests: ["Computer Vision", "Deep Learning"]

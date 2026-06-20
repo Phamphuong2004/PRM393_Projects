@@ -13,6 +13,7 @@ import authRoutes from "./routes/auth";
 import papersRoutes from "./routes/papers";
 import keywordsRoutes from "./routes/keywords";
 import journalsRoutes from "./routes/journals";
+import institutionsRoutes from "./routes/institutions";
 import topicsRoutes from "./routes/topics";
 import usersRoutes from "./routes/users";
 import analysisRunsRoutes from "./routes/analysisRuns";
@@ -22,6 +23,8 @@ import followsRoutes from "./routes/follows";
 import publicationTrendsRoutes from "./routes/publicationTrends";
 import dashboardRoutes from "./routes/dashboard";
 import adminRoutes from "./routes/admin";
+import authorsRoutes from "./routes/authors";
+import syncLogsRoutes from "./routes/syncLogs";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -112,6 +115,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/papers", papersRoutes);
 app.use("/api/keywords", keywordsRoutes);
 app.use("/api/journals", journalsRoutes);
+app.use("/api/institutions", institutionsRoutes);
 app.use("/api/topics", topicsRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/analysis-runs", analysisRunsRoutes);
@@ -121,6 +125,8 @@ app.use("/api/follows", followsRoutes);
 app.use("/api/publication-trends", publicationTrendsRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/authors", authorsRoutes);
+app.use("/api/sync-logs", syncLogsRoutes);
 
 // API Documentation
 app.get("/api", (req, res) => {
@@ -132,6 +138,7 @@ app.get("/api", (req, res) => {
       papers: "/api/papers",
       keywords: "/api/keywords",
       journals: "/api/journals",
+      institutions: "/api/institutions",
       topics: "/api/topics",
       users: "/api/users",
       "analysis-runs": "/api/analysis-runs",
@@ -141,6 +148,8 @@ app.get("/api", (req, res) => {
       "publication-trends": "/api/publication-trends",
       dashboard: "/api/dashboard",
       admin: "/api/admin",
+      authors: "/api/authors",
+      "sync-logs": "/api/sync-logs",
     },
   });
 });

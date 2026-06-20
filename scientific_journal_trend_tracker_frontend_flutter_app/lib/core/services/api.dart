@@ -114,13 +114,15 @@ class AuthApi {
   static Future<dynamic> register(
     String email,
     String password,
-    String fullName, [
+    String fullName, {
+    String role = 'researcher',
     String? institution,
-  ]) {
+  }) {
     final data = <String, dynamic>{
       'email': email,
       'password': password,
       'fullName': fullName,
+      'role': role,
     };
     if (institution != null) data['institution'] = institution;
     return api.post(ApiConstants.register, data);
@@ -439,3 +441,58 @@ class AdminApi {
     return api.post(ApiConstants.adminSync, {});
   }
 }
+
+// ─────────────────────────────────────────────────────────
+// AUTHORS
+// ─────────────────────────────────────────────────────────
+class AuthorsApi {
+  static Future<dynamic> list({int page = 1, int limit = 10, String? search}) {
+    String url = '${ApiConstants.authors}?page=$page&limit=$limit';
+    if (search != null && search.isNotEmpty) {
+      url += '&search=${Uri.encodeComponent(search)}';
+    }
+    return api.get(url);
+  }
+
+  static Future<dynamic> getById(String id) {
+    return api.get('${ApiConstants.authors}/$id');
+  }
+
+  static Future<dynamic> create(Map<String, dynamic> data) {
+    return api.post(ApiConstants.authors, data);
+  }
+
+  static Future<dynamic> update(String id, Map<String, dynamic> data) {
+    return api.put('${ApiConstants.authors}/$id', data);
+  }
+
+  static Future<dynamic> delete(String id) {
+    return api.delete('${ApiConstants.authors}/$id');
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+// SYNC LOGS
+// ─────────────────────────────────────────────────────────
+class SyncLogsApi {
+  static Future<dynamic> list({int page = 1, int limit = 10, String? status}) {
+    String url = '${ApiConstants.syncLogs}?page=$page&limit=$limit';
+    if (status != null && status.isNotEmpty) {
+      url += '&status=$status';
+    }
+    return api.get(url);
+  }
+
+  static Future<dynamic> getById(String id) {
+    return api.get('${ApiConstants.syncLogs}/$id');
+  }
+
+  static Future<dynamic> delete(String id) {
+    return api.delete('${ApiConstants.syncLogs}/$id');
+  }
+
+  static Future<dynamic> clearAll() {
+    return api.delete(ApiConstants.syncLogs);
+  }
+}
+

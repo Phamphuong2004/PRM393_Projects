@@ -42,7 +42,7 @@ router.get(
   "/external/search",
   async (req: Request, res: Response): Promise<void> => {
     try {
-      const { q, limit } = req.query;
+      const { q, limit, source } = req.query;
 
       if (!q || !String(q).trim()) {
         res.status(400).json({ message: "Search query is required" });
@@ -50,7 +50,7 @@ router.get(
       }
 
       const parsedLimit = limit ? parseInt(limit as string) : 10;
-      const result = await PaperService.searchExternalPapers(String(q), parsedLimit);
+      const result = await PaperService.searchExternalPapers(String(q), parsedLimit, source as string);
 
       res.json(result);
     } catch (error: any) {

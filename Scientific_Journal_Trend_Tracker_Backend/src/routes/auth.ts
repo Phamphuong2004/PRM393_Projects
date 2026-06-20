@@ -15,8 +15,14 @@ router.post(
   validateInputs,
   async (req: Request, res: Response): Promise<void> => {
     try {
-      const { email, password, fullName } = req.body;
-      const result = await AuthService.register(email, password, fullName);
+      const { email, password, fullName, role, institution } = req.body;
+      const result = await AuthService.register(
+        email,
+        password,
+        fullName,
+        role,
+        institution,
+      );
       res.status(201).json(result);
     } catch (error: any) {
       res.status(error.status || 500).json({ message: error.message });

@@ -51,6 +51,7 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
 
   Future<void> _fetchData() async {
     try {
+      if (!mounted) return;
       setState(() {
         _isLoading = true;
         _error = null;
@@ -66,6 +67,7 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
         keywordRepo.getTrendingKeywords(limit: 5),
       ]);
 
+      if (!mounted) return;
       setState(() {
         _dashboardStats = Map<String, dynamic>.from(results[0] as Map);
         _recentPapers = (results[1] as Map)['papers'] ?? [];
@@ -75,6 +77,7 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
 
       _animationController.forward();
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = 'Failed to load dashboard data. Please try again.';
         _isLoading = false;
@@ -607,10 +610,10 @@ class _AnimatedMetricCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         gradient: gradient,
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
             color: gradient.colors.first.withValues(alpha: 0.25),
@@ -623,31 +626,28 @@ class _AnimatedMetricCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(icon, color: Colors.white, size: 24),
-              ),
-            ],
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: Colors.white, size: 20),
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               if (stringValue != null)
                 Text(
                   stringValue!,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 24,
+                    fontSize: 20,
                     fontWeight: FontWeight.w900,
                     letterSpacing: -0.5,
                   ),
+                  overflow: TextOverflow.ellipsis,
                 )
               else
                 TweenAnimationBuilder<double>(
@@ -659,21 +659,22 @@ class _AnimatedMetricCard extends StatelessWidget {
                       val.toInt().toString(),
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 28,
+                        fontSize: 24,
                         fontWeight: FontWeight.w900,
                         letterSpacing: -0.5,
                       ),
                     );
                   },
                 ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
               Text(
                 title,
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.85),
-                  fontSize: 13,
+                  fontSize: 11,
                   fontWeight: FontWeight.w600,
                 ),
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),

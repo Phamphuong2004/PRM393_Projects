@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:provider/provider.dart' as prov;
 import '../../../core/constants/theme.dart';
+import '../../../core/models/institution.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/repositories/institution_repository.dart';
 import '../../../core/repositories/user_repository.dart';
 
 class ProfileSettingsScreen extends ConsumerStatefulWidget {
@@ -15,38 +17,63 @@ class ProfileSettingsScreen extends ConsumerStatefulWidget {
 class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
   final _formKey = GlobalKey<FormState>();
   final _passwordFormKey = GlobalKey<FormState>();
-  
+
   late TextEditingController _nameController;
   late TextEditingController _bioController;
-  
+  late TextEditingController _interestsController;
+
+  List<Institution> _institutions = [];
+  String? _selectedInstitution;
+
   final _currentPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  bool _isEditingProfile = false;
   bool _isLoading = false;
-  
+  bool _showPasswordForm = false;
+  bool _obscureCurrent = true;
+  bool _obscureNew = true;
+  bool _obscureConfirm = true;
+
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController();
     _bioController = TextEditingController();
-    
+    _interestsController = TextEditingController();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final user = prov.Provider.of<AuthProvider>(context, listen: false).user;
       if (user != null) {
         setState(() {
           _nameController.text = user['fullName'] ?? '';
           _bioController.text = user['bio'] ?? '';
+          _selectedInstitution = (user['institution'] as String?)?.isNotEmpty == true
+              ? user['institution'] as String
+              : null;
+          _interestsController.text = user['researchInterests'] ?? '';
         });
       }
     });
+
+    _loadInstitutions();
+  }
+
+  Future<void> _loadInstitutions() async {
+    try {
+      final repo = ref.read(institutionRepositoryProvider);
+      final list = await repo.getInstitutions();
+      if (mounted) setState(() => _institutions = list);
+    } catch (_) {
+      // Silently ignore — dropdown just stays with current value only.
+    }
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _bioController.dispose();
+    _interestsController.dispose();
     _currentPasswordController.dispose();
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
@@ -55,7 +82,6 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
 
   Future<void> _updateProfile(Map<String, dynamic> userMap) async {
     if (!_formKey.currentState!.validate()) return;
-    
     setState(() => _isLoading = true);
     try {
       final repo = ref.read(userRepositoryProvider);
@@ -63,48 +89,46 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
       await repo.updateProfile(userId, {
         'fullName': _nameController.text.trim(),
         'bio': _bioController.text.trim(),
+        'institution': _selectedInstitution ?? '',
+        'researchInterests': _interestsController.text.trim(),
       });
-      
-      setState(() {
-        _isEditingProfile = false;
-        _isLoading = false;
-      });
-      
+      setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile updated successfully'), backgroundColor: AppColors.success));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile updated successfully'), backgroundColor: AppColors.success),
+        );
       }
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to update profile'), backgroundColor: AppColors.error));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to update profile'), backgroundColor: AppColors.error),
+        );
       }
     }
   }
 
   Future<void> _changePassword(String userId) async {
     if (!_passwordFormKey.currentState!.validate()) return;
-    
     setState(() => _isLoading = true);
     try {
       final repo = ref.read(userRepositoryProvider);
-      await repo.changePassword(
-        userId, 
-        _currentPasswordController.text, 
-        _newPasswordController.text
-      );
-      
+      await repo.changePassword(userId, _currentPasswordController.text, _newPasswordController.text);
       _currentPasswordController.clear();
       _newPasswordController.clear();
       _confirmPasswordController.clear();
-      
-      setState(() => _isLoading = false);
+      setState(() { _isLoading = false; _showPasswordForm = false; });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password changed successfully'), backgroundColor: AppColors.success));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Password changed successfully'), backgroundColor: AppColors.success),
+        );
       }
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to change password'), backgroundColor: AppColors.error));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to change password'), backgroundColor: AppColors.error),
+        );
       }
     }
   }
@@ -119,195 +143,528 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
     }
 
     final String fullName = user['fullName'] ?? 'Unknown';
-    final String initial = fullName.isNotEmpty ? fullName[0].toUpperCase() : 'U';
+    final String email = user['email'] ?? '';
+    final String role = user['role'] ?? 'User';
+    final String createdAt = user['createdAt'] != null
+        ? _formatDate(user['createdAt'].toString())
+        : 'N/A';
+    final int savedPapers = (user['savedPapers'] as List?)?.length ?? 0;
+
+    final isWide = MediaQuery.of(context).size.width > 700;
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
-      appBar: AppBar(
-        title: Text('Settings', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-        backgroundColor: AppColors.bg,
-        elevation: 0,
-      ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1000),
-          child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            children: [
-              Center(
-                child: Column(
-                  children: [
-                  Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: AppColors.gradientPrimary,
-                      boxShadow: AppColors.glowShadow,
-                      border: Border.all(color: AppColors.surface, width: 4),
+      backgroundColor: const Color(0xFFF3F4F8),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // ── Header Banner ──────────────────────────────────────────────
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  height: 160,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFB8B8FF), Color(0xFFB2E8E8)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      initial,
-                      style: const TextStyle(fontSize: 48, color: Colors.white, fontWeight: FontWeight.bold),
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(0),
+                      bottomRight: Radius.circular(0),
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  Text(fullName, style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                ),
+                // Avatar overlapping the banner
+                Positioned(
+                  left: 28,
+                  bottom: -44,
+                  child: Container(
+                    width: 88,
+                    height: 88,
                     decoration: BoxDecoration(
-                      color: AppColors.primaryLight.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20)
+                      shape: BoxShape.circle,
+                      color: const Color(0xFFE8E8F4),
+                      border: Border.all(color: Colors.white, width: 4),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
-                    child: Text(
-                      (user['role'] ?? 'User').toString().toUpperCase(),
-                      style: const TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 0.5),
+                    child: Center(
+                      child: Icon(Icons.person_rounded, size: 44, color: Colors.grey.shade500),
                     ),
+                  ),
+                ),
+              ],
+            ),
+
+            // ── User Info row ───────────────────────────────────────────────
+            Container(
+              color: Colors.white,
+              padding: const EdgeInsets.fromLTRB(136, 16, 24, 20),
+              margin: const EdgeInsets.only(top: 44), // space for overlapping avatar
+              width: double.infinity,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    fullName,
+                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),
+                  ),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.email_outlined, size: 14, color: Colors.grey),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              email,
+                              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          _capitalize(role),
+                          style: const TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 40),
-            
-            // Personal Information
-            _buildSectionHeader('Personal Information', 
-              action: TextButton.icon(
-                icon: Icon(_isEditingProfile ? Icons.check_rounded : Icons.edit_rounded, size: 16),
-                onPressed: () {
-                  if (_isEditingProfile) {
-                    _updateProfile(user);
-                  } else {
-                    setState(() => _isEditingProfile = true);
-                  }
-                },
-                label: _isLoading && _isEditingProfile 
-                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                    : Text(_isEditingProfile ? 'Save' : 'Edit', style: const TextStyle(fontWeight: FontWeight.bold)),
-              )
-            ),
-            
-            Container(
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: AppColors.softShadow,
-              ),
-              padding: const EdgeInsets.all(24),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildTextField('Email Address', initialValue: user['email'], enabled: false, icon: Icons.email_rounded),
-                    const SizedBox(height: 20),
-                    _buildTextField('Full Name', controller: _nameController, enabled: _isEditingProfile, icon: Icons.person_rounded, validator: (v) => v!.isEmpty ? 'Required' : null),
-                    const SizedBox(height: 20),
-                    _buildTextField('Bio / Research Interests', controller: _bioController, enabled: _isEditingProfile, icon: Icons.description_rounded, maxLines: 3),
-                  ],
-                ),
-              ),
-            ),
-            
-            const SizedBox(height: 40),
-            
-            // Security
-            _buildSectionHeader('Security'),
-            Container(
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: AppColors.softShadow,
-              ),
-              padding: const EdgeInsets.all(24),
-              child: Form(
-                key: _passwordFormKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildTextField('Current Password', controller: _currentPasswordController, isPassword: true, icon: Icons.lock_outline_rounded, validator: (v) => v!.isEmpty ? 'Required' : null),
-                    const SizedBox(height: 20),
-                    _buildTextField('New Password', controller: _newPasswordController, isPassword: true, icon: Icons.lock_rounded, validator: (v) => v!.length < 6 ? 'Min 6 characters' : null),
-                    const SizedBox(height: 20),
-                    _buildTextField('Confirm Password', controller: _confirmPasswordController, isPassword: true, icon: Icons.lock_rounded, validator: (v) => v != _newPasswordController.text ? 'Passwords do not match' : null),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : () => _changePassword(user['_id'] ?? user['id']),
-                        child: _isLoading && !_isEditingProfile 
-                            ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                            : const Text('Update Password'),
-                      ),
+
+            const SizedBox(height: 24),
+
+            // ── Content ─────────────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: isWide
+                  ? Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(width: 260, child: _buildActivityCard(createdAt, savedPapers)),
+                        const SizedBox(width: 20),
+                        Expanded(
+                          child: Column(
+                            children: [
+                              _buildGeneralInfoCard(user),
+                              const SizedBox(height: 20),
+                              _buildSecurityCard(user),
+                              const SizedBox(height: 20),
+                              _buildLogoutButton(context),
+                            ],
+                          ),
+                        ),
+                      ],
                     )
-                  ],
-                ),
-              ),
+                  : Column(
+                      children: [
+                        _buildActivityCard(createdAt, savedPapers),
+                        const SizedBox(height: 20),
+                        _buildGeneralInfoCard(user),
+                        const SizedBox(height: 20),
+                        _buildSecurityCard(user),
+                        const SizedBox(height: 20),
+                        _buildLogoutButton(context),
+                      ],
+                    ),
             ),
-            
             const SizedBox(height: 48),
-            
-            // Logout
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.logout_rounded),
-                label: const Text('Sign Out'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.error,
-                  side: const BorderSide(color: AppColors.error, width: 1.5),
-                  padding: const EdgeInsets.symmetric(vertical: 18),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                onPressed: () {
-                  prov.Provider.of<AuthProvider>(context, listen: false).logout();
-                },
-              ),
-            ),
-            const SizedBox(height: 60),
           ],
         ),
-      ),
       ),
     );
   }
 
-  Widget _buildSectionHeader(String title, {Widget? action}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  // ── Account Activity Card ──────────────────────────────────────────────────
+  Widget _buildActivityCard(String createdAt, int savedPapers) {
+    return Container(
+      decoration: _cardDecoration(),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.5)),
-          ?action,
+          _cardHeader(Icons.monitor_heart_outlined, 'Account Activity'),
+          const SizedBox(height: 16),
+          _activityRow('Status', badge: _buildBadge('Active', Colors.green)),
+          _divider(),
+          _activityRow('Member Since', value: createdAt),
+          _divider(),
+          _activityRow(
+            'Saved Papers',
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.bookmark_border_rounded, size: 16, color: AppColors.primary),
+                const SizedBox(width: 4),
+                Text(savedPapers.toString(), style: const TextStyle(fontWeight: FontWeight.w700)),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildTextField(String label, {String? initialValue, TextEditingController? controller, bool enabled = true, bool isPassword = false, int maxLines = 1, IconData? icon, String? Function(String?)? validator}) {
+  // ── General Information Card ───────────────────────────────────────────────
+  Widget _buildGeneralInfoCard(Map<String, dynamic> user) {
+    return Container(
+      decoration: _cardDecoration(),
+      padding: const EdgeInsets.all(24),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _cardHeader(Icons.settings_outlined, 'General Information'),
+            const SizedBox(height: 20),
+            LayoutBuilder(builder: (context, c) {
+              final wide = c.maxWidth > 500;
+              return wide
+                  ? Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: _profileField('Full Name', controller: _nameController, validator: (v) => v!.isEmpty ? 'Required' : null)),
+                        const SizedBox(width: 16),
+                        Expanded(child: _profileField('Email Address', initialValue: user['email'], enabled: false, note: 'Email cannot be changed.')),
+                      ],
+                    )
+                  : Column(children: [
+                      _profileField('Full Name', controller: _nameController, validator: (v) => v!.isEmpty ? 'Required' : null),
+                      const SizedBox(height: 16),
+                      _profileField('Email Address', initialValue: user['email'], enabled: false, note: 'Email cannot be changed.'),
+                    ]);
+            }),
+            const SizedBox(height: 16),
+            _buildInstitutionDropdown(),
+            const SizedBox(height: 16),
+            _profileField('Bio', controller: _bioController, hint: 'Tell us a bit about yourself and your research focus...', maxLines: 4),
+            const SizedBox(height: 16),
+            _profileField('Research Interests', controller: _interestsController, hint: 'e.g. Artificial Intelligence, Quantum Physics', note: 'Separate multiple topics with commas.'),
+            const SizedBox(height: 24),
+            Align(
+              alignment: Alignment.centerRight,
+              child: ElevatedButton(
+                onPressed: _isLoading ? null : () => _updateProfile(user),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: _isLoading
+                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Text('Save Changes', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Security Card ──────────────────────────────────────────────────────────
+  Widget _buildSecurityCard(Map<String, dynamic> user) {
+    return Container(
+      decoration: _cardDecoration(),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _cardHeader(Icons.key_outlined, 'Security Settings'),
+          const SizedBox(height: 20),
+
+          // Change Password row
+          if (!_showPasswordForm)
+            Row(
+              children: [
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Change Password', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                      SizedBox(height: 4),
+                      Text('Update your password to keep your account secure.', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                    ],
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => setState(() => _showPasswordForm = true),
+                  child: const Text('Update Password', style: TextStyle(fontWeight: FontWeight.w600)),
+                ),
+              ],
+            )
+          else
+            Form(
+              key: _passwordFormKey,
+              child: Column(
+                children: [
+                  _passwordField('Current Password', _currentPasswordController, _obscureCurrent, () => setState(() => _obscureCurrent = !_obscureCurrent),
+                      validator: (v) => v!.isEmpty ? 'Required' : null),
+                  const SizedBox(height: 14),
+                  _passwordField('New Password', _newPasswordController, _obscureNew, () => setState(() => _obscureNew = !_obscureNew),
+                      validator: (v) => (v?.length ?? 0) < 6 ? 'Min 6 characters' : null),
+                  const SizedBox(height: 14),
+                  _passwordField('Confirm Password', _confirmPasswordController, _obscureConfirm, () => setState(() => _obscureConfirm = !_obscureConfirm),
+                      validator: (v) => v != _newPasswordController.text ? 'Passwords do not match' : null),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => setState(() { _showPasswordForm = false; }),
+                        child: const Text('Cancel'),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton(
+                        onPressed: _isLoading ? null : () => _changePassword(user['_id'] ?? user['id']),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                            : const Text('Update Password', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLogoutButton(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        icon: const Icon(Icons.logout_rounded),
+        label: const Text('Sign Out'),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.error,
+          side: const BorderSide(color: AppColors.error, width: 1.5),
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+        ),
+        onPressed: () {
+          prov.Provider.of<AuthProvider>(context, listen: false).logout();
+        },
+      ),
+    );
+  }
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  BoxDecoration _cardDecoration() => BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      );
+
+  Widget _cardHeader(IconData icon, String title) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: AppColors.primary),
+        const SizedBox(width: 10),
+        Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF1E293B))),
+      ],
+    );
+  }
+
+  Widget _activityRow(String label, {String? value, Widget? badge, Widget? trailing}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+          badge ?? trailing ?? Text(value ?? '', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBadge(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(text, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12)),
+    );
+  }
+
+  Widget _divider() => Divider(height: 1, color: Colors.grey.shade100);
+
+  Widget _buildInstitutionDropdown() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
-        const SizedBox(height: 8),
+        Text('Institution', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey.shade600)),
+        const SizedBox(height: 6),
+        // Combobox: pick from the catalog OR type a custom institution.
+        Autocomplete<String>(
+          // Key changes once when the saved value loads, so the prefill applies.
+          key: ValueKey('inst_${_selectedInstitution ?? ''}'),
+          initialValue: TextEditingValue(text: _selectedInstitution ?? ''),
+          optionsBuilder: (TextEditingValue value) {
+            final names = _institutions.map((e) => e.name);
+            if (value.text.isEmpty) return names;
+            return names.where((n) => n.toLowerCase().contains(value.text.toLowerCase()));
+          },
+          onSelected: (value) => _selectedInstitution = value,
+          fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+            return TextField(
+              controller: controller,
+              focusNode: focusNode,
+              style: const TextStyle(fontSize: 14, color: Color(0xFF1E293B)),
+              onChanged: (v) {
+                final t = v.trim();
+                _selectedInstitution = t.isEmpty ? null : t;
+              },
+              decoration: InputDecoration(
+                hintText: 'Select or type your institution',
+                hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade200)),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade200)),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
+              ),
+            );
+          },
+          optionsViewBuilder: (context, onSelected, options) {
+            return Align(
+              alignment: Alignment.topLeft,
+              child: Material(
+                elevation: 4,
+                borderRadius: BorderRadius.circular(10),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 240, maxWidth: 400),
+                  child: ListView.builder(
+                    padding: EdgeInsets.zero,
+                    shrinkWrap: true,
+                    itemCount: options.length,
+                    itemBuilder: (context, index) {
+                      final option = options.elementAt(index);
+                      return InkWell(
+                        onTap: () => onSelected(option),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          child: Text(option, style: const TextStyle(fontSize: 14)),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _profileField(String label, {TextEditingController? controller, String? initialValue, String? hint, String? note, bool enabled = true, int maxLines = 1, String? Function(String?)? validator}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey.shade600)),
+        const SizedBox(height: 6),
         TextFormField(
-          initialValue: initialValue,
           controller: controller,
+          initialValue: initialValue,
           enabled: enabled,
-          obscureText: isPassword,
           maxLines: maxLines,
           validator: validator,
-          style: TextStyle(color: enabled ? AppColors.textPrimary : AppColors.textSecondary, fontWeight: FontWeight.w500),
+          style: TextStyle(fontSize: 14, color: enabled ? const Color(0xFF1E293B) : Colors.grey.shade500),
           decoration: InputDecoration(
-            prefixIcon: icon != null ? Icon(icon, color: enabled ? AppColors.primaryLight : AppColors.textLight, size: 20) : null,
+            hintText: hint,
             filled: true,
-            fillColor: enabled ? AppColors.bg : AppColors.bg.withValues(alpha: 0.5),
+            fillColor: enabled ? Colors.grey.shade50 : Colors.grey.shade100,
+            hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade200)),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade200)),
+            disabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade200)),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
+          ),
+        ),
+        if (note != null) ...[
+          const SizedBox(height: 4),
+          Text(note, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+        ],
+      ],
+    );
+  }
+
+  Widget _passwordField(String label, TextEditingController controller, bool obscure, VoidCallback toggle, {String? Function(String?)? validator}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey.shade600)),
+        const SizedBox(height: 6),
+        TextFormField(
+          controller: controller,
+          obscureText: obscure,
+          validator: validator,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.grey.shade50,
+            suffixIcon: IconButton(
+              icon: Icon(obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 18, color: Colors.grey),
+              onPressed: toggle,
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade200)),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade200)),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
           ),
         ),
       ],
     );
+  }
+
+  String _capitalize(String s) => s.isEmpty ? s : s[0].toUpperCase() + s.substring(1).toLowerCase();
+
+  String _formatDate(String iso) {
+    try {
+      final d = DateTime.parse(iso);
+      return '${d.day}/${d.month}/${d.year}';
+    } catch (_) {
+      return iso;
+    }
   }
 }

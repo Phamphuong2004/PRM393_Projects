@@ -56,6 +56,30 @@ class PaperRepository {
     }
   }
 
+  Future<Map<String, dynamic>> searchExternalPapers(String query, {int limit = 10, String? source}) async {
+    try {
+      final response = await _dio.get(
+        ApiConstants.searchExternalPapers,
+        queryParameters: {'q': query, 'limit': limit, 'source': source},
+      );
+      
+      final papersJson = (response.data['papers'] as List?) ?? (response.data['data'] as List?) ?? [];
+      final papers = papersJson.map((e) => Paper.fromJson(e as Map<String, dynamic>)).toList();
+      
+      return {
+        'papers': papers,
+        'pagination': {
+          'page': 1,
+          'limit': limit,
+          'total': response.data['total'] ?? papers.length,
+          'pages': 1,
+        },
+      };
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<Paper> getPaperById(String id) async {
     try {
       final response = await _dio.get('${ApiConstants.papers}/$id');
