@@ -20,10 +20,17 @@ import '../../features/dashboard/screens/bookmarks_screen.dart';
 import '../../features/dashboard/screens/following_screen.dart';
 import '../../features/dashboard/screens/notifications_screen.dart';
 import '../../features/dashboard/screens/profile_settings_screen.dart';
+import '../../features/dashboard/screens/authors_screen.dart';
+
+// Workspace Screens
+import '../../features/workspaces/screens/workspace_list_screen.dart';
+import '../../features/workspaces/screens/workspace_detail_screen.dart';
+import '../../features/workspaces/screens/upload_pdf_screen.dart';
 
 // Admin Screens
 import '../../features/admin/screens/user_management_screen.dart';
 import '../../features/admin/screens/analytics_report_screen.dart';
+import '../../features/admin/screens/sync_logs_screen.dart';
 import '../../features/admin/screens/system_settings_screen.dart';
 
 class AppRouter {
@@ -101,7 +108,10 @@ class AppRouter {
             ),
             GoRoute(
               path: '/app/search',
-              builder: (context, state) => const SearchPapersScreen(),
+              builder: (context, state) {
+                final workspaceId = state.uri.queryParameters['workspaceId'];
+                return SearchPapersScreen(workspaceId: workspaceId);
+              },
             ),
             GoRoute(
               path: '/app/trending',
@@ -123,6 +133,33 @@ class AppRouter {
               path: '/app/profile',
               builder: (context, state) => const ProfileSettingsScreen(),
             ),
+            GoRoute(
+              path: '/app/authors',
+              builder: (context, state) => const AuthorsScreen(),
+            ),
+            // Workspaces Routes
+            GoRoute(
+              path: '/app/workspaces',
+              builder: (context, state) => const WorkspaceListScreen(),
+            ),
+            GoRoute(
+              path: '/app/workspaces/:workspaceId',
+              builder: (context, state) {
+                final workspaceId = state.pathParameters['workspaceId']!;
+                return WorkspaceDetailScreen(workspaceId: workspaceId);
+              },
+            ),
+            GoRoute(
+              path: '/app/workspaces/:workspaceId/papers/:paperId/upload-pdf',
+              builder: (context, state) {
+                final workspaceId = state.pathParameters['workspaceId']!;
+                final paperId = state.pathParameters['paperId']!;
+                return UploadPdfScreen(
+                  workspaceId: workspaceId,
+                  paperId: paperId,
+                );
+              },
+            ),
             // Admin Routes
             GoRoute(
               path: '/app/admin/users',
@@ -131,6 +168,10 @@ class AppRouter {
             GoRoute(
               path: '/app/admin/analytics',
               builder: (context, state) => const AnalyticsReportScreen(),
+            ),
+            GoRoute(
+              path: '/app/admin/sync-logs',
+              builder: (context, state) => const SyncLogsScreen(),
             ),
             GoRoute(
               path: '/app/admin/settings',

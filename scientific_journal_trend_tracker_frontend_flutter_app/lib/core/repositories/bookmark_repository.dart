@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/bookmark.dart';
+import '../models/paper.dart';
 import '../providers/network_provider.dart';
 import '../constants/api_constants.dart';
 
@@ -14,11 +14,15 @@ class BookmarkRepository {
 
   BookmarkRepository(this._dio);
 
-  Future<List<Bookmark>> getBookmarks() async {
+  // BE returns { bookmarks: [ ...Paper ], pagination }. The bookmarks array holds
+  // populated Paper documents directly (not a Bookmark wrapper).
+  Future<List<Paper>> getBookmarks() async {
     try {
       final response = await _dio.get(ApiConstants.bookmarks);
-      final data = (response.data['data'] as List?) ?? [];
-      return data.map((e) => Bookmark.fromJson(e as Map<String, dynamic>)).toList();
+      final data = (response.data['bookmarks'] as List?) ??
+          (response.data['data'] as List?) ??
+          [];
+      return data.map((e) => Paper.fromJson(e as Map<String, dynamic>)).toList();
     } catch (e) {
       rethrow;
     }

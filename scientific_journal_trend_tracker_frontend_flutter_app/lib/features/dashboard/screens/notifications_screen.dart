@@ -67,6 +67,50 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     }
   }
 
+  Future<void> _clearAll() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Clear all notifications?'),
+        content: const Text('This permanently deletes all your notifications.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Clear all'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      await ref.read(notificationRepositoryProvider).clearAll();
+      setState(() => _notifications = []);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('All notifications cleared'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to clear notifications'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _deleteNotification(String id) async {
     try {
       await ref.read(notificationRepositoryProvider).deleteNotification(id);
@@ -102,6 +146,12 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                 ),
                 onPressed: _markAllAsRead,
               ),
+            ),
+          if (_notifications.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.delete_sweep_rounded, color: AppColors.error),
+              tooltip: 'Clear all',
+              onPressed: _clearAll,
             ),
         ],
       ),

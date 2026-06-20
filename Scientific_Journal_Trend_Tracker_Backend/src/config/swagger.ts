@@ -25,6 +25,7 @@ const swaggerSpec = {
     { name: "Papers" },
     { name: "Keywords" },
     { name: "Journals" },
+    { name: "Institutions" },
     { name: "Topics" },
     { name: "Users" },
     { name: "AnalysisRuns" },
@@ -32,6 +33,7 @@ const swaggerSpec = {
     { name: "Notifications" },
     { name: "Follows" },
     { name: "PublicationTrends" },
+    { name: "Workspaces" },
   ],
   paths: {
     "/health": {
@@ -369,6 +371,85 @@ const swaggerSpec = {
       delete: {
         tags: ["Journals"],
         summary: "Delete journal",
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+          },
+        ],
+        responses: { "200": { description: "OK" } },
+      },
+    },
+    "/api/institutions": {
+      get: {
+        tags: ["Institutions"],
+        summary: "List institutions (for register/profile dropdown)",
+        security: [],
+        parameters: [
+          {
+            name: "search",
+            in: "query",
+            required: false,
+            schema: { type: "string" },
+          },
+        ],
+        responses: { "200": { description: "OK" } },
+      },
+      post: {
+        tags: ["Institutions"],
+        summary: "Create institution (admin only)",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/InstitutionWriteRequest" },
+            },
+          },
+        },
+        responses: { "201": { description: "Created" } },
+      },
+    },
+    "/api/institutions/{id}": {
+      get: {
+        tags: ["Institutions"],
+        summary: "Get institution by ID",
+        security: [],
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+          },
+        ],
+        responses: { "200": { description: "OK" } },
+      },
+      put: {
+        tags: ["Institutions"],
+        summary: "Update institution (admin only)",
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/InstitutionWriteRequest" },
+            },
+          },
+        },
+        responses: { "200": { description: "OK" } },
+      },
+      delete: {
+        tags: ["Institutions"],
+        summary: "Delete institution (admin only)",
         parameters: [
           {
             name: "id",
@@ -964,12 +1045,183 @@ const swaggerSpec = {
         responses: { "200": { description: "OK" } },
       },
     },
+    "/api/v1/workspaces": {
+      get: {
+        tags: ["Workspaces"],
+        summary: "List workspaces",
+        responses: { "200": { description: "OK" } },
+      },
+      post: {
+        tags: ["Workspaces"],
+        summary: "Create workspace",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["name"],
+                properties: {
+                  name: { type: "string", example: "AI in Medical Imaging" },
+                  description: { type: "string", example: "Workspace theo dõi paper và trend AI y tế" },
+                  visibility: { type: "string", example: "team" }
+                }
+              }
+            }
+          }
+        },
+        responses: { "201": { description: "Created" } },
+      },
+    },
+    "/api/v1/workspaces/{id}": {
+      get: {
+        tags: ["Workspaces"],
+        summary: "Get workspace by ID",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        responses: { "200": { description: "OK" } },
+      },
+    },
+    "/api/v1/workspaces/{id}/members": {
+      post: {
+        tags: ["Workspaces"],
+        summary: "Add member to workspace",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["email", "role"],
+                properties: {
+                  email: { type: "string", example: "member@example.com" },
+                  role: { type: "string", example: "editor" }
+                }
+              }
+            }
+          }
+        },
+        responses: { "200": { description: "OK" } },
+      },
+    },
+    "/api/v1/workspaces/{id}/papers": {
+      get: {
+        tags: ["Workspaces"],
+        summary: "Get papers in workspace",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        responses: { "200": { description: "OK" } },
+      },
+      post: {
+        tags: ["Workspaces"],
+        summary: "Add paper to workspace",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["paper"],
+                properties: {
+                  paper: { type: "string", example: "664f1d..." }
+                }
+              }
+            }
+          }
+        },
+        responses: { "201": { description: "Created" } },
+      },
+    },
+    "/api/v1/workspaces/{id}/papers/{paperId}/pdf": {
+      post: {
+        tags: ["Workspaces"],
+        summary: "Upload PDF for a paper",
+        parameters: [
+          { name: "id", in: "path", required: true, schema: { type: "string" } },
+          { name: "paperId", in: "path", required: true, schema: { type: "string" } }
+        ],
+        requestBody: {
+          content: {
+            "multipart/form-data": {
+              schema: {
+                type: "object",
+                properties: {
+                  pdf: {
+                    type: "string",
+                    format: "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        responses: { "200": { description: "OK" } },
+      },
+    },
+    "/api/v1/workspaces/{id}/notes": {
+      get: {
+        tags: ["Workspaces"],
+        summary: "Get notes in workspace",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        responses: { "200": { description: "OK" } },
+      },
+      post: {
+        tags: ["Workspaces"],
+        summary: "Create note in workspace",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["content"],
+                properties: {
+                  content: { type: "string", example: "Need to review this paper carefully." },
+                  paperId: { type: "string", example: "664f1d..." }
+                }
+              }
+            }
+          }
+        },
+        responses: { "201": { description: "Created" } },
+      },
+    },
+    "/api/v1/workspaces/{id}/alerts": {
+      get: {
+        tags: ["Workspaces"],
+        summary: "Get alerts in workspace",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        responses: { "200": { description: "OK" } },
+      },
+      post: {
+        tags: ["Workspaces"],
+        summary: "Create alert in workspace",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["query"],
+                properties: {
+                  query: { type: "string", example: "machine learning AND healthcare" },
+                  frequency: { type: "string", enum: ["daily", "weekly"], example: "weekly" }
+                }
+              }
+            }
+          }
+        },
+        responses: { "201": { description: "Created" } },
+      },
+    },
   },
   components: {
     schemas: {
       RegisterRequest: {
         type: "object",
-        required: ["email", "password", "fullName", "institution", "role"],
+        required: ["email", "password", "fullName"],
         properties: {
           email: {
             type: "string",
@@ -1091,6 +1343,17 @@ const swaggerSpec = {
           isTracked: { type: "boolean", example: true },
           source: { type: "string", example: "manual" },
           externalId: { type: "string", example: "journal-123" },
+        },
+      },
+      InstitutionWriteRequest: {
+        type: "object",
+        required: ["name"],
+        properties: {
+          name: { type: "string", example: "FPT University" },
+          country: { type: "string", example: "Vietnam" },
+          city: { type: "string", example: "Ho Chi Minh City" },
+          website: { type: "string", example: "https://www.fpt.edu.vn" },
+          isActive: { type: "boolean", example: true },
         },
       },
       TopicWriteRequest: {

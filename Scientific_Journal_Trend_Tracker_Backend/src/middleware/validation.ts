@@ -14,15 +14,11 @@ export const validateRegister = [
     .withMessage("Password must be at least 6 characters"),
   body("fullName").notEmpty().withMessage("Full name is required"),
   body("role")
-    .notEmpty()
-    .withMessage("Role is required")
-    .bail()
+    .optional()
     .isIn(["admin", "researcher", "student"])
     .withMessage("Role must be 'admin', 'researcher', or 'student'"),
   body("institution")
-    .notEmpty()
-    .withMessage("Institution is required")
-    .bail()
+    .optional()
     .isString()
     .withMessage("Institution must be a string")
     .trim(),
@@ -55,6 +51,10 @@ export const validateCreateJournal = [
 export const validateCreateTopic = [
   body("name").notEmpty().withMessage("Topic name is required"),
   body("seedKeyword").notEmpty().withMessage("Seed keyword is required"),
+];
+
+export const validateCreateAuthor = [
+  body("fullName").notEmpty().withMessage("Author full name is required"),
 ];
 
 export const validateChangePassword = [

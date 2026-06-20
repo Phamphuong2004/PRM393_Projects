@@ -7,6 +7,7 @@ export {
   validateCreateKeyword,
   validateCreateJournal,
   validateCreateTopic,
+  validateCreateAuthor,
   validateChangePassword,
   validatePaginationQuery,
   validateIdParam,
@@ -40,3 +41,4 @@ export {
   getPaginationParams,
   formatPaginatedResponse,
 } from "./pagination";
+export { uploadPaperPdf } from "./upload";

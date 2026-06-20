@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:provider/provider.dart' as prov;
 import '../../../core/constants/theme.dart';
+import '../../../core/models/institution.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/repositories/institution_repository.dart';
 import '../../../core/repositories/user_repository.dart';
 
 class ProfileSettingsScreen extends ConsumerStatefulWidget {
@@ -18,8 +20,10 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
 
   late TextEditingController _nameController;
   late TextEditingController _bioController;
-  late TextEditingController _institutionController;
   late TextEditingController _interestsController;
+
+  List<Institution> _institutions = [];
+  String? _selectedInstitution;
 
   final _currentPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
@@ -36,7 +40,6 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
     super.initState();
     _nameController = TextEditingController();
     _bioController = TextEditingController();
-    _institutionController = TextEditingController();
     _interestsController = TextEditingController();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -45,18 +48,31 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
         setState(() {
           _nameController.text = user['fullName'] ?? '';
           _bioController.text = user['bio'] ?? '';
-          _institutionController.text = user['institution'] ?? '';
+          _selectedInstitution = (user['institution'] as String?)?.isNotEmpty == true
+              ? user['institution'] as String
+              : null;
           _interestsController.text = user['researchInterests'] ?? '';
         });
       }
     });
+
+    _loadInstitutions();
+  }
+
+  Future<void> _loadInstitutions() async {
+    try {
+      final repo = ref.read(institutionRepositoryProvider);
+      final list = await repo.getInstitutions();
+      if (mounted) setState(() => _institutions = list);
+    } catch (_) {
+      // Silently ignore — dropdown just stays with current value only.
+    }
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _bioController.dispose();
-    _institutionController.dispose();
     _interestsController.dispose();
     _currentPasswordController.dispose();
     _newPasswordController.dispose();
@@ -73,7 +89,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
       await repo.updateProfile(userId, {
         'fullName': _nameController.text.trim(),
         'bio': _bioController.text.trim(),
-        'institution': _institutionController.text.trim(),
+        'institution': _selectedInstitution ?? '',
         'researchInterests': _interestsController.text.trim(),
       });
       setState(() => _isLoading = false);
@@ -129,7 +145,6 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
     final String fullName = user['fullName'] ?? 'Unknown';
     final String email = user['email'] ?? '';
     final String role = user['role'] ?? 'User';
-    final String initial = fullName.isNotEmpty ? fullName[0].toUpperCase() : 'U';
     final String createdAt = user['createdAt'] != null
         ? _formatDate(user['createdAt'].toString())
         : 'N/A';
@@ -341,7 +356,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
                     ]);
             }),
             const SizedBox(height: 16),
-            _profileField('Institution', controller: _institutionController, hint: 'e.g. FPT University'),
+            _buildInstitutionDropdown(),
             const SizedBox(height: 16),
             _profileField('Bio', controller: _bioController, hint: 'Tell us a bit about yourself and your research focus...', maxLines: 4),
             const SizedBox(height: 16),
@@ -511,6 +526,76 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
   }
 
   Widget _divider() => Divider(height: 1, color: Colors.grey.shade100);
+
+  Widget _buildInstitutionDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Institution', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey.shade600)),
+        const SizedBox(height: 6),
+        // Combobox: pick from the catalog OR type a custom institution.
+        Autocomplete<String>(
+          // Key changes once when the saved value loads, so the prefill applies.
+          key: ValueKey('inst_${_selectedInstitution ?? ''}'),
+          initialValue: TextEditingValue(text: _selectedInstitution ?? ''),
+          optionsBuilder: (TextEditingValue value) {
+            final names = _institutions.map((e) => e.name);
+            if (value.text.isEmpty) return names;
+            return names.where((n) => n.toLowerCase().contains(value.text.toLowerCase()));
+          },
+          onSelected: (value) => _selectedInstitution = value,
+          fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+            return TextField(
+              controller: controller,
+              focusNode: focusNode,
+              style: const TextStyle(fontSize: 14, color: Color(0xFF1E293B)),
+              onChanged: (v) {
+                final t = v.trim();
+                _selectedInstitution = t.isEmpty ? null : t;
+              },
+              decoration: InputDecoration(
+                hintText: 'Select or type your institution',
+                hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade200)),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade200)),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
+              ),
+            );
+          },
+          optionsViewBuilder: (context, onSelected, options) {
+            return Align(
+              alignment: Alignment.topLeft,
+              child: Material(
+                elevation: 4,
+                borderRadius: BorderRadius.circular(10),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 240, maxWidth: 400),
+                  child: ListView.builder(
+                    padding: EdgeInsets.zero,
+                    shrinkWrap: true,
+                    itemCount: options.length,
+                    itemBuilder: (context, index) {
+                      final option = options.elementAt(index);
+                      return InkWell(
+                        onTap: () => onSelected(option),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          child: Text(option, style: const TextStyle(fontSize: 14)),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
 
   Widget _profileField(String label, {TextEditingController? controller, String? initialValue, String? hint, String? note, bool enabled = true, int maxLines = 1, String? Function(String?)? validator}) {
     return Column(
