@@ -239,7 +239,15 @@ class WorkspacePapersTab extends ConsumerWidget {
                                   TextButton.icon(
                                     onPressed: () {
                                       if (paper['_id'] != null) {
-                                        context.push('/app/workspaces/$workspaceId/papers/${paper['_id']}/upload-pdf');
+                                        context.push<bool>('/app/workspaces/$workspaceId/papers/${paper['_id']}/upload-pdf').then((success) {
+                                          if (success == true) {
+                                            // Wait for the navigation animation to fully complete before invalidating, 
+                                            // ensuring Riverpod's state tree is stable.
+                                            Future.delayed(const Duration(milliseconds: 400), () {
+                                              ref.invalidate(workspacePapersProvider(workspaceId));
+                                            });
+                                          }
+                                        });
                                       }
                                     },
                                     icon: const Icon(Icons.upload_file, size: 14),
