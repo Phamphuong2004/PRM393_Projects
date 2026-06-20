@@ -216,7 +216,11 @@ class WorkspacePapersTab extends ConsumerWidget {
                                 if (hasPdf)
                                   TextButton.icon(
                                     onPressed: () {
-                                      final fullUrl = 'https://prm393-projects-journal-tracking.up.railway.app$pdfUrl';
+                                      // Cloudinary returns an absolute URL; older
+                                      // records may still hold a relative /uploads path.
+                                      final fullUrl = pdfUrl.startsWith('http')
+                                          ? pdfUrl
+                                          : 'https://prm393-projects-journal-tracking.up.railway.app$pdfUrl';
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(

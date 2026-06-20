@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { WorkspaceService } from "../services/WorkspaceService";
+import { uploadPdfBuffer, isCloudinaryConfigured } from "../config/cloudinary";
 
 export class WorkspaceController {
   static async createWorkspace(req: Request, res: Response) {
@@ -65,9 +66,12 @@ export class WorkspaceController {
   static async uploadPdf(req: Request, res: Response) {
     try {
       if (!req.file) throw { status: 400, message: "No PDF file uploaded" };
-      // req.file.path contains the local file path
-      const filePath = `/uploads/papers/${req.file.filename}`;
-      const result = await WorkspaceService.uploadPdf(req.params.id, req.userId as string, req.params.paperId, filePath);
+      if (!isCloudinaryConfigured()) {
+        throw { status: 500, message: "File storage is not configured. Set CLOUDINARY_* environment variables." };
+      }
+      // Stream the in-memory buffer to Cloudinary and store the absolute URL.
+      const pdfUrl = await uploadPdfBuffer(req.file.buffer, req.file.originalname);
+      const result = await WorkspaceService.uploadPdf(req.params.id, req.userId as string, req.params.paperId, pdfUrl);
       res.json({ success: true, data: result });
     } catch (error: any) {
       res.status(error.status || 500).json({ success: false, message: error.message });
