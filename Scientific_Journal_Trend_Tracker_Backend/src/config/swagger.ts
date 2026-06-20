@@ -1054,6 +1054,23 @@ const swaggerSpec = {
       post: {
         tags: ["Workspaces"],
         summary: "Create workspace",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["name"],
+                properties: {
+                  name: { type: "string", example: "AI in Medical Imaging" },
+                  description: { type: "string", example: "Workspace theo dõi paper và trend AI y tế" },
+                  visibility: { type: "string", example: "team" },
+                  plan: { type: "string", example: "free" }
+                }
+              }
+            }
+          }
+        },
         responses: { "201": { description: "Created" } },
       },
     },
@@ -1070,6 +1087,21 @@ const swaggerSpec = {
         tags: ["Workspaces"],
         summary: "Add member to workspace",
         parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["email", "role"],
+                properties: {
+                  email: { type: "string", example: "member@example.com" },
+                  role: { type: "string", example: "editor" }
+                }
+              }
+            }
+          }
+        },
         responses: { "200": { description: "OK" } },
       },
     },
@@ -1084,6 +1116,20 @@ const swaggerSpec = {
         tags: ["Workspaces"],
         summary: "Add paper to workspace",
         parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["paper"],
+                properties: {
+                  paper: { type: "string", example: "664f1d..." }
+                }
+              }
+            }
+          }
+        },
         responses: { "201": { description: "Created" } },
       },
     },
@@ -1124,6 +1170,21 @@ const swaggerSpec = {
         tags: ["Workspaces"],
         summary: "Create note in workspace",
         parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["content"],
+                properties: {
+                  content: { type: "string", example: "Need to review this paper carefully." },
+                  paperId: { type: "string", example: "664f1d..." }
+                }
+              }
+            }
+          }
+        },
         responses: { "201": { description: "Created" } },
       },
     },
@@ -1138,6 +1199,21 @@ const swaggerSpec = {
         tags: ["Workspaces"],
         summary: "Create alert in workspace",
         parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["query"],
+                properties: {
+                  query: { type: "string", example: "machine learning AND healthcare" },
+                  frequency: { type: "string", enum: ["daily", "weekly"], example: "weekly" }
+                }
+              }
+            }
+          }
+        },
         responses: { "201": { description: "Created" } },
       },
     },
