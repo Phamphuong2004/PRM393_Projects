@@ -33,6 +33,7 @@ const swaggerSpec = {
     { name: "Notifications" },
     { name: "Follows" },
     { name: "PublicationTrends" },
+    { name: "Workspaces" },
   ],
   paths: {
     "/health": {
@@ -1042,6 +1043,102 @@ const swaggerSpec = {
         tags: ["PublicationTrends"],
         summary: "Get trending publications",
         responses: { "200": { description: "OK" } },
+      },
+    },
+    "/api/v1/workspaces": {
+      get: {
+        tags: ["Workspaces"],
+        summary: "List workspaces",
+        responses: { "200": { description: "OK" } },
+      },
+      post: {
+        tags: ["Workspaces"],
+        summary: "Create workspace",
+        responses: { "201": { description: "Created" } },
+      },
+    },
+    "/api/v1/workspaces/{id}": {
+      get: {
+        tags: ["Workspaces"],
+        summary: "Get workspace by ID",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        responses: { "200": { description: "OK" } },
+      },
+    },
+    "/api/v1/workspaces/{id}/members": {
+      post: {
+        tags: ["Workspaces"],
+        summary: "Add member to workspace",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        responses: { "200": { description: "OK" } },
+      },
+    },
+    "/api/v1/workspaces/{id}/papers": {
+      get: {
+        tags: ["Workspaces"],
+        summary: "Get papers in workspace",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        responses: { "200": { description: "OK" } },
+      },
+      post: {
+        tags: ["Workspaces"],
+        summary: "Add paper to workspace",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        responses: { "201": { description: "Created" } },
+      },
+    },
+    "/api/v1/workspaces/{id}/papers/{paperId}/pdf": {
+      post: {
+        tags: ["Workspaces"],
+        summary: "Upload PDF for a paper",
+        parameters: [
+          { name: "id", in: "path", required: true, schema: { type: "string" } },
+          { name: "paperId", in: "path", required: true, schema: { type: "string" } }
+        ],
+        requestBody: {
+          content: {
+            "multipart/form-data": {
+              schema: {
+                type: "object",
+                properties: {
+                  pdf: {
+                    type: "string",
+                    format: "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        responses: { "200": { description: "OK" } },
+      },
+    },
+    "/api/v1/workspaces/{id}/notes": {
+      get: {
+        tags: ["Workspaces"],
+        summary: "Get notes in workspace",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        responses: { "200": { description: "OK" } },
+      },
+      post: {
+        tags: ["Workspaces"],
+        summary: "Create note in workspace",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        responses: { "201": { description: "Created" } },
+      },
+    },
+    "/api/v1/workspaces/{id}/alerts": {
+      get: {
+        tags: ["Workspaces"],
+        summary: "Get alerts in workspace",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        responses: { "200": { description: "OK" } },
+      },
+      post: {
+        tags: ["Workspaces"],
+        summary: "Create alert in workspace",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        responses: { "201": { description: "Created" } },
       },
     },
   },

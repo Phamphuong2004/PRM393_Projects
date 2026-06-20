@@ -17,6 +17,7 @@ export interface IPaper extends Document {
   keywords: mongoose.Types.ObjectId[];
   topics: mongoose.Types.ObjectId[];
   source: string;
+  pdfUrl?: string;
   lastSyncedAt?: Date;
 }
 
@@ -78,6 +79,7 @@ const paperSchema = new Schema<IPaper>(
       },
     ],
     source: String,
+    pdfUrl: String,
     lastSyncedAt: Date,
   },
   {

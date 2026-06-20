@@ -18,3 +18,8 @@ export {
   default as PublicationTrend,
   type IPublicationTrend,
 } from "./PublicationTrend";
+export { default as Workspace, type IWorkspace, type IWorkspaceMember } from "./Workspace";
+export { default as WorkspacePaper, type IWorkspacePaper } from "./WorkspacePaper";
+export { default as WorkspaceNote, type IWorkspaceNote } from "./WorkspaceNote";
+export { default as WorkspaceAlert, type IWorkspaceAlert } from "./WorkspaceAlert";
+
