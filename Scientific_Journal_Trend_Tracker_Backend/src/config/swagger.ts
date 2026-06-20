@@ -1064,8 +1064,7 @@ const swaggerSpec = {
                 properties: {
                   name: { type: "string", example: "AI in Medical Imaging" },
                   description: { type: "string", example: "Workspace theo dõi paper và trend AI y tế" },
-                  visibility: { type: "string", example: "team" },
-                  plan: { type: "string", example: "free" }
+                  visibility: { type: "string", example: "team" }
                 }
               }
             }

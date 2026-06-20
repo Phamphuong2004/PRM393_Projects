@@ -44,6 +44,7 @@ export class WorkspaceService {
 
   static async getWorkspaceById(workspaceId: string, userId: string) {
     const { workspace, role } = await this.checkRole(workspaceId, userId, ["owner", "editor", "viewer"]);
+    await workspace.populate("members.user", "fullName email avatar");
     const memberCount = workspace.members.length;
     const paperCount = await WorkspacePaper.countDocuments({ workspace: workspaceId });
     const noteCount = await WorkspaceNote.countDocuments({ workspace: workspaceId });

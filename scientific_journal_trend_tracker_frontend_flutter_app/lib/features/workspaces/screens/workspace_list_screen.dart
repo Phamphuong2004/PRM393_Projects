@@ -9,52 +9,77 @@ class WorkspaceListScreen extends ConsumerWidget {
   void _showCreateDialog(BuildContext context, WidgetRef ref) {
     final nameController = TextEditingController();
     final descController = TextEditingController();
+    String selectedVisibility = 'team';
 
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: const Text('Create Workspace', style: TextStyle(fontWeight: FontWeight.bold)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Workspace Name',
-                  border: OutlineInputBorder(),
-                ),
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Create Workspace', style: TextStyle(fontWeight: FontWeight.bold)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Workspace Name',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: descController,
+                    decoration: const InputDecoration(
+                      labelText: 'Description',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: selectedVisibility,
+                    decoration: const InputDecoration(
+                      labelText: 'Visibility',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'private', child: Text('Private')),
+                      DropdownMenuItem(value: 'team', child: Text('Team')),
+                      DropdownMenuItem(value: 'public', child: Text('Public')),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() {
+                          selectedVisibility = value;
+                        });
+                      }
+                    },
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: descController,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
-                  border: OutlineInputBorder(),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
                 ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final name = nameController.text.trim();
-                if (name.isNotEmpty) {
-                  Navigator.pop(context);
-                  await ref.read(createWorkspaceStateProvider.notifier).createWorkspace(
-                    name, 
-                    descController.text.trim(), 
-                    'team'
-                  );
-                }
-              },
-              child: const Text('Create'),
-            ),
-          ],
+                ElevatedButton(
+                  onPressed: () async {
+                    final name = nameController.text.trim();
+                    if (name.isNotEmpty) {
+                      Navigator.pop(context);
+                      await ref.read(createWorkspaceStateProvider.notifier).createWorkspace(
+                        name, 
+                        descController.text.trim(), 
+                        selectedVisibility
+                      );
+                    }
+                  },
+                  child: const Text('Create'),
+                ),
+              ],
+            );
+          }
         );
       },
     );
@@ -119,7 +144,7 @@ class WorkspaceListScreen extends ConsumerWidget {
                     child: InkWell(
                       borderRadius: BorderRadius.circular(16),
                       onTap: () {
-                        // TODO: Navigate to detail
+                        context.push('/app/workspaces/${workspace.id}');
                       },
                       child: Padding(
                         padding: const EdgeInsets.all(20),

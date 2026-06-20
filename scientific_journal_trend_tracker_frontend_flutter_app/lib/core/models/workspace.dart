@@ -3,7 +3,6 @@ class Workspace {
   final String name;
   final String description;
   final String visibility;
-  final String plan;
   final dynamic owner;
   final List<dynamic> members;
 
@@ -12,7 +11,6 @@ class Workspace {
     required this.name,
     required this.description,
     required this.visibility,
-    required this.plan,
     this.owner,
     this.members = const [],
   });
@@ -23,7 +21,6 @@ class Workspace {
       name: json['name'] ?? '',
       description: json['description'] ?? '',
       visibility: json['visibility'] ?? 'team',
-      plan: json['plan'] ?? 'free',
       owner: json['owner'],
       members: json['members'] ?? [],
     );
