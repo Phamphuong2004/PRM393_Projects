@@ -13,10 +13,21 @@ class FollowRepository {
 
   FollowRepository(this._dio);
 
+  // BE returns a bare JSON array (e.g. user.follows / user.trackedRuns), but some
+  // endpoints may wrap it. Handle both shapes safely.
+  List<dynamic> _asList(dynamic data) {
+    if (data is List) return data;
+    if (data is Map) {
+      final inner = data['data'] ?? data['follows'] ?? data['trackedRuns'];
+      if (inner is List) return inner;
+    }
+    return [];
+  }
+
   Future<List<dynamic>> getFollows() async {
     try {
       final response = await _dio.get(ApiConstants.follows);
-      return (response.data['data'] as List?) ?? [];
+      return _asList(response.data);
     } catch (e) {
       rethrow;
     }
@@ -45,7 +56,7 @@ class FollowRepository {
   Future<List<dynamic>> getTrackedRuns() async {
     try {
       final response = await _dio.get('${ApiConstants.follows}/tracked-runs');
-      return (response.data['data'] as List?) ?? [];
+      return _asList(response.data);
     } catch (e) {
       rethrow;
     }
