@@ -122,7 +122,7 @@ class WorkspacePapersTab extends ConsumerWidget {
 
   void _showAddPaperDialog(BuildContext context, WidgetRef ref) {
     context.push('/app/search?workspaceId=$workspaceId').then((_) {
-      // Refresh papers when coming back
+      // Force a fresh fetch when returning from search
       ref.invalidate(workspacePapersProvider(workspaceId));
     });
   }
@@ -153,32 +153,35 @@ class WorkspacePapersTab extends ConsumerWidget {
               if (papers.isEmpty) {
                 return _buildEmptyState(Icons.description_outlined, 'No papers yet', 'Click the button above to add a paper');
               }
-              return ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: papers.length,
-                itemBuilder: (context, index) {
-                  final wp = papers[index];
-                  final paper = wp['paper'] ?? {};
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200)),
-                    elevation: 0,
-                    child: ListTile(
-                      leading: const Icon(Icons.description, color: Colors.blue),
-                      title: Text(paper['title'] ?? 'Unknown Title', style: const TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Text('Added at: ${wp['addedAt']?.toString().substring(0, 10) ?? ''}'),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.upload_file),
-                        tooltip: 'Upload PDF',
-                        onPressed: () {
-                          if (paper['_id'] != null) {
-                            context.push('/app/workspaces/$workspaceId/papers/${paper['_id']}/upload-pdf');
-                          }
-                        },
+              return RefreshIndicator(
+                onRefresh: () async => ref.invalidate(workspacePapersProvider(workspaceId)),
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: papers.length,
+                  itemBuilder: (context, index) {
+                    final wp = papers[index];
+                    final paper = wp['paper'] ?? {};
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200)),
+                      elevation: 0,
+                      child: ListTile(
+                        leading: const Icon(Icons.description, color: Colors.blue),
+                        title: Text(paper['title'] ?? 'Unknown Title', style: const TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Text('Added at: ${wp['addedAt']?.toString().substring(0, 10) ?? ''}'),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.upload_file),
+                          tooltip: 'Upload PDF',
+                          onPressed: () {
+                            if (paper['_id'] != null) {
+                              context.push('/app/workspaces/$workspaceId/papers/${paper['_id']}/upload-pdf');
+                            }
+                          },
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),

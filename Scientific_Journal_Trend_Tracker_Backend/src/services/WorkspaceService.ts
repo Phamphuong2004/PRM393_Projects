@@ -46,10 +46,18 @@ export class WorkspaceService {
     const { workspace, role } = await this.checkRole(workspaceId, userId, ["owner", "editor", "viewer"]);
     await workspace.populate("members.user", "fullName email avatar");
     const memberCount = workspace.members.length;
-    const paperCount = await WorkspacePaper.countDocuments({ workspace: workspaceId });
-    const noteCount = await WorkspaceNote.countDocuments({ workspace: workspaceId });
 
-    return { workspace, role, stats: { memberCount, paperCount, noteCount } };
+    const [papers, notes] = await Promise.all([
+      WorkspacePaper.find({ workspace: workspaceId }).populate("paper", "title doi publicationYear authors").lean(),
+      WorkspaceNote.countDocuments({ workspace: workspaceId }),
+    ]);
+
+    return {
+      workspace,
+      role,
+      papers,
+      stats: { memberCount, paperCount: papers.length, noteCount: notes },
+    };
   }
 
   static async addMember(workspaceId: string, ownerId: string, email: string, role: string) {

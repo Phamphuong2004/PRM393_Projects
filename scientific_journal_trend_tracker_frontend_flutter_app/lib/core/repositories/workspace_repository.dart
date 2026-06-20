@@ -123,7 +123,10 @@ class WorkspaceRepository {
 
   Future<void> createWorkspaceNote(String id, String paperId, String content) async {
     try {
-      await _dio.post('${ApiConstants.workspaces}/$id/notes', data: {'paperId': paperId, 'content': content});
+      final data = <String, dynamic>{'content': content};
+      final mongoIdRe = RegExp(r'^[0-9a-fA-F]{24}$');
+      if (mongoIdRe.hasMatch(paperId)) data['paperId'] = paperId;
+      await _dio.post('${ApiConstants.workspaces}/$id/notes', data: data);
     } catch (e) {
       rethrow;
     }
