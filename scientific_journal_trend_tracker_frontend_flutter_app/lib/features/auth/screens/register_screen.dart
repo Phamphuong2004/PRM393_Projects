@@ -25,6 +25,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   String? _selectedInstitution;
   bool _loadingInstitutions = true;
   bool _isLoading = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
   String? _errorMessage;
 
   @override
@@ -317,28 +319,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 20),
-              _buildTextField(
-                controller: _passwordController,
-                label: 'Password *',
-                hint: 'Create a strong password',
-                icon: Icons.lock_outline_rounded,
-                obscureText: true,
-                onChanged: (value) =>
-                    setState(() => _passwordScore = _calcPasswordScore(value)),
-              ),
+              _buildPasswordField(),
               if (_passwordController.text.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 _buildPasswordStrength(),
               ],
               const SizedBox(height: 20),
-              _buildTextField(
-                controller: _confirmPasswordController,
-                label: 'Confirm Password *',
-                hint: 'Re-enter your password',
-                icon: Icons.lock_reset_rounded,
-                obscureText: true,
-                onChanged: (_) => setState(() {}),
-              ),
+              _buildConfirmPasswordField(),
               if (_confirmPasswordController.text.isNotEmpty &&
                   _confirmPasswordController.text != _passwordController.text) ...[
                 const SizedBox(height: 8),
@@ -558,6 +545,78 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           decoration: InputDecoration(
             prefixIcon: Icon(icon, color: AppColors.textSecondary),
             hintText: hint,
+            hintStyle: TextStyle(color: AppColors.textLight.withValues(alpha: 0.8)),
+            filled: true,
+            fillColor: AppColors.bg,
+            contentPadding: const EdgeInsets.all(20),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: AppColors.primary, width: 2),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPasswordField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Password *', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.textPrimary)),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _passwordController,
+          obscureText: _obscurePassword,
+          onChanged: (value) => setState(() => _passwordScore = _calcPasswordScore(value)),
+          style: const TextStyle(fontWeight: FontWeight.w500),
+          decoration: InputDecoration(
+            prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.textSecondary),
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                color: AppColors.textSecondary,
+              ),
+              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+            ),
+            hintText: 'Create a strong password',
+            hintStyle: TextStyle(color: AppColors.textLight.withValues(alpha: 0.8)),
+            filled: true,
+            fillColor: AppColors.bg,
+            contentPadding: const EdgeInsets.all(20),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: AppColors.primary, width: 2),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildConfirmPasswordField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Confirm Password *', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.textPrimary)),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _confirmPasswordController,
+          obscureText: _obscureConfirmPassword,
+          onChanged: (_) => setState(() {}),
+          style: const TextStyle(fontWeight: FontWeight.w500),
+          decoration: InputDecoration(
+            prefixIcon: const Icon(Icons.lock_reset_rounded, color: AppColors.textSecondary),
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscureConfirmPassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                color: AppColors.textSecondary,
+              ),
+              onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+            ),
+            hintText: 'Re-enter your password',
             hintStyle: TextStyle(color: AppColors.textLight.withValues(alpha: 0.8)),
             filled: true,
             fillColor: AppColors.bg,

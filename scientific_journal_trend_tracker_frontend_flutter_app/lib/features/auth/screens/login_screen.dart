@@ -15,6 +15,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _obscurePassword = true;
   String? _errorMessage;
 
   Future<void> _handleLogin() async {
@@ -246,13 +247,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 24),
-              _buildTextField(
-                controller: _passwordController,
-                label: 'Password',
-                hint: 'Enter your password',
-                icon: Icons.lock_outline_rounded,
-                obscureText: true,
-              ),
+              _buildPasswordField(),
               
               const SizedBox(height: 16),
               Align(
@@ -327,6 +322,41 @@ class _LoginScreenState extends State<LoginScreen> {
           decoration: InputDecoration(
             prefixIcon: Icon(icon, color: AppColors.textSecondary),
             hintText: hint,
+            hintStyle: TextStyle(color: AppColors.textLight.withValues(alpha: 0.8)),
+            filled: true,
+            fillColor: AppColors.bg,
+            contentPadding: const EdgeInsets.all(20),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: AppColors.primary, width: 2),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPasswordField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Password', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.textPrimary)),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _passwordController,
+          obscureText: _obscurePassword,
+          style: const TextStyle(fontWeight: FontWeight.w500),
+          decoration: InputDecoration(
+            prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.textSecondary),
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                color: AppColors.textSecondary,
+              ),
+              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+            ),
+            hintText: 'Enter your password',
             hintStyle: TextStyle(color: AppColors.textLight.withValues(alpha: 0.8)),
             filled: true,
             fillColor: AppColors.bg,
