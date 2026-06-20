@@ -63,4 +63,7 @@ class ApiConstants {
 
   // Sync Logs
   static const String syncLogs = '/api/sync-logs';
+
+  // Workspaces
+  static const String workspaces = '/api/v1/workspaces';
 }

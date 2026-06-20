@@ -108,6 +108,7 @@ class DashboardShell extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
               children: [
                 _buildSideMenuItem(context, 'Dashboard', Icons.dashboard_outlined, Icons.dashboard_rounded, '/app', location),
+                _buildSideMenuItem(context, 'Workspaces', Icons.workspaces_outline, Icons.workspaces, '/app/workspaces', location),
                 _buildSideMenuItem(context, 'Search Papers', Icons.search_outlined, Icons.search_rounded, '/app/search', location),
                 _buildSideMenuItem(context, 'Trending', Icons.trending_up_rounded, Icons.trending_up_rounded, '/app/trending', location),
                 _buildSideMenuItem(context, 'Bookmarks', Icons.bookmark_outline_rounded, Icons.bookmark_rounded, '/app/bookmarks', location),
@@ -226,6 +227,7 @@ class DashboardShell extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               children: [
+                _buildDrawerItem(context, icon: Icons.workspaces_outline, activeIcon: Icons.workspaces, title: 'Workspaces', path: '/app/workspaces'),
                 _buildDrawerItem(context, icon: Icons.people_outline_rounded, activeIcon: Icons.people_rounded, title: 'Following', path: '/app/following'),
                 _buildDrawerItem(context, icon: Icons.person_outline_rounded, activeIcon: Icons.person_rounded, title: 'Profile Settings', path: '/app/profile'),
                 _buildDrawerItem(context, icon: Icons.people_outline_rounded, activeIcon: Icons.people_rounded, title: 'Authors', path: '/app/authors'),
@@ -286,12 +288,14 @@ class DashboardShell extends StatelessWidget {
   Widget _buildModernBottomNav(BuildContext context) {
     final String location = GoRouterState.of(context).matchedLocation;
     int currentIndex = 0;
-    if (location.startsWith('/app/search')) {
+    if (location.startsWith('/app/workspaces')) {
       currentIndex = 1;
-    } else if (location.startsWith('/app/trending')) {
+    } else if (location.startsWith('/app/search')) {
       currentIndex = 2;
-    } else if (location.startsWith('/app/bookmarks')) {
+    } else if (location.startsWith('/app/trending')) {
       currentIndex = 3;
+    } else if (location.startsWith('/app/bookmarks')) {
+      currentIndex = 4;
     }
 
     return Container(
@@ -306,13 +310,15 @@ class DashboardShell extends StatelessWidget {
         onDestinationSelected: (index) {
           switch (index) {
             case 0: context.go('/app'); break;
-            case 1: context.go('/app/search'); break;
-            case 2: context.go('/app/trending'); break;
-            case 3: context.go('/app/bookmarks'); break;
+            case 1: context.go('/app/workspaces'); break;
+            case 2: context.go('/app/search'); break;
+            case 3: context.go('/app/trending'); break;
+            case 4: context.go('/app/bookmarks'); break;
           }
         },
         destinations: const [
           NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard_rounded), label: 'Dashboard'),
+          NavigationDestination(icon: Icon(Icons.workspaces_outline), selectedIcon: Icon(Icons.workspaces), label: 'Workspaces'),
           NavigationDestination(icon: Icon(Icons.search_outlined), selectedIcon: Icon(Icons.search_rounded), label: 'Search'),
           NavigationDestination(icon: Icon(Icons.trending_up_rounded), selectedIcon: Icon(Icons.trending_up_rounded), label: 'Trending'),
           NavigationDestination(icon: Icon(Icons.bookmark_outline_rounded), selectedIcon: Icon(Icons.bookmark_rounded), label: 'Bookmarks'),

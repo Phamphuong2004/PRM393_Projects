@@ -25,6 +25,7 @@ import dashboardRoutes from "./routes/dashboard";
 import adminRoutes from "./routes/admin";
 import authorsRoutes from "./routes/authors";
 import syncLogsRoutes from "./routes/syncLogs";
+import workspacesRoutes from "./routes/workspaces";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -127,6 +128,7 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/authors", authorsRoutes);
 app.use("/api/sync-logs", syncLogsRoutes);
+app.use("/api/v1/workspaces", workspacesRoutes);
 
 // API Documentation
 app.get("/api", (req, res) => {
