@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import '../providers/workspace_paper_provider.dart';
+import '../providers/workspace_detail_provider.dart';
 
 class UploadPdfScreen extends ConsumerStatefulWidget {
   final String workspaceId;
@@ -96,7 +97,7 @@ class _UploadPdfScreenState extends ConsumerState<UploadPdfScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.pop(context);
+        Navigator.pop(context, true); // Pass true to indicate success
       }
     }
   }

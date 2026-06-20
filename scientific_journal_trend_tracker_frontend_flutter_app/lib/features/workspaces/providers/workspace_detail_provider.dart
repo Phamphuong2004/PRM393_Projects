@@ -8,9 +8,12 @@ final workspaceDetailProvider = FutureProvider.family<Map<String, dynamic>, Stri
 });
 
 final workspacePapersProvider = FutureProvider.family<List<dynamic>, String>((ref, id) async {
-  // Papers are now included in workspace detail response — reuse that call
-  final detail = await ref.watch(workspaceDetailProvider(id).future);
-  return detail['papers'] as List<dynamic>? ?? [];
+  // Use the dedicated /papers endpoint: it returns the FULL paper object
+  // (including pdfUrl). The workspace detail response only returns a trimmed
+  // paper projection without pdfUrl, so uploaded PDFs wouldn't show up there.
+  final repository = ref.watch(workspaceRepositoryProvider);
+  final res = await repository.getWorkspacePapers(id);
+  return res['data'] as List<dynamic>? ?? [];
 });
 
 final workspaceNotesProvider = FutureProvider.family<List<dynamic>, String>((ref, id) async {
