@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express from "express";
+import path from "path";
 import cors from "cors";
 import helmet from "helmet";
 import { connectDB } from "./config/database";
@@ -46,6 +47,9 @@ app.use(
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve uploaded files (PDFs, etc.) as static assets
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 // Request logging middleware
 app.use(requestLogger);

@@ -152,29 +152,28 @@ class WorkspaceRepository {
   Future<Map<String, dynamic>> uploadPaperPdf({
     required String workspaceId,
     required String paperId,
-    required File pdfFile,
+    File? file,
+    List<int>? bytes,
+    required String fileName,
   }) async {
     try {
-      String fileName = pdfFile.path.split('/').last;
-      if (!fileName.toLowerCase().endsWith('.pdf')) {
-        throw Exception('Only PDF files are allowed');
+      MultipartFile multipart;
+      if (bytes != null) {
+        // Web or when path is unavailable: use bytes
+        multipart = MultipartFile.fromBytes(bytes, filename: fileName);
+      } else if (file != null) {
+        // Mobile/Desktop: use file path
+        multipart = await MultipartFile.fromFile(file.path, filename: fileName);
+      } else {
+        throw Exception('No file data provided.');
       }
 
-      FormData formData = FormData.fromMap({
-        "pdf": await MultipartFile.fromFile(
-          pdfFile.path,
-          filename: fileName,
-        ),
-      });
-
+      final formData = FormData.fromMap({'pdf': multipart});
       final response = await _dio.post(
         '${ApiConstants.workspaces}/$workspaceId/papers/$paperId/pdf',
         data: formData,
-        options: Options(
-          contentType: 'multipart/form-data',
-        ),
+        options: Options(contentType: 'multipart/form-data'),
       );
-      
       return response.data;
     } on DioException catch (e) {
       if (e.response != null) {

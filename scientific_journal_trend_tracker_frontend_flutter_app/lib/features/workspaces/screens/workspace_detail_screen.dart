@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../providers/workspace_detail_provider.dart';
 import '../../../core/repositories/workspace_repository.dart';
-import 'package:go_router/go_router.dart';
+import 'pdf_viewer_screen.dart';
 
 class WorkspaceDetailScreen extends ConsumerWidget {
   final String workspaceId;
@@ -161,22 +162,97 @@ class WorkspacePapersTab extends ConsumerWidget {
                   itemBuilder: (context, index) {
                     final wp = papers[index];
                     final paper = wp['paper'] ?? {};
+                    final pdfUrl = paper['pdfUrl']?.toString();
+                    final hasPdf = pdfUrl != null && pdfUrl.isNotEmpty;
+
                     return Card(
                       margin: const EdgeInsets.only(bottom: 12),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200)),
                       elevation: 0,
-                      child: ListTile(
-                        leading: const Icon(Icons.description, color: Colors.blue),
-                        title: Text(paper['title'] ?? 'Unknown Title', style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text('Added at: ${wp['addedAt']?.toString().substring(0, 10) ?? ''}'),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.upload_file),
-                          tooltip: 'Upload PDF',
-                          onPressed: () {
-                            if (paper['_id'] != null) {
-                              context.push('/app/workspaces/$workspaceId/papers/${paper['_id']}/upload-pdf');
-                            }
-                          },
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.description, color: Colors.blue),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    paper['title'] ?? 'Unknown Title',
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (hasPdf)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red.shade50,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: Colors.red.shade200),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.picture_as_pdf, size: 12, color: Colors.red.shade700),
+                                        const SizedBox(width: 4),
+                                        Text('PDF', style: TextStyle(fontSize: 11, color: Colors.red.shade700, fontWeight: FontWeight.bold)),
+                                      ],
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Text(
+                                  'Added: ${wp['addedAt']?.toString().substring(0, 10) ?? ''}',
+                                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                                ),
+                                const Spacer(),
+                                if (hasPdf)
+                                  TextButton.icon(
+                                    onPressed: () {
+                                      final fullUrl = 'https://prm393-projects-journal-tracking.up.railway.app$pdfUrl';
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => PdfViewerScreen(
+                                            pdfUrl: fullUrl,
+                                            title: paper['title'] ?? 'PDF Viewer',
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    icon: const Icon(Icons.picture_as_pdf, size: 14),
+                                    label: const Text('View PDF'),
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: Colors.red.shade700,
+                                      padding: EdgeInsets.zero,
+                                      minimumSize: const Size(0, 32),
+                                    ),
+                                  )
+                                else
+                                  TextButton.icon(
+                                    onPressed: () {
+                                      if (paper['_id'] != null) {
+                                        context.push('/app/workspaces/$workspaceId/papers/${paper['_id']}/upload-pdf');
+                                      }
+                                    },
+                                    icon: const Icon(Icons.upload_file, size: 14),
+                                    label: const Text('Upload PDF'),
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: Colors.blue,
+                                      padding: EdgeInsets.zero,
+                                      minimumSize: const Size(0, 32),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
                     );
