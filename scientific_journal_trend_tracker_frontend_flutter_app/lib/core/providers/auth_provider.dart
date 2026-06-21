@@ -35,10 +35,20 @@ class AuthProvider with ChangeNotifier {
         _user = userData;
       }
     } catch (e) {
-      _token = null;
-      _user = null;
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('token');
+      bool isUnauthorized = false;
+      if (e is ApiException && e.statusCode == 401) {
+        isUnauthorized = true;
+      } else if (e.toString().toLowerCase().contains('unauthorized') || e.toString().contains('401')) {
+        isUnauthorized = true;
+      }
+
+      if (isUnauthorized) {
+        _token = null;
+        _user = null;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('token');
+      }
+      // If network timeout or backend sleep, keep the token so user stays logged in
     } finally {
       _isLoading = false;
       notifyListeners();
