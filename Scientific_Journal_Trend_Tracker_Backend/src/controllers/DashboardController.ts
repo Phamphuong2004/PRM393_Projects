@@ -13,7 +13,13 @@ export class DashboardController {
       const cacheKey = `dashboard:stats${year ? ':' + year : ''}`;
       
       // Try to fetch from Redis
-      const cachedData = await redisClient.get(cacheKey);
+      let cachedData = null;
+      try {
+        cachedData = await redisClient.get(cacheKey);
+      } catch (redisError) {
+        console.warn("Redis GET error (falling back to DB):", redisError);
+      }
+
       if (cachedData) {
         res.json(JSON.parse(cachedData));
         return;
@@ -82,7 +88,11 @@ export class DashboardController {
       };
 
       // Cache for 1 hour
-      await redisClient.setex(cacheKey, 3600, JSON.stringify(responseData));
+      try {
+        await redisClient.setex(cacheKey, 3600, JSON.stringify(responseData));
+      } catch (redisError) {
+        console.warn("Redis SET error:", redisError);
+      }
 
       res.json(responseData);
     } catch (error) {

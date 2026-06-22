@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/workspace_detail_provider.dart';
 import '../../../core/repositories/workspace_repository.dart';
+import '../../../core/constants/api_constants.dart';
 import 'pdf_viewer_screen.dart';
 
 class WorkspaceDetailScreen extends ConsumerWidget {
@@ -20,6 +21,30 @@ class WorkspaceDetailScreen extends ConsumerWidget {
         title: const Text('Workspace Details', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          detailAsync.when(
+            data: (data) {
+              if (data['role'] == 'owner') {
+                return PopupMenuButton<String>(
+                  onSelected: (value) {
+                    if (value == 'edit') {
+                      _showEditWorkspaceDialog(context, ref, data['workspace']);
+                    } else if (value == 'delete') {
+                      _showDeleteWorkspaceDialog(context, ref, data['workspace']);
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(value: 'edit', child: Row(children: [Icon(Icons.edit, size: 20), SizedBox(width: 8), Text('Edit Workspace')])),
+                    const PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete, color: Colors.red, size: 20), SizedBox(width: 8), Text('Delete Workspace', style: TextStyle(color: Colors.red))])),
+                  ],
+                );
+              }
+              return const SizedBox.shrink();
+            },
+            loading: () => const SizedBox.shrink(),
+            error: (_, ___) => const SizedBox.shrink(),
+          ),
+        ],
       ),
       body: detailAsync.when(
         data: (data) {
@@ -98,10 +123,10 @@ class WorkspaceDetailScreen extends ConsumerWidget {
                 Expanded(
                   child: TabBarView(
                     children: [
-                      WorkspacePapersTab(workspaceId: workspaceId),
-                      WorkspaceNotesTab(workspaceId: workspaceId),
-                      WorkspaceMembersTab(workspaceId: workspaceId, members: members),
-                      WorkspaceAlertsTab(workspaceId: workspaceId),
+                      WorkspacePapersTab(workspaceId: workspaceId, role: role),
+                      WorkspaceNotesTab(workspaceId: workspaceId, role: role),
+                      WorkspaceMembersTab(workspaceId: workspaceId, members: members, role: role),
+                      WorkspaceAlertsTab(workspaceId: workspaceId, role: role),
                     ],
                   ),
                 ),
@@ -114,18 +139,119 @@ class WorkspaceDetailScreen extends ConsumerWidget {
       ),
     );
   }
+
+  void _showEditWorkspaceDialog(BuildContext context, WidgetRef ref, dynamic workspace) {
+    final nameCtrl = TextEditingController(text: workspace['name']);
+    final descCtrl = TextEditingController(text: workspace['description']);
+    String visibility = workspace['visibility'] ?? 'team';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Edit Workspace'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Name', border: OutlineInputBorder())),
+            const SizedBox(height: 16),
+            TextField(controller: descCtrl, decoration: const InputDecoration(labelText: 'Description', border: OutlineInputBorder()), maxLines: 2),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              value: visibility,
+              decoration: const InputDecoration(labelText: 'Visibility', border: OutlineInputBorder()),
+              items: const [
+                DropdownMenuItem(value: 'team', child: Text('Team')),
+                DropdownMenuItem(value: 'private', child: Text('Private')),
+              ],
+              onChanged: (val) => visibility = val ?? 'team',
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              if (nameCtrl.text.isNotEmpty) {
+                try {
+                  await ref.read(workspaceRepositoryProvider).updateWorkspace(workspaceId, name: nameCtrl.text, description: descCtrl.text, visibility: visibility);
+                  ref.invalidate(workspaceDetailProvider(workspaceId));
+                  if (context.mounted) Navigator.pop(ctx);
+                } catch (e) {
+                  if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                }
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteWorkspaceDialog(BuildContext context, WidgetRef ref, dynamic workspace) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Workspace', style: TextStyle(color: Colors.red)),
+        content: Text('Are you sure you want to delete "${workspace['name']}"? This will delete all associated papers, notes, and alerts. This action cannot be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            onPressed: () async {
+              try {
+                await ref.read(workspaceRepositoryProvider).deleteWorkspace(workspaceId);
+                if (context.mounted) {
+                  Navigator.pop(ctx);
+                  context.go('/app/workspaces');
+                }
+              } catch (e) {
+                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+              }
+            },
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // ======================= PAPERS TAB =======================
 class WorkspacePapersTab extends ConsumerWidget {
   final String workspaceId;
-  const WorkspacePapersTab({super.key, required this.workspaceId});
+  final String role;
+  const WorkspacePapersTab({super.key, required this.workspaceId, required this.role});
 
   void _showAddPaperDialog(BuildContext context, WidgetRef ref) {
     context.push('/app/search?workspaceId=$workspaceId').then((_) {
       // Force a fresh fetch when returning from search
       ref.invalidate(workspacePapersProvider(workspaceId));
     });
+  }
+
+  void _removePaper(BuildContext context, WidgetRef ref, String paperId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remove Paper'),
+        content: const Text('Are you sure you want to remove this paper from the workspace?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Remove', style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await ref.read(workspaceRepositoryProvider).removePaperFromWorkspace(workspaceId, paperId);
+        ref.invalidate(workspacePapersProvider(workspaceId));
+        if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Paper removed')));
+      } catch (e) {
+        if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
   }
 
   @override
@@ -213,6 +339,14 @@ class WorkspacePapersTab extends ConsumerWidget {
                                   style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
                                 ),
                                 const Spacer(),
+                                if (role == 'owner' || role == 'editor')
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_outline, size: 20, color: Colors.grey),
+                                    onPressed: () => _removePaper(context, ref, paper['_id']),
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                  ),
+                                const SizedBox(width: 8),
                                 if (hasPdf)
                                   TextButton.icon(
                                     onPressed: () {
@@ -220,7 +354,7 @@ class WorkspacePapersTab extends ConsumerWidget {
                                       // records may still hold a relative /uploads path.
                                       final fullUrl = pdfUrl.startsWith('http')
                                           ? pdfUrl
-                                          : 'https://prm393-projects-journal-tracking.up.railway.app$pdfUrl';
+                                          : '${ApiConstants.baseUrl}$pdfUrl';
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
@@ -284,14 +418,15 @@ class WorkspacePapersTab extends ConsumerWidget {
 // ======================= NOTES TAB =======================
 class WorkspaceNotesTab extends ConsumerWidget {
   final String workspaceId;
-  const WorkspaceNotesTab({super.key, required this.workspaceId});
+  final String role;
+  const WorkspaceNotesTab({super.key, required this.workspaceId, required this.role});
 
-  void _showAddNoteDialog(BuildContext context, WidgetRef ref) {
-    final contentCtrl = TextEditingController();
+  void _showAddNoteDialog(BuildContext context, WidgetRef ref, {dynamic note}) {
+    final contentCtrl = TextEditingController(text: note?['content']);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Create Note'),
+        title: Text(note == null ? 'Create Note' : 'Edit Note'),
         content: TextField(
           controller: contentCtrl,
           maxLines: 3,
@@ -303,12 +438,15 @@ class WorkspaceNotesTab extends ConsumerWidget {
             onPressed: () async {
               if (contentCtrl.text.isNotEmpty) {
                 try {
-                  // Omit paperId for general workspace notes if allowed, or put empty string
-                  await ref.read(workspaceRepositoryProvider).createWorkspaceNote(workspaceId, '', contentCtrl.text.trim());
+                  if (note == null) {
+                    await ref.read(workspaceRepositoryProvider).createWorkspaceNote(workspaceId, '', contentCtrl.text.trim());
+                  } else {
+                    await ref.read(workspaceRepositoryProvider).updateWorkspaceNote(workspaceId, note['_id'], contentCtrl.text.trim());
+                  }
                   ref.invalidate(workspaceNotesProvider(workspaceId));
-                  Navigator.pop(ctx);
+                  if (context.mounted) Navigator.pop(ctx);
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                  if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
                 }
               }
             },
@@ -317,6 +455,29 @@ class WorkspaceNotesTab extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  void _deleteNote(BuildContext context, WidgetRef ref, String noteId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Note'),
+        content: const Text('Are you sure you want to delete this note?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete', style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await ref.read(workspaceRepositoryProvider).deleteWorkspaceNote(workspaceId, noteId);
+        ref.invalidate(workspaceNotesProvider(workspaceId));
+      } catch (e) {
+        if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
   }
 
   @override
@@ -358,6 +519,13 @@ class WorkspaceNotesTab extends ConsumerWidget {
                       leading: const Icon(Icons.note, color: Colors.orange),
                       title: Text(note['content'] ?? 'Empty Note'),
                       subtitle: Text('By: ${note['user']?['fullName'] ?? 'User'}'),
+                      trailing: (role == 'owner' || role == 'editor') ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(icon: const Icon(Icons.edit, size: 20), onPressed: () => _showAddNoteDialog(context, ref, note: note)),
+                          IconButton(icon: const Icon(Icons.delete, size: 20, color: Colors.red), onPressed: () => _deleteNote(context, ref, note['_id'])),
+                        ],
+                      ) : null,
                     ),
                   );
                 },
@@ -376,7 +544,31 @@ class WorkspaceNotesTab extends ConsumerWidget {
 class WorkspaceMembersTab extends ConsumerWidget {
   final String workspaceId;
   final List<dynamic> members;
-  const WorkspaceMembersTab({super.key, required this.workspaceId, required this.members});
+  final String role;
+  const WorkspaceMembersTab({super.key, required this.workspaceId, required this.members, required this.role});
+
+  void _removeMember(BuildContext context, WidgetRef ref, String userId, String name) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remove Member'),
+        content: Text('Are you sure you want to remove $name from the workspace?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Remove', style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await ref.read(workspaceRepositoryProvider).removeWorkspaceMember(workspaceId, userId);
+        ref.invalidate(workspaceDetailProvider(workspaceId));
+      } catch (e) {
+        if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
+  }
 
   void _showAddMemberDialog(BuildContext context, WidgetRef ref) {
     final emailCtrl = TextEditingController();
@@ -412,10 +604,12 @@ class WorkspaceMembersTab extends ConsumerWidget {
                 try {
                   await ref.read(workspaceRepositoryProvider).addWorkspaceMember(workspaceId, emailCtrl.text.trim(), selectedRole);
                   ref.invalidate(workspaceDetailProvider(workspaceId)); // refreshes members
-                  Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Member added!')));
+                  if (context.mounted) {
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Member added!')));
+                  }
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                  if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
                 }
               }
             },
@@ -467,6 +661,17 @@ class WorkspaceMembersTab extends ConsumerWidget {
                       style: const TextStyle(fontWeight: FontWeight.bold)
                     ),
                     subtitle: Text('Role: ${member['role'].toString().toUpperCase()}'),
+                    trailing: (role == 'owner' && member['role'] != 'owner')
+                      ? IconButton(
+                          icon: const Icon(Icons.person_remove, color: Colors.red, size: 20),
+                          onPressed: () => _removeMember(
+                            context, 
+                            ref, 
+                            member['user'] is Map ? member['user']['_id'] : member['user'],
+                            member['user'] is Map ? member['user']['fullName'] ?? 'User' : 'User'
+                          ),
+                        )
+                      : null,
                   ),
                 );
               },
@@ -480,7 +685,31 @@ class WorkspaceMembersTab extends ConsumerWidget {
 // ======================= ALERTS TAB =======================
 class WorkspaceAlertsTab extends ConsumerWidget {
   final String workspaceId;
-  const WorkspaceAlertsTab({super.key, required this.workspaceId});
+  final String role;
+  const WorkspaceAlertsTab({super.key, required this.workspaceId, required this.role});
+
+  void _deleteAlert(BuildContext context, WidgetRef ref, String alertId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Alert'),
+        content: const Text('Are you sure you want to delete this alert?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete', style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await ref.read(workspaceRepositoryProvider).deleteWorkspaceAlert(workspaceId, alertId);
+        ref.invalidate(workspaceAlertsProvider(workspaceId));
+      } catch (e) {
+        if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
+  }
 
   void _showAddAlertDialog(BuildContext context, WidgetRef ref) {
     final queryCtrl = TextEditingController();
@@ -516,9 +745,9 @@ class WorkspaceAlertsTab extends ConsumerWidget {
                 try {
                   await ref.read(workspaceRepositoryProvider).createWorkspaceAlert(workspaceId, queryCtrl.text.trim(), frequency);
                   ref.invalidate(workspaceAlertsProvider(workspaceId));
-                  Navigator.pop(ctx);
+                  if (context.mounted) Navigator.pop(ctx);
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                  if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
                 }
               }
             },
@@ -568,6 +797,10 @@ class WorkspaceAlertsTab extends ConsumerWidget {
                       leading: const Icon(Icons.notifications, color: Colors.redAccent),
                       title: Text(alert['query'] ?? 'Query', style: const TextStyle(fontWeight: FontWeight.bold)),
                       subtitle: Text('Frequency: ${alert['frequency']}'),
+                      trailing: (role == 'owner' || role == 'editor') ? IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                        onPressed: () => _deleteAlert(context, ref, alert['_id']),
+                      ) : null,
                     ),
                   );
                 },

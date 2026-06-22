@@ -34,6 +34,27 @@ export class WorkspaceService {
     return workspace;
   }
 
+  static async updateWorkspace(workspaceId: string, userId: string, data: any) {
+    await this.checkRole(workspaceId, userId, ["owner", "editor"]);
+    const workspace = await Workspace.findByIdAndUpdate(workspaceId, data, { new: true });
+    if (!workspace) throw { status: 404, message: "Workspace not found" };
+    return workspace;
+  }
+
+  static async deleteWorkspace(workspaceId: string, userId: string) {
+    await this.checkRole(workspaceId, userId, ["owner"]);
+    
+    // Cleanup related data
+    await Promise.all([
+      WorkspacePaper.deleteMany({ workspace: workspaceId }),
+      WorkspaceNote.deleteMany({ workspace: workspaceId }),
+      WorkspaceAlert.deleteMany({ workspace: workspaceId }),
+      Workspace.findByIdAndDelete(workspaceId)
+    ]);
+    
+    return { message: "Workspace and related data deleted successfully" };
+  }
+
   static async getWorkspaces(userId: string, page: number, limit: number) {
     const skip = (page - 1) * limit;
     const query = { $or: [{ owner: userId }, { "members.user": userId }] };
@@ -80,6 +101,18 @@ export class WorkspaceService {
     return workspace;
   }
 
+  static async removeMember(workspaceId: string, ownerId: string, userIdToRemove: string) {
+    const { workspace } = await this.checkRole(workspaceId, ownerId, ["owner"]);
+    
+    if (workspace.owner.toString() === userIdToRemove) {
+      throw { status: 400, message: "Cannot remove the owner of the workspace" };
+    }
+
+    workspace.members = workspace.members.filter((m) => m.user.toString() !== userIdToRemove);
+    await workspace.save();
+    return workspace;
+  }
+
   static async addPaper(workspaceId: string, userId: string, data: any) {
     await this.checkRole(workspaceId, userId, ["owner", "editor"]);
     let paperId = data.paperId;
@@ -112,6 +145,13 @@ export class WorkspaceService {
     });
     await wp.save();
     return wp;
+  }
+
+  static async removePaper(workspaceId: string, userId: string, paperId: string) {
+    await this.checkRole(workspaceId, userId, ["owner", "editor"]);
+    const result = await WorkspacePaper.findOneAndDelete({ workspace: workspaceId, paper: paperId });
+    if (!result) throw { status: 404, message: "Paper not found in this workspace" };
+    return { message: "Paper removed from workspace" };
   }
 
   static async getWorkspacePapers(workspaceId: string, userId: string, page: number, limit: number, tag?: string) {
@@ -160,6 +200,24 @@ export class WorkspaceService {
     return { data: notes, total, page, limit, pages: Math.ceil(total / limit) };
   }
 
+  static async updateNote(workspaceId: string, userId: string, noteId: string, data: any) {
+    await this.checkRole(workspaceId, userId, ["owner", "editor"]);
+    const note = await WorkspaceNote.findOneAndUpdate(
+      { _id: noteId, workspace: workspaceId },
+      data,
+      { new: true }
+    );
+    if (!note) throw { status: 404, message: "Note not found" };
+    return note;
+  }
+
+  static async deleteNote(workspaceId: string, userId: string, noteId: string) {
+    await this.checkRole(workspaceId, userId, ["owner", "editor"]);
+    const result = await WorkspaceNote.findOneAndDelete({ _id: noteId, workspace: workspaceId });
+    if (!result) throw { status: 404, message: "Note not found" };
+    return { message: "Note deleted" };
+  }
+
   static async createAlert(workspaceId: string, userId: string, data: any) {
     await this.checkRole(workspaceId, userId, ["owner", "editor"]);
     const alert = new WorkspaceAlert({ ...data, workspace: workspaceId, createdBy: userId });
@@ -170,5 +228,12 @@ export class WorkspaceService {
   static async getAlerts(workspaceId: string, userId: string) {
     await this.checkRole(workspaceId, userId, ["owner", "editor", "viewer"]);
     return await WorkspaceAlert.find({ workspace: workspaceId }).lean();
+  }
+
+  static async deleteAlert(workspaceId: string, userId: string, alertId: string) {
+    await this.checkRole(workspaceId, userId, ["owner", "editor"]);
+    const result = await WorkspaceAlert.findOneAndDelete({ _id: alertId, workspace: workspaceId });
+    if (!result) throw { status: 404, message: "Alert not found" };
+    return { message: "Alert deleted" };
   }
 }
