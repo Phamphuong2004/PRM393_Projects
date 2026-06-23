@@ -1,0 +1,21 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "scientific_journal_trend_tracker_frontend_flutter_app (Local Backend)",
+      "cwd": "scientific_journal_trend_tracker_frontend_flutter_app",
+      "request": "launch",
+      "type": "dart"
+    },
+    {
+      "name": "scientific_journal_trend_tracker_frontend_flutter_app (Railway Production)",
+      "cwd": "scientific_journal_trend_tracker_frontend_flutter_app",
+      "request": "launch",
+      "type": "dart",
+      "toolArgs": [
+        "--dart-define",
+        "API_BASE_URL=https://prm393-projects-journal-tracking.up.railway.app"
+      ]
+    }
+  ]
+}
