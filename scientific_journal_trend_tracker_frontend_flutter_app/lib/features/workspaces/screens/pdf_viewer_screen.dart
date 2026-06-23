@@ -70,7 +70,16 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
                   const SizedBox(height: 16),
                   const Text('Failed to load PDF', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
-                  Text(_error!, textAlign: TextAlign.center, style: const TextStyle(color: Colors.grey)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: Text(
+                      'There was an error opening this document. If this is an older record, the file might be missing - please try re-uploading the PDF.',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(_error ?? '', textAlign: TextAlign.center, style: TextStyle(color: Colors.red.shade300, fontSize: 12)),
                 ],
               ),
             ),

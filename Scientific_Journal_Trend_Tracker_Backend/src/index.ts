@@ -132,7 +132,7 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/authors", authorsRoutes);
 app.use("/api/sync-logs", syncLogsRoutes);
-app.use("/api/v1/workspaces", workspacesRoutes);
+app.use("/api/workspaces", workspacesRoutes);
 
 // API Documentation
 app.get("/api", (req, res) => {
@@ -156,6 +156,7 @@ app.get("/api", (req, res) => {
       admin: "/api/admin",
       authors: "/api/authors",
       "sync-logs": "/api/sync-logs",
+      workspaces: "/api/workspaces",
     },
   });
 });

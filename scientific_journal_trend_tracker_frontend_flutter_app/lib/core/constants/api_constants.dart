@@ -1,8 +1,8 @@
 class ApiConstants {
   // Thay đổi URL này tùy theo môi trường bạn đang chạy:
-  static const String baseUrl =
-      'https://prm393-projects-journal-tracking.up.railway.app'; // Dùng cho production (Railway)
-  // static const String baseUrl = 'http://localhost:5000'; // Dùng cho chạy Web hoặc Windows Desktop
+  // static const String baseUrl =
+  //     'https://prm393-projects-journal-tracking.up.railway.app'; // Dùng cho production (Railway)
+  static const String baseUrl = 'http://localhost:5000'; // Dùng cho chạy Web hoặc Windows Desktop
   // static const String baseUrl = 'http://10.0.2.2:5000'; // Dùng cho máy ảo Android Emulator
 
   // Auth
@@ -65,5 +65,5 @@ class ApiConstants {
   static const String syncLogs = '/api/sync-logs';
 
   // Workspaces
-  static const String workspaces = '/api/v1/workspaces';
+  static const String workspaces = '/api/workspaces';
 }

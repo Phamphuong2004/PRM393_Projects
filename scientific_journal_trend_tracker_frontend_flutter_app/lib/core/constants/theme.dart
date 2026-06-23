@@ -23,6 +23,12 @@ class AppColors {
   static const Color textLight = Color(0xFF94A3B8);
   static const Color border = Color(0xFFE2E8F0);
 
+  // Monthly Preview Card Colors
+  static const Color monthlyDone = Color(0xFF34D399); // Green
+  static const Color monthlyInProgress = Color(0xFFFBBF24); // Orange
+  static const Color monthlyOngoing = Color(0xFFFB7185); // Pink
+  static const Color monthlyWaiting = Color(0xFF38BDF8); // Light Blue
+
   // High-end Gradients
   static const LinearGradient gradientPrimary = LinearGradient(
     colors: [Color(0xFF1E3A8A), Color(0xFF3B82F6)],
