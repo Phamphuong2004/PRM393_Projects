@@ -12,6 +12,24 @@ export class WorkspaceController {
     }
   }
 
+  static async updateWorkspace(req: Request, res: Response) {
+    try {
+      const workspace = await WorkspaceService.updateWorkspace(req.params.id, req.userId as string, req.body);
+      res.json({ success: true, data: workspace });
+    } catch (error: any) {
+      res.status(error.status || 500).json({ success: false, message: error.message });
+    }
+  }
+
+  static async deleteWorkspace(req: Request, res: Response) {
+    try {
+      const result = await WorkspaceService.deleteWorkspace(req.params.id, req.userId as string);
+      res.json({ success: true, ...result });
+    } catch (error: any) {
+      res.status(error.status || 500).json({ success: false, message: error.message });
+    }
+  }
+
   static async getWorkspaces(req: Request, res: Response) {
     try {
       const page = parseInt(req.query.page as string) || 1;
@@ -42,10 +60,28 @@ export class WorkspaceController {
     }
   }
 
+  static async removeMember(req: Request, res: Response) {
+    try {
+      const workspace = await WorkspaceService.removeMember(req.params.id, req.userId as string, req.params.userId);
+      res.json({ success: true, data: workspace });
+    } catch (error: any) {
+      res.status(error.status || 500).json({ success: false, message: error.message });
+    }
+  }
+
   static async addPaper(req: Request, res: Response) {
     try {
       const wp = await WorkspaceService.addPaper(req.params.id, req.userId as string, req.body);
       res.status(201).json({ success: true, data: wp });
+    } catch (error: any) {
+      res.status(error.status || 500).json({ success: false, message: error.message });
+    }
+  }
+
+  static async removePaper(req: Request, res: Response) {
+    try {
+      const result = await WorkspaceService.removePaper(req.params.id, req.userId as string, req.params.paperId);
+      res.json({ success: true, ...result });
     } catch (error: any) {
       res.status(error.status || 500).json({ success: false, message: error.message });
     }
@@ -98,6 +134,24 @@ export class WorkspaceController {
     }
   }
 
+  static async updateNote(req: Request, res: Response) {
+    try {
+      const note = await WorkspaceService.updateNote(req.params.id, req.userId as string, req.params.noteId, req.body);
+      res.json({ success: true, data: note });
+    } catch (error: any) {
+      res.status(error.status || 500).json({ success: false, message: error.message });
+    }
+  }
+
+  static async deleteNote(req: Request, res: Response) {
+    try {
+      const result = await WorkspaceService.deleteNote(req.params.id, req.userId as string, req.params.noteId);
+      res.json({ success: true, ...result });
+    } catch (error: any) {
+      res.status(error.status || 500).json({ success: false, message: error.message });
+    }
+  }
+
   static async createAlert(req: Request, res: Response) {
     try {
       const alert = await WorkspaceService.createAlert(req.params.id, req.userId as string, req.body);
@@ -111,6 +165,15 @@ export class WorkspaceController {
     try {
       const alerts = await WorkspaceService.getAlerts(req.params.id, req.userId as string);
       res.json({ success: true, data: alerts });
+    } catch (error: any) {
+      res.status(error.status || 500).json({ success: false, message: error.message });
+    }
+  }
+
+  static async deleteAlert(req: Request, res: Response) {
+    try {
+      const result = await WorkspaceService.deleteAlert(req.params.id, req.userId as string, req.params.alertId);
+      res.json({ success: true, ...result });
     } catch (error: any) {
       res.status(error.status || 500).json({ success: false, message: error.message });
     }

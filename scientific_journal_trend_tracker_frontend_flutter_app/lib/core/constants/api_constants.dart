@@ -1,9 +1,30 @@
+import 'package:flutter/foundation.dart';
+
 class ApiConstants {
-  // Thay đổi URL này tùy theo môi trường bạn đang chạy:
-  static const String baseUrl =
-      'https://prm393-projects-journal-tracking.up.railway.app'; // Dùng cho production (Railway)
-  // static const String baseUrl = 'http://localhost:5000'; // Dùng cho chạy Web hoặc Windows Desktop
-  // static const String baseUrl = 'http://10.0.2.2:5000'; // Dùng cho máy ảo Android Emulator
+  // Đặt là true nếu chạy Local Backend, đặt là false nếu chạy Railway Backend (Production)
+  static const bool useLocal = true;
+
+  static String get baseUrl {
+    if (!useLocal) {
+      return 'https://prm393-projects-journal-tracking.up.railway.app';
+    }
+
+    // Tự động chọn địa chỉ Localhost phù hợp cho từng môi trường/thiết bị khi chạy nội bộ (Local)
+    if (kIsWeb) {
+      return 'http://localhost:5000'; // Web
+    }
+
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return 'http://10.0.2.2:5000'; // Máy ảo Android Emulator kết nối với localhost của máy chủ
+      case TargetPlatform.iOS:
+      case TargetPlatform.macOS:
+      case TargetPlatform.windows:
+      case TargetPlatform.linux:
+      default:
+        return 'http://localhost:5000'; // iOS Simulator, Desktop App, v.v.
+    }
+  }
 
   // Auth
   static const String login = '/api/auth/login';
@@ -65,5 +86,5 @@ class ApiConstants {
   static const String syncLogs = '/api/sync-logs';
 
   // Workspaces
-  static const String workspaces = '/api/v1/workspaces';
+  static const String workspaces = '/api/workspaces';
 }

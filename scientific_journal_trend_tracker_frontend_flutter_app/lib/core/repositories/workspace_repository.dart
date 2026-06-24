@@ -39,6 +39,36 @@ class WorkspaceRepository {
     }
   }
 
+  Future<Workspace> updateWorkspace(String id, {String? name, String? description, String? visibility}) async {
+    try {
+      final data = <String, dynamic>{};
+      if (name != null) data['name'] = name;
+      if (description != null) data['description'] = description;
+      if (visibility != null) data['visibility'] = visibility;
+
+      final response = await _dio.put('${ApiConstants.workspaces}/$id', data: data);
+      return Workspace.fromJson(response.data['data']);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> deleteWorkspace(String id) async {
+    try {
+      await _dio.delete('${ApiConstants.workspaces}/$id');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> removePaperFromWorkspace(String workspaceId, String paperId) async {
+    try {
+      await _dio.delete('${ApiConstants.workspaces}/$workspaceId/papers/$paperId');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<Map<String, dynamic>> getWorkspaceDetails(String id) async {
     try {
       final response = await _dio.get('${ApiConstants.workspaces}/$id');
@@ -112,6 +142,14 @@ class WorkspaceRepository {
     }
   }
 
+  Future<void> removeWorkspaceMember(String id, String userId) async {
+    try {
+      await _dio.delete('${ApiConstants.workspaces}/$id/members/$userId');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<Map<String, dynamic>> getWorkspaceNotes(String id) async {
     try {
       final response = await _dio.get('${ApiConstants.workspaces}/$id/notes');
@@ -132,6 +170,22 @@ class WorkspaceRepository {
     }
   }
 
+  Future<void> updateWorkspaceNote(String workspaceId, String noteId, String content) async {
+    try {
+      await _dio.put('${ApiConstants.workspaces}/$workspaceId/notes/$noteId', data: {'content': content});
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> deleteWorkspaceNote(String workspaceId, String noteId) async {
+    try {
+      await _dio.delete('${ApiConstants.workspaces}/$workspaceId/notes/$noteId');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<Map<String, dynamic>> getWorkspaceAlerts(String id) async {
     try {
       final response = await _dio.get('${ApiConstants.workspaces}/$id/alerts');
@@ -144,6 +198,14 @@ class WorkspaceRepository {
   Future<void> createWorkspaceAlert(String id, String query, String frequency) async {
     try {
       await _dio.post('${ApiConstants.workspaces}/$id/alerts', data: {'query': query, 'frequency': frequency});
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> deleteWorkspaceAlert(String workspaceId, String alertId) async {
+    try {
+      await _dio.delete('${ApiConstants.workspaces}/$workspaceId/alerts/$alertId');
     } catch (e) {
       rethrow;
     }
