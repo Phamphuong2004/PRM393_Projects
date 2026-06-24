@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../providers/workspace_detail_provider.dart';
 import '../../../core/repositories/workspace_repository.dart';
 import '../../../core/constants/api_constants.dart';
-import 'pdf_viewer_screen.dart';
 
 class WorkspaceDetailScreen extends ConsumerWidget {
   final String workspaceId;
@@ -349,21 +349,24 @@ class WorkspacePapersTab extends ConsumerWidget {
                                 const SizedBox(width: 8),
                                 if (hasPdf)
                                   TextButton.icon(
-                                    onPressed: () {
+                                    onPressed: () async {
                                       // Cloudinary returns an absolute URL; older
                                       // records may still hold a relative /uploads path.
                                       final fullUrl = pdfUrl.startsWith('http')
                                           ? pdfUrl
                                           : '${ApiConstants.baseUrl}$pdfUrl';
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => PdfViewerScreen(
-                                            pdfUrl: fullUrl,
-                                            title: paper['title'] ?? 'PDF Viewer',
-                                          ),
-                                        ),
+                                      final uri = Uri.parse(fullUrl);
+                                      final ok = await launchUrl(
+                                        uri,
+                                        mode: LaunchMode.externalApplication,
                                       );
+                                      if (!ok && context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Could not open PDF link'),
+                                          ),
+                                        );
+                                      }
                                     },
                                     icon: const Icon(Icons.picture_as_pdf, size: 14),
                                     label: const Text('View PDF'),
