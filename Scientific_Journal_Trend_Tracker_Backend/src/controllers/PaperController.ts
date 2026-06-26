@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import { validationResult } from "express-validator";
 import Paper from "../models/Paper";
+import Author from "../models/Author";
+import Journal from "../models/Journal";
+import User from "../models/User";
 
 export class PaperController {
   static async getAllPapers(req: Request, res: Response): Promise<void> {
@@ -136,6 +139,82 @@ export class PaperController {
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: "Server error" });
+    }
+  }
+
+  static async importExternalPaper(req: Request, res: Response): Promise<void> {
+    try {
+      const item = req.body;
+      const doi = item.doi;
+      let paper = doi ? await Paper.findOne({ doi }) : await Paper.findOne({ externalId_semanticScholarId: item._id || item.externalIdOpenalexId });
+
+      if (!paper) {
+        // Process Journal (Venue)
+        let journalId = null;
+        if (item.source) {
+          let journal = await Journal.findOne({ name: item.source });
+          if (!journal) {
+            journal = new Journal({ name: item.source, source: "Import" });
+            await journal.save();
+          }
+          journalId = journal._id;
+        }
+
+        // Process Authors
+        const authorIds = [];
+        if (item.authors && Array.isArray(item.authors)) {
+          for (const a of item.authors) {
+            const authorName = a.fullName || a.name;
+            if (!authorName) continue;
+            let author = null;
+            if (a.id || a.externalAuthorId) {
+              author = await Author.findOne({ externalAuthorId: a.id || a.externalAuthorId });
+            }
+            if (!author) {
+              author = await Author.findOne({ fullName: authorName });
+            }
+            if (!author) {
+              author = new Author({
+                fullName: authorName,
+                externalAuthorId: a.id || a.externalAuthorId,
+              });
+              await author.save();
+            }
+            authorIds.push(author._id);
+          }
+        }
+
+        paper = new Paper({
+          title: item.title,
+          abstract: item.abstract,
+          doi: doi,
+          url: item.url,
+          publicationYear: item.publicationYear || item.year,
+          citationCount: item.citationCount || 0,
+          externalId_semanticScholarId: item._id,
+          authors: authorIds,
+          ...(journalId && { journalId }),
+          source: item.source || "External",
+          lastSyncedAt: new Date()
+        });
+
+        await paper.save();
+      }
+
+      // Add to bookmarks if userId is provided in req.user (requires authMiddleware)
+      const userId = (req as any).user?.id;
+      if (userId) {
+        const user = await User.findById(userId);
+        if (user && !user.bookmarks.includes(paper._id)) {
+          user.bookmarks.push(paper._id);
+          await user.save();
+        }
+      }
+
+      res.status(201).json(paper);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Server error during import" });
     }
   }
 }
