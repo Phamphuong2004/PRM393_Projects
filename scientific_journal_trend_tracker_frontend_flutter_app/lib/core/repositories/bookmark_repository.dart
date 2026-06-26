@@ -36,9 +36,10 @@ class BookmarkRepository {
     }
   }
 
-  Future<void> importBookmark(Map<String, dynamic> paperData) async {
+  Future<Paper> importBookmark(Map<String, dynamic> paperData) async {
     try {
-      await _dio.post('/api/papers/import', data: paperData);
+      final response = await _dio.post('/api/papers/import', data: paperData);
+      return Paper.fromJson(response.data as Map<String, dynamic>);
     } catch (e) {
       rethrow;
     }

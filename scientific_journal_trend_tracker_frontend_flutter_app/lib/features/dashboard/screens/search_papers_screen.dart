@@ -151,11 +151,45 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
     super.dispose();
   }
 
-  void _showPaperDetail(Paper paper) {
+  Future<void> _showPaperDetail(Paper paper) async {
+    final isLocalPaper =
+        _selectedSource == 'Local Database' && _objectIdRegex.hasMatch(paper.id);
+
+    Paper displayPaper = paper;
+
+    if (!isLocalPaper) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      try {
+        final importedPaper = await ref.read(bookmarkRepositoryProvider).importBookmark(paper.toJson());
+        displayPaper = importedPaper;
+        if (mounted) {
+          Navigator.pop(context); // Close loading dialog
+          setState(() {
+            _savedIds.add(paper.id);
+            _savedIds.add(importedPaper.id);
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          Navigator.pop(context); // Close loading dialog
+          _showSnack('Failed to import and open paper details.', AppColors.error);
+        }
+        return;
+      }
+    }
+
+    if (!mounted) return;
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => PaperDetailScreen(paper: paper),
+        builder: (context) => PaperDetailScreen(paper: displayPaper),
       ),
     );
   }
