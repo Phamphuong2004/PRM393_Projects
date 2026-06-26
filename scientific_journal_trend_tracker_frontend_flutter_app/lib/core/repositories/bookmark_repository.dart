@@ -36,6 +36,14 @@ class BookmarkRepository {
     }
   }
 
+  Future<void> importBookmark(Map<String, dynamic> paperData) async {
+    try {
+      await _dio.post('/api/papers/import', data: paperData);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<void> removeBookmark(String paperId) async {
     try {
       await _dio.delete('${ApiConstants.bookmarks}/$paperId');
