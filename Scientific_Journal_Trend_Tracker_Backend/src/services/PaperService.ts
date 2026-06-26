@@ -177,7 +177,7 @@ export class PaperService {
           publicationYear: item.publication_year,
           citationCount: item.cited_by_count || 0,
           source: item.primary_location?.source?.display_name || "OpenAlex",
-          externalIdOpenalexId: item.id,
+          externalId_openalexId: item.id,
           authors: item.authorships?.map((a: any) => ({ fullName: a.author.display_name })) || []
         }));
         

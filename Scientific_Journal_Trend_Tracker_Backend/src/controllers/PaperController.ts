@@ -146,7 +146,20 @@ export class PaperController {
     try {
       const item = req.body;
       const doi = item.doi;
-      let paper = doi ? await Paper.findOne({ doi }) : await Paper.findOne({ externalId_semanticScholarId: item._id || item.externalIdOpenalexId });
+      let paper = null;
+      if (doi) {
+        paper = await Paper.findOne({ doi });
+      }
+
+      const openalexId = item.externalId_openalexId || item.externalIdOpenalexId || (item._id && String(item._id).startsWith("https://openalex.org/") ? item._id : null);
+
+      if (!paper) {
+        if (openalexId) {
+          paper = await Paper.findOne({ externalId_openalexId: openalexId });
+        } else if (item._id) {
+          paper = await Paper.findOne({ externalId_semanticScholarId: item._id });
+        }
+      }
 
       if (!paper) {
         // Process Journal (Venue)
@@ -191,12 +204,21 @@ export class PaperController {
           url: item.url,
           publicationYear: item.publicationYear || item.year,
           citationCount: item.citationCount || 0,
-          externalId_semanticScholarId: item._id,
           authors: authorIds,
           ...(journalId && { journalId }),
           source: item.source || "External",
           lastSyncedAt: new Date()
         });
+
+        if (openalexId) {
+          paper.externalId_openalexId = openalexId;
+        } else if (item._id) {
+          if (String(item._id).startsWith("http")) {
+            paper.externalId_crossref = item._id;
+          } else {
+            paper.externalId_semanticScholarId = item._id;
+          }
+        }
 
         await paper.save();
       }
