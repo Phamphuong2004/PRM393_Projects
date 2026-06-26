@@ -155,9 +155,19 @@ export class PaperController {
 
       if (!paper) {
         if (openalexId) {
-          paper = await Paper.findOne({ externalId_openalexId: openalexId });
+          paper = await Paper.findOne({
+            $or: [
+              { externalId_openalexId: openalexId },
+              { externalId_semanticScholarId: openalexId }
+            ]
+          });
         } else if (item._id) {
-          paper = await Paper.findOne({ externalId_semanticScholarId: item._id });
+          paper = await Paper.findOne({
+            $or: [
+              { externalId_semanticScholarId: item._id },
+              { externalId_crossref: item._id }
+            ]
+          });
         }
       }
 
