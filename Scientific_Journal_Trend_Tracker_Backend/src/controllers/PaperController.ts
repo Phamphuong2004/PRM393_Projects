@@ -197,20 +197,23 @@ export class PaperController {
               author = await Author.findOne({ fullName: authorName });
             }
             if (!author) {
-              author = new Author({
+              const newAuthorData: any = {
                 fullName: authorName,
-                externalAuthorId: a.id || a.externalAuthorId,
-              });
+              };
+              const extId = a.id || a.externalAuthorId;
+              if (extId) {
+                newAuthorData.externalAuthorId = extId;
+              }
+              author = new Author(newAuthorData);
               await author.save();
             }
             authorIds.push(author._id);
           }
         }
 
-        paper = new Paper({
+        const paperData: any = {
           title: item.title,
           abstract: item.abstract,
-          doi: doi,
           url: item.url,
           publicationYear: item.publicationYear || item.year,
           citationCount: item.citationCount || 0,
@@ -218,7 +221,10 @@ export class PaperController {
           ...(journalId && { journalId }),
           source: item.source || "External",
           lastSyncedAt: new Date()
-        });
+        };
+        if (doi) paperData.doi = doi;
+
+        paper = new Paper(paperData);
 
         if (openalexId) {
           paper.externalId_openalexId = openalexId;
@@ -234,7 +240,7 @@ export class PaperController {
       }
 
       // Add to bookmarks if userId is provided in req.user (requires authMiddleware)
-      const userId = (req as any).user?.id;
+      const userId = (req as any).userId || (req as any).user?.id;
       if (userId) {
         const user = await User.findById(userId);
         if (user && !user.bookmarks.includes(paper._id)) {
