@@ -433,7 +433,7 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
         ? authorsList.map((a) => a.fullName).join(', ')
         : 'Unknown';
     final journal = paper.journalId != null
-        ? (paper.journalId is Map ? paper.journalId['name'] : paper.journalId.toString())
+        ? (paper.journalId is Map ? (paper.journalId['name']?.toString() ?? 'Unknown journal') : paper.journalId.toString())
         : 'Unknown journal';
     final year = paper.publicationYear?.toString() ?? '';
     final citations = paper.citationCount;
