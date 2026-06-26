@@ -233,6 +233,9 @@ export class PaperController {
         }
       }
 
+      // Populate authors, journalId, and keywords so frontend receives complete, structured data
+      await paper.populate(["authors", "journalId", "keywords"]);
+
       res.status(201).json(paper);
     } catch (error) {
       console.error(error);
