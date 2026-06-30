@@ -1,6 +1,7 @@
 import Notification from "../models/Notification";
 import User from "../models/User";
 import { sendEmail } from "../utils/mailer";
+import { SocketService } from "./SocketService";
 
 export class NotificationService {
   static async getUserNotifications(
@@ -99,6 +100,9 @@ export class NotificationService {
 
     await notification.save();
 
+    // Send real-time notification
+    SocketService.sendNotificationToUser(userId, notification);
+
     return notification;
   }
 
@@ -122,6 +126,11 @@ export class NotificationService {
     }));
 
     const result = await Notification.insertMany(notifications);
+
+    // Send real-time notifications to all users
+    result.forEach((notification) => {
+      SocketService.sendNotificationToUser(notification.userId.toString(), notification);
+    });
 
     return result;
   }
