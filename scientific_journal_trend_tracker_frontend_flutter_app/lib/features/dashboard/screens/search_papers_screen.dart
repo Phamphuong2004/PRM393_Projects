@@ -262,8 +262,10 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Stack(
       children: [
+        Column(
+          children: [
         // Search Header
         Container(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
@@ -430,18 +432,20 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
                           },
                         ),
         ),
-        if (_isImporting)
-          Positioned.fill(
-            child: Container(
-              color: Colors.white.withOpacity(0.7),
-              child: const Center(
-                child: CircularProgressIndicator(),
-              ),
-            ),
-          ),
       ],
-    );
-  }
+    ),
+    if (_isImporting)
+      Positioned.fill(
+        child: Container(
+          color: Colors.white.withOpacity(0.7),
+          child: const Center(
+            child: CircularProgressIndicator(),
+          ),
+        ),
+      ),
+    ],
+  );
+}
 
   Widget _buildPaperCard(Paper paper) {
     final authorsList = paper.authors ?? [];
