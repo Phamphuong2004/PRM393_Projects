@@ -80,6 +80,28 @@ const swaggerSpec = {
         responses: { "200": { description: "OK" } },
       },
     },
+    "/api/auth/google-login": {
+      post: {
+        tags: ["Auth"],
+        summary: "Login with Google ID Token and receive JWT",
+        security: [],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["idToken"],
+                properties: {
+                  idToken: { type: "string", example: "eyJhbGciOiJSUzI1NiIs..." },
+                },
+              },
+            },
+          },
+        },
+        responses: { "200": { description: "OK" } },
+      },
+    },
     "/api/auth/me": {
       get: {
         tags: ["Auth"],
