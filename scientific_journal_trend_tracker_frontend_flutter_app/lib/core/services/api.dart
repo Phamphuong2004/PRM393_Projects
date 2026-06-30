@@ -352,6 +352,10 @@ class TrendsApi {
   static Future<dynamic> byKeyword(String keywordId) {
     return api.get('${ApiConstants.publicationTrends}/keyword/$keywordId');
   }
+
+  static Future<dynamic> analyzeRelated(String keyword, String source, int startYear) {
+    return api.get('${ApiConstants.publicationTrends}/analyze-related?keyword=${Uri.encodeComponent(keyword)}&source=${Uri.encodeComponent(source)}&startYear=$startYear');
+  }
 }
 
 // ─────────────────────────────────────────────────────────
