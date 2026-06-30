@@ -38,7 +38,7 @@ class WorkspaceListScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
-                    value: selectedVisibility,
+                    initialValue: selectedVisibility,
                     decoration: const InputDecoration(
                       labelText: 'Visibility',
                       border: OutlineInputBorder(),
@@ -154,7 +154,7 @@ class WorkspaceListScreen extends ConsumerWidget {
                               width: 56,
                               height: 56,
                               decoration: BoxDecoration(
-                                color: Theme.of(context).primaryColor.withOpacity(0.1),
+                                color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: Icon(Icons.workspaces_filled, color: Theme.of(context).primaryColor, size: 28),
@@ -206,7 +206,7 @@ class WorkspaceListScreen extends ConsumerWidget {
           
           if (createState.isLoading)
             Container(
-              color: Colors.white.withOpacity(0.7),
+              color: Colors.white.withValues(alpha: 0.7),
               child: const Center(child: CircularProgressIndicator()),
             ),
         ],
