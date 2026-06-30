@@ -95,8 +95,6 @@ class AuthProvider with ChangeNotifier {
         return;
       }
       
-      if (googleUser == null) return;
-
       final GoogleSignInAuthentication googleAuth = googleUser.authentication;
       final String? idToken = googleAuth.idToken;
 

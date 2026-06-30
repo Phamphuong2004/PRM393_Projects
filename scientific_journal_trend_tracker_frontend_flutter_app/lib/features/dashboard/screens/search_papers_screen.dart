@@ -456,7 +456,7 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
     if (_isImporting)
       Positioned.fill(
         child: Container(
-          color: Colors.white.withOpacity(0.7),
+          color: Colors.white.withValues(alpha: 0.7),
           child: const Center(
             child: CircularProgressIndicator(),
           ),
