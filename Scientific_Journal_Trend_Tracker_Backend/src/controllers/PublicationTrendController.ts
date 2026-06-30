@@ -1,8 +1,27 @@
 import { Request, Response } from "express";
 import { validationResult } from "express-validator";
 import PublicationTrend from "../models/PublicationTrend";
+import { TrendAnalyzerService } from "../services/TrendAnalyzerService";
 
 export class PublicationTrendController {
+  static async analyzeRelatedKeywords(req: Request, res: Response): Promise<void> {
+    try {
+      const keyword = req.query.keyword as string;
+      const source = req.query.source as string || 'OpenAlex';
+      const startYear = parseInt(req.query.startYear as string) || 2018;
+
+      if (!keyword) {
+        res.status(400).json({ message: "Keyword is required" });
+        return;
+      }
+
+      const data = await TrendAnalyzerService.analyzeRelatedKeywords(keyword, source, startYear);
+      res.json(data);
+    } catch (error: any) {
+      console.error(error);
+      res.status(500).json({ message: error.message || "Server error" });
+    }
+  }
   static async getAllTrends(req: Request, res: Response): Promise<void> {
     try {
       const page = parseInt(req.query.page as string) || 1;
