@@ -83,19 +83,16 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      try {
-        await GoogleSignIn.instance.initialize();
-      } catch (_) {}
+      final GoogleSignIn googleSignIn = GoogleSignIn(
+        clientId: '673014775519-rju4plaf4dc5bjqc7h7dprhtjv61i5h0.apps.googleusercontent.com',
+        scopes: ['email', 'profile'],
+      );
 
-      GoogleSignInAccount? googleUser;
-      try {
-        googleUser = await GoogleSignIn.instance.authenticate(scopeHint: ['email', 'profile']);
-      } catch (e) {
-        // User canceled the login
-        return;
-      }
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
       
-      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+      if (googleUser == null) return;
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
       final String? idToken = googleAuth.idToken;
 
       if (idToken == null) {
