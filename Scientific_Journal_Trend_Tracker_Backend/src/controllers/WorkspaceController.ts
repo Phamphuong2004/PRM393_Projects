@@ -1,4 +1,6 @@
 import { Request, Response } from "express";
+import fs from "fs";
+import path from "path";
 import { WorkspaceService } from "../services/WorkspaceService";
 import { uploadPdfBuffer, isCloudinaryConfigured } from "../config/cloudinary";
 
@@ -103,12 +105,33 @@ export class WorkspaceController {
     try {
       const file = (req as any).file;
       if (!file) throw { status: 400, message: "No PDF file uploaded" };
-      if (!isCloudinaryConfigured()) {
-        throw { status: 500, message: "File storage is not configured. Set CLOUDINARY_* environment variables." };
+
+      let pdfUrl = "";
+      if (isCloudinaryConfigured()) {
+        // Stream the in-memory buffer to Cloudinary and store the absolute URL.
+        pdfUrl = await uploadPdfBuffer(file.buffer, file.originalname);
+      } else {
+        // Fallback to local storage
+        const uploadsDir = path.join(process.cwd(), "uploads");
+        if (!fs.existsSync(uploadsDir)) {
+          fs.mkdirSync(uploadsDir, { recursive: true });
+        }
+        const fileName = `${Date.now()}-${file.originalname.replace(/\s+/g, "_")}`;
+        const filePath = path.join(uploadsDir, fileName);
+        await fs.promises.writeFile(filePath, file.buffer);
+        pdfUrl = `/uploads/${fileName}`;
       }
-      // Stream the in-memory buffer to Cloudinary and store the absolute URL.
-      const pdfUrl = await uploadPdfBuffer(file.buffer, file.originalname);
+
       const result = await WorkspaceService.uploadPdf(req.params.id, req.userId as string, req.params.paperId, pdfUrl);
+      res.json({ success: true, data: result });
+    } catch (error: any) {
+      res.status(error.status || 500).json({ success: false, message: error.message });
+    }
+  }
+
+  static async deletePdf(req: Request, res: Response) {
+    try {
+      const result = await WorkspaceService.deletePdf(req.params.id, req.userId as string, req.params.paperId);
       res.json({ success: true, data: result });
     } catch (error: any) {
       res.status(error.status || 500).json({ success: false, message: error.message });

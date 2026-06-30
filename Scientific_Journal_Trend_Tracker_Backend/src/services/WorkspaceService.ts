@@ -211,6 +211,21 @@ export class WorkspaceService {
     return { paper, workspaceId };
   }
 
+  static async deletePdf(workspaceId: string, userId: string, paperId: string) {
+    await this.checkRole(workspaceId, userId, ["owner", "editor"]);
+    
+    const wp = await WorkspacePaper.findOne({ workspace: workspaceId, paper: paperId });
+    if (!wp) throw { status: 404, message: "Paper not found in this workspace" };
+
+    const paper = await Paper.findById(paperId);
+    if (!paper) throw { status: 404, message: "Paper not found" };
+
+    paper.pdfUrl = undefined; // Unset the PDF URL
+    await paper.save();
+
+    return { message: "PDF removed successfully", paper, workspaceId };
+  }
+
   static async createNote(workspaceId: string, userId: string, data: any) {
     await this.checkRole(workspaceId, userId, ["owner", "editor"]);
     const note = new WorkspaceNote({ ...data, workspace: workspaceId, createdBy: userId });

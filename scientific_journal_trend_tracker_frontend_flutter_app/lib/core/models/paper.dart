@@ -33,6 +33,7 @@ abstract class Paper with _$Paper {
     dynamic journalId,
     List<dynamic>? keywords,
     List<dynamic>? topics,
+    String? pdfUrl,
     String? source,
     DateTime? createdAt,
     DateTime? updatedAt,

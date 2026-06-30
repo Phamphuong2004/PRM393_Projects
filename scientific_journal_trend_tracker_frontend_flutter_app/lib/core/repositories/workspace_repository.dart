@@ -232,4 +232,21 @@ class WorkspaceRepository {
       rethrow;
     }
   }
+
+  Future<void> deletePaperPdf({
+    required String workspaceId,
+    required String paperId,
+  }) async {
+    try {
+      await _dio.delete('${ApiConstants.workspaces}/$workspaceId/papers/$paperId/pdf');
+    } on DioException catch (e) {
+      if (e.response != null) {
+        throw Exception(e.response?.data['message'] ?? 'Failed to delete PDF');
+      } else {
+        throw Exception('Network error while deleting PDF');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

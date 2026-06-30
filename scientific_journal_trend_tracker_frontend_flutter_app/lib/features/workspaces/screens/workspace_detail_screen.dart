@@ -381,33 +381,117 @@ class WorkspacePapersTab extends ConsumerWidget {
                                               constraints: const BoxConstraints(),
                                             ),
                                           if (hasPdf)
-                                            TextButton.icon(
-                                              onPressed: () async {
-                                                // Cloudinary returns an absolute URL; older
-                                                // records may still hold a relative /uploads path.
-                                                final fullUrl = pdfUrl.startsWith('http')
-                                                    ? pdfUrl
-                                                    : '${ApiConstants.baseUrl}$pdfUrl';
-                                                final uri = Uri.parse(fullUrl);
-                                                final ok = await launchUrl(
-                                                  uri,
-                                                  mode: LaunchMode.externalApplication,
-                                                );
-                                                if (!ok && context.mounted) {
-                                                  ScaffoldMessenger.of(context).showSnackBar(
-                                                    const SnackBar(
-                                                      content: Text('Could not open PDF link'),
+                                            PopupMenuButton<String>(
+                                              tooltip: 'PDF Options',
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.red.shade50,
+                                                  borderRadius: BorderRadius.circular(6),
+                                                  border: Border.all(color: Colors.red.shade200),
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Icon(Icons.picture_as_pdf, size: 14, color: Colors.red.shade700),
+                                                    const SizedBox(width: 4),
+                                                    Text('PDF Options', style: TextStyle(fontSize: 12, color: Colors.red.shade700, fontWeight: FontWeight.bold)),
+                                                    const Icon(Icons.arrow_drop_down, size: 16, color: Colors.red),
+                                                  ],
+                                                ),
+                                              ),
+                                              itemBuilder: (context) => [
+                                                const PopupMenuItem(
+                                                  value: 'view',
+                                                  child: Row(
+                                                    children: [
+                                                      Icon(Icons.visibility, size: 20, color: Colors.blue),
+                                                      SizedBox(width: 8),
+                                                      Text('View PDF'),
+                                                    ],
+                                                  ),
+                                                ),
+                                                if (role == 'owner' || role == 'editor')
+                                                  const PopupMenuItem(
+                                                    value: 'update',
+                                                    child: Row(
+                                                      children: [
+                                                        Icon(Icons.upload_file, size: 20, color: Colors.green),
+                                                        SizedBox(width: 8),
+                                                        Text('Update PDF'),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                if (role == 'owner' || role == 'editor')
+                                                  const PopupMenuItem(
+                                                    value: 'remove',
+                                                    child: Row(
+                                                      children: [
+                                                        Icon(Icons.delete, size: 20, color: Colors.red),
+                                                        SizedBox(width: 8),
+                                                        Text('Remove PDF', style: TextStyle(color: Colors.red)),
+                                                      ],
+                                                    ),
+                                                  ),
+                                              ],
+                                              onSelected: (value) async {
+                                                if (value == 'view') {
+                                                  final fullUrl = pdfUrl.startsWith('http')
+                                                      ? pdfUrl
+                                                      : '${ApiConstants.baseUrl}$pdfUrl';
+                                                  final uri = Uri.parse(fullUrl);
+                                                  final ok = await launchUrl(
+                                                    uri,
+                                                    mode: LaunchMode.externalApplication,
+                                                  );
+                                                  if (!ok && context.mounted) {
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      const SnackBar(
+                                                        content: Text('Could not open PDF link'),
+                                                      ),
+                                                    );
+                                                  }
+                                                } else if (value == 'update') {
+                                                  if (paper['_id'] != null) {
+                                                    context.push<bool>('/app/workspaces/$workspaceId/papers/${paper['_id']}/upload-pdf').then((success) {
+                                                      if (success == true) {
+                                                        Future.delayed(const Duration(milliseconds: 400), () {
+                                                          ref.invalidate(workspacePapersProvider(workspaceId));
+                                                        });
+                                                      }
+                                                    });
+                                                  }
+                                                } else if (value == 'remove') {
+                                                  final confirmed = await showDialog<bool>(
+                                                    context: context,
+                                                    builder: (ctx) => AlertDialog(
+                                                      title: const Text('Remove PDF'),
+                                                      content: const Text('Are you sure you want to remove the PDF from this paper?'),
+                                                      actions: [
+                                                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                                                        TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Remove', style: TextStyle(color: Colors.red))),
+                                                      ],
                                                     ),
                                                   );
+
+                                                  if (confirmed == true) {
+                                                    try {
+                                                      await ref.read(workspaceRepositoryProvider).deletePaperPdf(
+                                                        workspaceId: workspaceId,
+                                                        paperId: paper['_id'],
+                                                      );
+                                                      ref.invalidate(workspacePapersProvider(workspaceId));
+                                                      if (context.mounted) {
+                                                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('PDF removed')));
+                                                      }
+                                                    } catch (e) {
+                                                      if (context.mounted) {
+                                                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                                                      }
+                                                    }
+                                                  }
                                                 }
                                               },
-                                              icon: const Icon(Icons.picture_as_pdf, size: 14),
-                                              label: const Text('View PDF'),
-                                              style: TextButton.styleFrom(
-                                                foregroundColor: Colors.red.shade700,
-                                                padding: EdgeInsets.zero,
-                                                minimumSize: const Size(0, 32),
-                                              ),
                                             )
                                           else
                                             TextButton.icon(
