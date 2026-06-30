@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../services/api.dart';
 
 class AuthProvider with ChangeNotifier {
@@ -62,6 +63,48 @@ class AuthProvider with ChangeNotifier {
 
     try {
       final response = await AuthApi.login(email, password);
+      _token = response['token'];
+      _user = response['user'];
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('token', _token!);
+    } catch (e) {
+      _error = e.toString();
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loginWithGoogle() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      try {
+        await GoogleSignIn.instance.initialize();
+      } catch (_) {}
+
+      GoogleSignInAccount? googleUser;
+      try {
+        googleUser = await GoogleSignIn.instance.authenticate(scopeHint: ['email', 'profile']);
+      } catch (e) {
+        // User canceled the login
+        return;
+      }
+      
+      if (googleUser == null) return;
+
+      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+      final String? idToken = googleAuth.idToken;
+
+      if (idToken == null) {
+        throw Exception("Failed to get ID Token from Google");
+      }
+
+      final response = await AuthApi.googleLogin(idToken);
       _token = response['token'];
       _user = response['user'];
 

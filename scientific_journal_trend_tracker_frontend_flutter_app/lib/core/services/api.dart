@@ -132,6 +132,10 @@ class AuthApi {
     return api.post(ApiConstants.login, {'email': email, 'password': password});
   }
 
+  static Future<dynamic> googleLogin(String idToken) {
+    return api.post(ApiConstants.googleLogin, {'idToken': idToken});
+  }
+
   static Future<dynamic> me() {
     return api.get(ApiConstants.me);
   }
