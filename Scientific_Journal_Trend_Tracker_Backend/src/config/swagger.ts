@@ -122,6 +122,21 @@ const swaggerSpec = {
         responses: { "201": { description: "Created" } },
       },
     },
+    "/api/papers/import": {
+      post: {
+        tags: ["Papers"],
+        summary: "Import an external paper and automatically bookmark it",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { type: "object" },
+            },
+          },
+        },
+        responses: { "201": { description: "Created" } },
+      },
+    },
     "/api/papers/{id}": {
       get: {
         tags: ["Papers"],

@@ -5,7 +5,15 @@ import User from "../models/User";
 export class BookmarkController {
   static async getUserBookmarks(req: Request, res: Response): Promise<void> {
     try {
-      const user = await User.findById(req.userId).populate("bookmarks");
+      const user = await User.findById(req.userId).populate({
+        path: "bookmarks",
+        populate: [
+          { path: "authors" },
+          { path: "journalId" },
+          { path: "keywords" },
+          { path: "topics" }
+        ]
+      });
 
       if (!user) {
         res.status(404).json({ message: "User not found" });

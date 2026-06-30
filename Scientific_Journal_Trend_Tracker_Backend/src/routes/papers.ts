@@ -59,6 +59,22 @@ router.get(
   },
 );
 
+// Import external paper
+router.post(
+  "/import",
+  authMiddleware,
+  rateLimit(rateLimits.write),
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      // Need to import PaperController manually since it's not exported from index yet
+      const { PaperController } = require("../controllers/PaperController");
+      await PaperController.importExternalPaper(req, res);
+    } catch (error: any) {
+      res.status(error.status || 500).json({ message: error.message });
+    }
+  },
+);
+
 // Get paper by ID
 router.get(
   "/:id",

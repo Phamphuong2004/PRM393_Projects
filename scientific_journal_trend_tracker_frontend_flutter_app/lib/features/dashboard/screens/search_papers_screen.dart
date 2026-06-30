@@ -151,11 +151,45 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
     super.dispose();
   }
 
-  void _showPaperDetail(Paper paper) {
+  Future<void> _showPaperDetail(Paper paper) async {
+    final isLocalPaper =
+        _selectedSource == 'Local Database' && _objectIdRegex.hasMatch(paper.id);
+
+    Paper displayPaper = paper;
+
+    if (!isLocalPaper) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      try {
+        final importedPaper = await ref.read(bookmarkRepositoryProvider).importBookmark(paper.toJson());
+        displayPaper = importedPaper;
+        if (mounted) {
+          Navigator.pop(context); // Close loading dialog
+          setState(() {
+            _savedIds.add(paper.id);
+            _savedIds.add(importedPaper.id);
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          Navigator.pop(context); // Close loading dialog
+          _showSnack('Failed to import and open paper details.', AppColors.error);
+        }
+        return;
+      }
+    }
+
+    if (!mounted) return;
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => PaperDetailScreen(paper: paper),
+        builder: (context) => PaperDetailScreen(paper: displayPaper),
       ),
     );
   }
@@ -193,25 +227,16 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
   Future<void> _handleSave(Paper paper) async {
     if (_savedIds.contains(paper.id) || _savingIds.contains(paper.id)) return;
 
-    // Only papers that live in the local library (real Mongo _id) can be bookmarked.
     final isLocalPaper =
         _selectedSource == 'Local Database' && _objectIdRegex.hasMatch(paper.id);
 
-    if (!isLocalPaper) {
-      final origin = _selectedSource == 'Local Database'
-          ? (paper.source ?? 'an external source')
-          : _selectedSource;
-      _showSnack(
-        'This result comes from "$origin" and isn\'t saved in the library yet, '
-        'so it can\'t be bookmarked. Only papers from the Local Database can be saved.',
-        AppColors.error,
-      );
-      return;
-    }
-
     setState(() => _savingIds.add(paper.id));
     try {
-      await ref.read(bookmarkRepositoryProvider).addBookmark(paper.id);
+      if (isLocalPaper) {
+        await ref.read(bookmarkRepositoryProvider).addBookmark(paper.id);
+      } else {
+        await ref.read(bookmarkRepositoryProvider).importBookmark(paper.toJson());
+      }
       if (!mounted) return;
       setState(() {
         _savingIds.remove(paper.id);
@@ -221,11 +246,8 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _savingIds.remove(paper.id));
-      final notFound = e is DioException && e.response?.statusCode == 404;
       _showSnack(
-        notFound
-            ? 'This paper isn\'t available in the library, so it can\'t be bookmarked.'
-            : 'Failed to save bookmark. Please try again.',
+        'Failed to save bookmark. Please try again.',
         AppColors.error,
       );
     }
@@ -411,7 +433,7 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
         ? authorsList.map((a) => a.fullName).join(', ')
         : 'Unknown';
     final journal = paper.journalId != null
-        ? (paper.journalId is Map ? paper.journalId['name'] : paper.journalId.toString())
+        ? (paper.journalId is Map ? (paper.journalId['name']?.toString() ?? 'Unknown journal') : paper.journalId.toString())
         : 'Unknown journal';
     final year = paper.publicationYear?.toString() ?? '';
     final citations = paper.citationCount;
