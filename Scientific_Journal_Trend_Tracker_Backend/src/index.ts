@@ -8,6 +8,8 @@ import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 import { requestLogger, errorLogger } from "./middleware/logger";
 import swaggerSpec from "./config/swagger";
 import { initCronJobs } from "./scripts/cron";
+import http from "http";
+import { SocketService } from "./services/SocketService";
 
 // Import routes
 import authRoutes from "./routes/auth";
@@ -29,7 +31,11 @@ import syncLogsRoutes from "./routes/syncLogs";
 import workspacesRoutes from "./routes/workspaces";
 
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
+
+// Initialize Socket.io
+SocketService.init(server);
 
 // Middleware
 app.use(helmet({
@@ -169,9 +175,10 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 // Start server
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`\n🚀 Server running on http://localhost:${PORT}`);
   console.log(`📚 API docs: http://localhost:${PORT}/api\n`);
+  console.log(`🔌 Socket.io initialized`);
   
   // Initialize Background Tasks
   initCronJobs();
