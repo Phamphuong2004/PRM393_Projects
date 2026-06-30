@@ -101,12 +101,13 @@ export class WorkspaceController {
 
   static async uploadPdf(req: Request, res: Response) {
     try {
-      if (!req.file) throw { status: 400, message: "No PDF file uploaded" };
+      const file = (req as any).file;
+      if (!file) throw { status: 400, message: "No PDF file uploaded" };
       if (!isCloudinaryConfigured()) {
         throw { status: 500, message: "File storage is not configured. Set CLOUDINARY_* environment variables." };
       }
       // Stream the in-memory buffer to Cloudinary and store the absolute URL.
-      const pdfUrl = await uploadPdfBuffer(req.file.buffer, req.file.originalname);
+      const pdfUrl = await uploadPdfBuffer(file.buffer, file.originalname);
       const result = await WorkspaceService.uploadPdf(req.params.id, req.userId as string, req.params.paperId, pdfUrl);
       res.json({ success: true, data: result });
     } catch (error: any) {

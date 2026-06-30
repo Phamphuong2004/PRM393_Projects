@@ -7,6 +7,7 @@ import '../../../core/providers/auth_provider.dart';
 import '../../../core/repositories/dashboard_repository.dart';
 import '../../../core/repositories/paper_repository.dart';
 import '../../../core/models/paper.dart';
+import '../../../core/models/keyword.dart';
 import '../../../core/repositories/keyword_repository.dart';
 import 'package:provider/provider.dart' as prov;
 import 'paper_detail_screen.dart';
@@ -95,21 +96,6 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
     }
   }
 
-  String _getGreeting() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
-  }
-
-  String _getFormattedDate() {
-    final now = DateTime.now();
-    final weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    final months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-    
-    return '${weekdays[now.weekday - 1]}\n${now.day} ${months[now.month - 1]}';
-  }
-
   @override
   Widget build(BuildContext context) {
     final user = prov.Provider.of<AuthProvider>(context).user;
@@ -117,11 +103,11 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
     final isDesktop = screenWidth > 800;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.bg,
       body: RefreshIndicator(
         onRefresh: _fetchData,
         color: AppColors.primary,
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.surface,
         child: SafeArea(
           child: Center(
             child: ConstrainedBox(
@@ -138,8 +124,6 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildTopBar(user),
-                          const SizedBox(height: 24),
                           _buildGreeting(user),
                           const SizedBox(height: 24),
                           if (!_isLoading && _error == null) ...[
@@ -147,7 +131,29 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
                             const SizedBox(height: 32),
                             _buildMonthlyPreview(isDesktop, user),
                             const SizedBox(height: 32),
-                            _buildSectionHeader('Recent Publications'),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                _buildSectionHeader('Recent Publications'),
+                                TextButton(
+                                  onPressed: () => context.push('/app/search'),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: AppColors.primary,
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: const Text(
+                                    'View All',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                             const SizedBox(height: 16),
                             _buildRecentPapers(),
                           ] else if (_isLoading) ...[
@@ -169,80 +175,6 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildTopBar(Map<String, dynamic>? user) {
-    final dateParts = _getFormattedDate().split('\n');
-    final firstName = user?['fullName']?.toString().split(' ').first ?? 'User';
-    final initial = firstName.isNotEmpty ? firstName[0].toUpperCase() : 'U';
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              dateParts[0],
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              dateParts[1],
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.5,
-              ),
-            ),
-          ],
-        ),
-        Row(
-          children: [
-            InkWell(
-              onTap: () => context.push('/app/search'),
-              borderRadius: BorderRadius.circular(30),
-              child: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: const Icon(Icons.search, color: AppColors.textPrimary, size: 20),
-              ),
-            ),
-            const SizedBox(width: 12),
-            InkWell(
-              onTap: () => context.push('/app/profile'),
-              borderRadius: BorderRadius.circular(30),
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.primaryLight.withValues(alpha: 0.1),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  initial,
-                  style: const TextStyle(
-                    color: AppColors.primaryLight,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        )
-      ],
     );
   }
 
@@ -277,91 +209,101 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
 
   Widget _buildOngoingCard() {
     String keywordText = 'Research Trends';
+    String trendScoreText = '';
     if (_trendingKeywords.isNotEmpty) {
       final first = _trendingKeywords.first;
-      keywordText = first is Map ? (first['keyword'] ?? first['name'] ?? 'Trend').toString() : first.toString();
+      if (first is Keyword) {
+        keywordText = first.name;
+        trendScoreText = first.trendScore > 0 ? 'Score: ${first.trendScore.toStringAsFixed(1)}' : '';
+      } else if (first is Map) {
+        keywordText = (first['keyword'] ?? first['name'] ?? 'Trend').toString();
+      } else {
+        keywordText = first.toString();
+      }
     }
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFF6366F1), // Indigo color to match the design
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF6366F1).withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.08)),
+        boxShadow: AppColors.softShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Top Trending Keyword',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.5,
-            ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.auto_awesome, color: AppColors.primary, size: 18),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Top Trending Keyword',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 20),
           Text(
             keywordText,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.8),
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
+            style: const TextStyle(
+              color: AppColors.primaryDark,
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
             ),
           ),
           const SizedBox(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  _buildAvatarOverlap('A'),
-                  _buildAvatarOverlap('B', offset: -10),
-                ],
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.trending_up_rounded, color: Colors.white, size: 16),
+                    if (trendScoreText.isNotEmpty) ...[
+                      const SizedBox(width: 6),
+                      Text(
+                        trendScoreText,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
               const Text(
-                'Now',
+                'Updated Now',
                 style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
+                  color: AppColors.textLight,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildAvatarOverlap(String initial, {double offset = 0}) {
-    return Transform.translate(
-      offset: Offset(offset, 0),
-      child: Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-          border: Border.all(color: const Color(0xFF6366F1), width: 2),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          initial,
-          style: const TextStyle(
-            color: Color(0xFF6366F1),
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
       ),
     );
   }
@@ -389,27 +331,27 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
           physics: const NeverScrollableScrollPhysics(),
           mainAxisSpacing: 16,
           crossAxisSpacing: 16,
-          childAspectRatio: 1.1,
+          childAspectRatio: 1.15,
           children: [
             _buildMetricSquareCard(
-              title: 'Papers',
+              title: 'Total Papers',
               value: totalPapers.toString(),
-              color: AppColors.monthlyDone, // Green
+              icon: Icons.article_outlined,
             ),
             _buildMetricSquareCard(
-              title: 'Citations',
+              title: 'Total Citations',
               value: totalCitations.toString(),
-              color: AppColors.monthlyInProgress, // Orange
+              icon: Icons.format_quote_rounded,
             ),
             _buildMetricSquareCard(
               title: 'Hot Topics',
               value: _trendingKeywords.length.toString(),
-              color: AppColors.monthlyOngoing, // Pink
+              icon: Icons.local_fire_department_outlined,
             ),
             _buildMetricSquareCard(
-              title: 'Role',
+              title: 'Your Role',
               value: _normalizeRole(user?['role'] ?? 'User'),
-              color: AppColors.monthlyWaiting, // Light Blue
+              icon: Icons.person_outline,
             ),
           ],
         ),
@@ -420,42 +362,65 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
   Widget _buildMetricSquareCard({
     required String title,
     required String value,
-    required Color color,
+    required IconData icon,
   }) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(24),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
         boxShadow: [
           BoxShadow(
-            color: color.withValues(alpha: 0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
+            color: AppColors.textPrimary.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 32,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -1,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.08),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: AppColors.primary, size: 18),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-            textAlign: TextAlign.center,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                style: const TextStyle(
+                  color: AppColors.primaryDark,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ),
         ],
       ),
@@ -501,25 +466,21 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
     final paper = paperObj as Paper;
     final title = paper.title;
     final venue = paper.source ?? 'Unknown Venue';
+    final year = paper.publicationYear?.toString() ?? '';
+    final citations = paper.citationCount;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.6)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          )
-        ],
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.3)),
+        boxShadow: AppColors.softShadow,
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
           onTap: () {
             Navigator.push(
               context,
@@ -551,23 +512,64 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
                           color: AppColors.textPrimary,
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
+                          height: 1.3,
                         ),
-                        maxLines: 1,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        venue,
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              venue,
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (year.isNotEmpty) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.bg,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                year,
+                                style: const TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ],
                   ),
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.format_quote_rounded, color: AppColors.primaryLight, size: 16),
+                    const SizedBox(height: 4),
+                    Text(
+                      citations.toString(),
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

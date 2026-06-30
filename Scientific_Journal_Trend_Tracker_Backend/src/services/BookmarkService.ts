@@ -11,6 +11,7 @@ export class BookmarkService {
 
     const user = await User.findById(userId).populate({
       path: "bookmarks",
+      populate: ["authors", "journalId", "keywords"],
       options: { skip, limit, sort: { _id: -1 } },
     });
 
