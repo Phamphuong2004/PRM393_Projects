@@ -90,32 +90,17 @@ class WorkspaceRepository {
   Future<void> addPaperToWorkspace(String id, Paper paper) async {
     try {
       final isMongoId = RegExp(r'^[0-9a-fA-F]{24}$').hasMatch(paper.id);
-      if (isMongoId) {
-        await _dio.post('${ApiConstants.workspaces}/$id/papers', data: {'paperId': paper.id});
-      } else {
-        // External paper: clean the payload so Mongoose doesn't choke on
-        // non-ObjectId _id values in the root doc or nested author objects.
+      String paperId = paper.id;
+      
+      if (!isMongoId) {
+        // External paper: Import it first via the dedicated import endpoint
+        // which properly processes external authors and journals into ObjectIds.
         final paperJson = paper.toJson();
-        paperJson.remove('_id');          // root _id
-        paperJson.remove('createdAt');
-        paperJson.remove('updatedAt');
-
-        // Clean authors: remove _id if null/invalid ObjectId
-        final mongoIdRe = RegExp(r'^[0-9a-fA-F]{24}$');
-        if (paperJson['authors'] is List) {
-          paperJson['authors'] = (paperJson['authors'] as List).map((a) {
-            if (a is Map) {
-              final m = Map<String, dynamic>.from(a);
-              final authorId = m['_id']?.toString() ?? '';
-              if (!mongoIdRe.hasMatch(authorId)) m.remove('_id');
-              return m;
-            }
-            return a;
-          }).toList();
-        }
-
-        await _dio.post('${ApiConstants.workspaces}/$id/papers', data: {'paper': paperJson});
+        final importResponse = await _dio.post('/api/papers/import', data: paperJson);
+        paperId = importResponse.data['_id'];
       }
+      
+      await _dio.post('${ApiConstants.workspaces}/$id/papers', data: {'paperId': paperId});
     } on DioException catch (e) {
       final serverMsg = e.response?.data?['message']?.toString() ?? '';
       switch (e.response?.statusCode) {

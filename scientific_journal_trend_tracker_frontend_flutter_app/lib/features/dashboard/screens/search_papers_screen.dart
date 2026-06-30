@@ -563,66 +563,75 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
             const Divider(height: 1),
             const SizedBox(height: 12),
             Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Builder(
-                  builder: (_) {
-                    if (widget.workspaceId != null) {
-                      final isAdding = _addingToWorkspaceIds.contains(paper.id);
-                      final isAdded = _addedToWorkspaceIds.contains(paper.id);
+                Expanded(
+                  child: Wrap(
+                    spacing: 16,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Builder(
+                        builder: (_) {
+                          if (widget.workspaceId != null) {
+                            final isAdding = _addingToWorkspaceIds.contains(paper.id);
+                            final isAdded = _addedToWorkspaceIds.contains(paper.id);
 
-                      return TextButton.icon(
-                        onPressed: (isAdding || isAdded) ? null : () => _handleAddToWorkspace(paper),
-                        icon: isAdding
-                            ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                            : Icon(isAdded ? Icons.check : Icons.add, size: 18),
-                        label: Text(isAdded ? 'Added' : 'Add to Workspace'),
-                        style: TextButton.styleFrom(
-                          foregroundColor: isAdded ? Colors.green : const Color(0xFF4F46E5),
-                          disabledForegroundColor: isAdded ? Colors.green : Colors.grey,
-                          padding: EdgeInsets.zero,
-                          minimumSize: const Size(60, 36),
-                        ),
-                      );
-                    }
+                            return TextButton.icon(
+                              onPressed: (isAdding || isAdded) ? null : () => _handleAddToWorkspace(paper),
+                              icon: isAdding
+                                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                                  : Icon(isAdded ? Icons.check : Icons.add, size: 18),
+                              label: Text(isAdded ? 'Added' : 'Add to Workspace'),
+                              style: TextButton.styleFrom(
+                                foregroundColor: isAdded ? Colors.green : const Color(0xFF4F46E5),
+                                disabledForegroundColor: isAdded ? Colors.green : Colors.grey,
+                                padding: EdgeInsets.zero,
+                                minimumSize: const Size(60, 36),
+                              ),
+                            );
+                          }
 
-                    final saved = _savedIds.contains(paper.id);
-                    final saving = _savingIds.contains(paper.id);
-                    return TextButton.icon(
-                      onPressed: saving ? null : () => _handleSave(paper),
-                      icon: saving
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : Icon(saved ? Icons.bookmark : Icons.bookmark_border, size: 18),
-                      label: Text(saved ? 'Saved' : 'Save'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: saved ? AppColors.primary : Colors.grey.shade700,
-                        padding: EdgeInsets.zero,
-                        minimumSize: const Size(60, 36),
+                          final saved = _savedIds.contains(paper.id);
+                          final saving = _savingIds.contains(paper.id);
+                          return TextButton.icon(
+                            onPressed: saving ? null : () => _handleSave(paper),
+                            icon: saving
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                : Icon(saved ? Icons.bookmark : Icons.bookmark_border, size: 18),
+                            label: Text(saved ? 'Saved' : 'Save'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: saved ? AppColors.primary : Colors.grey.shade700,
+                              padding: EdgeInsets.zero,
+                              minimumSize: const Size(60, 36),
+                            ),
+                          );
+                        },
                       ),
-                    );
-                  },
-                ),
-                const SizedBox(width: 16),
-                if (paper.url != null && paper.url!.isNotEmpty)
-                  TextButton.icon(
-                    onPressed: () async {
-                      final url = Uri.parse(paper.url!);
-                      if (await canLaunchUrl(url)) {
-                        await launchUrl(url);
-                      }
-                    },
-                    icon: const Icon(Icons.open_in_new, size: 18),
-                    label: const Text('Source'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.grey.shade700,
-                      padding: EdgeInsets.zero,
-                      minimumSize: const Size(60, 36),
-                    ),
+                      if (paper.url != null && paper.url!.isNotEmpty)
+                        TextButton.icon(
+                          onPressed: () async {
+                            final url = Uri.parse(paper.url!);
+                            if (await canLaunchUrl(url)) {
+                              await launchUrl(url);
+                            }
+                          },
+                          icon: const Icon(Icons.open_in_new, size: 18),
+                          label: const Text('Source'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.grey.shade700,
+                            padding: EdgeInsets.zero,
+                            minimumSize: const Size(60, 36),
+                          ),
+                        ),
+                    ],
                   ),
-                const Spacer(),
+                ),
+                const SizedBox(width: 8),
                 TextButton(
                   onPressed: () => _showPaperDetail(paper),
                   style: TextButton.styleFrom(
