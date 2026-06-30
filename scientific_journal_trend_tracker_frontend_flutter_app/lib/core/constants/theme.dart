@@ -14,7 +14,7 @@ class AppColors {
   static const Color warning = Color(0xFFF59E0B);
   static const Color error = Color(0xFFEF4444);
   
-  static const Color bg = Color(0xFFF1F5F9); // Premium light slate background
+  static const Color bg = Color(0xFFF5F5F7); // Premium light slate background
   static const Color surface = Color(0xFFFFFFFF);
   static const Color surfaceGlass = Color(0xCCFFFFFF); // For glassmorphism
   
