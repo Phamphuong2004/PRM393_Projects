@@ -153,98 +153,64 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
     final isWide = MediaQuery.of(context).size.width > 700;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F4F8),
+      backgroundColor: AppColors.bg,
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // ── Header Banner ──────────────────────────────────────────────
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Container(
-                  height: 160,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFB8B8FF), Color(0xFFB2E8E8)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(0),
-                      bottomRight: Radius.circular(0),
-                    ),
-                  ),
-                ),
-                // Avatar overlapping the banner
-                Positioned(
-                  left: 28,
-                  bottom: -44,
-                  child: Container(
-                    width: 88,
-                    height: 88,
+            // ── Profile Header ──────────────────────────────────────────────
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
+              color: AppColors.surface,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 100,
+                    height: 100,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: const Color(0xFFE8E8F4),
-                      border: Border.all(color: Colors.white, width: 4),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
-                          blurRadius: 16,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
+                      color: AppColors.primary.withValues(alpha: 0.1),
                     ),
                     child: Center(
-                      child: Icon(Icons.person_rounded, size: 44, color: Colors.grey.shade500),
+                      child: Text(
+                        fullName.isNotEmpty ? fullName[0].toUpperCase() : 'U',
+                        style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: AppColors.primary),
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-
-            // ── User Info row ───────────────────────────────────────────────
-            Container(
-              color: Colors.white,
-              padding: const EdgeInsets.fromLTRB(136, 16, 24, 20),
-              margin: const EdgeInsets.only(top: 44), // space for overlapping avatar
-              width: double.infinity,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                  const SizedBox(height: 16),
                   Text(
                     fullName,
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),
+                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.5),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
                   Wrap(
-                    spacing: 8,
-                    runSpacing: 6,
+                    spacing: 12,
+                    runSpacing: 8,
+                    alignment: WrapAlignment.center,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.email_outlined, size: 14, color: Colors.grey),
-                          const SizedBox(width: 4),
-                          Flexible(
-                            child: Text(
-                              email,
-                              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                          const Icon(Icons.email_outlined, size: 16, color: AppColors.textSecondary),
+                          const SizedBox(width: 6),
+                          Text(
+                            email,
+                            style: const TextStyle(fontSize: 14, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
                           ),
                         ],
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                         decoration: BoxDecoration(
-                          border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
+                          color: AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
                           _capitalize(role),
-                          style: const TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w600),
+                          style: const TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w700),
                         ),
                       ),
                     ],
@@ -252,8 +218,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
                 ],
               ),
             ),
-
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
 
             // ── Content ─────────────────────────────────────────────────────
             Padding(
@@ -480,23 +445,22 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   BoxDecoration _cardDecoration() => BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
+        boxShadow: AppColors.softShadow,
       );
 
   Widget _cardHeader(IconData icon, String title) {
     return Row(
       children: [
-        Icon(icon, size: 20, color: AppColors.primary),
-        const SizedBox(width: 10),
-        Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF1E293B))),
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), shape: BoxShape.circle),
+          child: Icon(icon, size: 18, color: AppColors.primary),
+        ),
+        const SizedBox(width: 12),
+        Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary, letterSpacing: -0.3)),
       ],
     );
   }
@@ -518,10 +482,11 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
-      child: Text(text, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12)),
+      child: Text(text, style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 12)),
     );
   }
 
@@ -555,13 +520,13 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
               },
               decoration: InputDecoration(
                 hintText: 'Select or type your institution',
-                hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
+                hintStyle: const TextStyle(color: AppColors.textLight, fontSize: 14),
                 filled: true,
-                fillColor: Colors.grey.shade50,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade200)),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade200)),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
+                fillColor: AppColors.bg,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.border.withValues(alpha: 0.5))),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.border.withValues(alpha: 0.5))),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
               ),
             );
           },
@@ -613,13 +578,13 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
           decoration: InputDecoration(
             hintText: hint,
             filled: true,
-            fillColor: enabled ? Colors.grey.shade50 : Colors.grey.shade100,
-            hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade200)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade200)),
-            disabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade200)),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
+            fillColor: enabled ? AppColors.bg : AppColors.surface,
+            hintStyle: const TextStyle(color: AppColors.textLight, fontSize: 14),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.border.withValues(alpha: 0.5))),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.border.withValues(alpha: 0.5))),
+            disabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.border.withValues(alpha: 0.3))),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
           ),
         ),
         if (note != null) ...[
@@ -642,15 +607,15 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
           validator: validator,
           decoration: InputDecoration(
             filled: true,
-            fillColor: Colors.grey.shade50,
+            fillColor: AppColors.bg,
             suffixIcon: IconButton(
-              icon: Icon(obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 18, color: Colors.grey),
+              icon: Icon(obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 18, color: AppColors.textSecondary),
               onPressed: toggle,
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade200)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade200)),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.border.withValues(alpha: 0.5))),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.border.withValues(alpha: 0.5))),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
           ),
         ),
       ],

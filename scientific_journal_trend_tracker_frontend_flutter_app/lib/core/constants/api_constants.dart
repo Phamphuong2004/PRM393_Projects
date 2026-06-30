@@ -28,6 +28,7 @@ class ApiConstants {
 
   // Auth
   static const String login = '/api/auth/login';
+  static const String googleLogin = '/api/auth/google-login';
   static const String register = '/api/auth/register';
   static const String me = '/api/auth/me';
 

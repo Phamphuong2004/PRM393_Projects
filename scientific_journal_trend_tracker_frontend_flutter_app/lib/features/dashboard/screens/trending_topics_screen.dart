@@ -110,21 +110,38 @@ class _TrendingTopicsScreenState extends State<TrendingTopicsScreen> {
         children: [
           // Header
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Color(0xFFF093FB), Color(0xFFF5576C)]),
-              borderRadius: BorderRadius.circular(16),
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
+              boxShadow: AppColors.softShadow,
             ),
-            child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                Text('📊 Trending Topics', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white)),
-                SizedBox(height: 4),
-                Text('Real-time research trends and emerging keywords', style: TextStyle(color: Colors.white70)),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Icon(Icons.insights_rounded, color: AppColors.primary, size: 28),
+                ),
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Trending Topics', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.5)),
+                      SizedBox(height: 4),
+                      Text('Real-time research trends and emerging keywords', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
 
           if (_loading)
             const Center(child: Padding(padding: EdgeInsets.all(48), child: CircularProgressIndicator()))
@@ -137,15 +154,30 @@ class _TrendingTopicsScreenState extends State<TrendingTopicsScreen> {
           else ...[
             // Bar Chart
             if (_trends.isNotEmpty) ...[
-              Card(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
+                  boxShadow: AppColors.softShadow,
+                ),
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(24),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('📈 Publication Trends by Topic', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: Color(0xFF4FACFE))),
-                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), shape: BoxShape.circle),
+                            child: const Icon(Icons.bar_chart_rounded, color: AppColors.primary, size: 16),
+                          ),
+                          const SizedBox(width: 10),
+                          const Text('Publication Trends by Topic', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: AppColors.textPrimary, letterSpacing: -0.3)),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
                       SizedBox(
                         height: 220,
                         child: BarChart(
@@ -155,7 +187,7 @@ class _TrendingTopicsScreenState extends State<TrendingTopicsScreen> {
                             barGroups: _trends.asMap().entries.take(8).map((e) {
                               return BarChartGroupData(
                                 x: e.key,
-                                barRods: [BarChartRodData(toY: _toDouble(e.value['paperCount']), color: AppColors.secondary, width: 16, borderRadius: BorderRadius.circular(4))],
+                                barRods: [BarChartRodData(toY: _toDouble(e.value['paperCount']), color: AppColors.primaryLight, width: 16, borderRadius: BorderRadius.circular(4))],
                               );
                             }).toList(),
                             titlesData: FlTitlesData(
@@ -186,19 +218,34 @@ class _TrendingTopicsScreenState extends State<TrendingTopicsScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
             ],
 
             // Emerging Keywords
-            Card(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
+                boxShadow: AppColors.softShadow,
+              ),
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('⚡ Emerging Keywords', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: Color(0xFF43E97B))),
-                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(color: AppColors.accent.withValues(alpha: 0.1), shape: BoxShape.circle),
+                          child: const Icon(Icons.bolt_rounded, color: AppColors.accent, size: 16),
+                        ),
+                        const SizedBox(width: 10),
+                        const Text('Emerging Keywords', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: AppColors.textPrimary, letterSpacing: -0.3)),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
                     if (_keywords.isEmpty)
                       const Text('No trending keywords found.', style: TextStyle(color: AppColors.textSecondary))
                     else
@@ -212,10 +259,12 @@ class _TrendingTopicsScreenState extends State<TrendingTopicsScreen> {
                           return GestureDetector(
                             onTap: id == null ? null : () => _toggleFollowKeyword(kw),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF43E97B),
+                                color: followed ? AppColors.primary : AppColors.surface,
+                                border: Border.all(color: followed ? AppColors.primary : AppColors.border),
                                 borderRadius: BorderRadius.circular(20),
+                                boxShadow: followed ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 4))] : [],
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -224,15 +273,15 @@ class _TrendingTopicsScreenState extends State<TrendingTopicsScreen> {
                                     mainAxisSize: MainAxisSize.min,
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(kw['name'] ?? '', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
-                                      if (score != null) Text('Score: $score', style: const TextStyle(color: Colors.white70, fontSize: 10)),
+                                      Text(kw['name'] ?? '', style: TextStyle(color: followed ? Colors.white : AppColors.textPrimary, fontWeight: FontWeight.w600, fontSize: 14)),
+                                      if (score != null) Text('Score: $score', style: TextStyle(color: followed ? Colors.white.withValues(alpha: 0.8) : AppColors.textSecondary, fontSize: 11)),
                                     ],
                                   ),
-                                  const SizedBox(width: 6),
+                                  const SizedBox(width: 12),
                                   Icon(
-                                    followed ? Icons.check_circle : Icons.add_circle_outline,
-                                    color: Colors.white,
-                                    size: 18,
+                                    followed ? Icons.check_circle_rounded : Icons.add_circle_outline_rounded,
+                                    color: followed ? Colors.white : AppColors.primaryLight,
+                                    size: 20,
                                   ),
                                 ],
                               ),

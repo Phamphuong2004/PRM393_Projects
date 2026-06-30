@@ -46,6 +46,24 @@ router.post(
   },
 );
 
+// Google Login endpoint
+router.post(
+  "/google-login",
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { idToken } = req.body;
+      if (!idToken) {
+        res.status(400).json({ message: "ID token is required" });
+        return;
+      }
+      const result = await AuthService.googleLogin(idToken);
+      res.status(200).json(result);
+    } catch (error: any) {
+      res.status(error.status || 500).json({ message: error.message });
+    }
+  },
+);
+
 // Get current user endpoint
 router.get("/me", authMiddleware, async (req: Request, res: Response): Promise<void> => {
   try {
