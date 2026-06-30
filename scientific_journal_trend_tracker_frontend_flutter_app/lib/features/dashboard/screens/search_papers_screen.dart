@@ -23,6 +23,7 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
   final _searchController = TextEditingController();
   List<Paper> _results = [];
   int _page = 1;
+  bool _isImporting = false;
   int _totalPages = 1;
   int _totalResults = 0;
   bool _loading = false;
@@ -162,28 +163,30 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
     Paper displayPaper = paper;
 
     if (!isLocalPaper) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      setState(() { _isImporting = true; });
 
       try {
         final importedPaper = await ref.read(bookmarkRepositoryProvider).importBookmark(paper.toJson());
         displayPaper = importedPaper;
+        
         if (mounted) {
-          Navigator.pop(context); // Close loading dialog
           setState(() {
+            _isImporting = false;
             _savedIds.add(paper.id);
             _savedIds.add(importedPaper.id);
           });
         }
       } catch (e) {
         if (mounted) {
-          Navigator.pop(context); // Close loading dialog
-          _showSnack('Failed to import and open paper details.', AppColors.error);
+          setState(() { _isImporting = false; });
+          String errorMessage = 'Failed to import and open paper details.';
+          if (e is DioException && e.response?.data != null) {
+            final data = e.response!.data;
+            if (data is Map && data['details'] != null) {
+              errorMessage = 'Backend Error: ${data['details']}';
+            }
+          }
+          _showSnack(errorMessage, AppColors.error);
         }
         return;
       }
@@ -259,8 +262,10 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Stack(
       children: [
+        Column(
+          children: [
         // Search Header
         Container(
           padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
@@ -447,8 +452,19 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
                         ),
         ),
       ],
-    );
-  }
+    ),
+    if (_isImporting)
+      Positioned.fill(
+        child: Container(
+          color: Colors.white.withOpacity(0.7),
+          child: const Center(
+            child: CircularProgressIndicator(),
+          ),
+        ),
+      ),
+    ],
+  );
+}
 
   Widget _buildPaperCard(Paper paper) {
     final authorsList = paper.authors ?? [];

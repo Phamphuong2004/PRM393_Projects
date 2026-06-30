@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/theme.dart';
 import '../../../core/models/paper.dart';
 import '../../../core/repositories/bookmark_repository.dart';
+import 'paper_detail_screen.dart';
 
 class BookmarksScreen extends ConsumerStatefulWidget {
   const BookmarksScreen({super.key});
@@ -156,7 +157,12 @@ class _BookmarksScreenState extends ConsumerState<BookmarksScreen> {
         child: InkWell(
           borderRadius: BorderRadius.circular(24),
           onTap: () {
-            // Navigate to paper detail
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => PaperDetailScreen(paper: paper),
+              ),
+            );
           },
           child: Padding(
             padding: const EdgeInsets.all(20),
@@ -186,13 +192,13 @@ class _BookmarksScreenState extends ConsumerState<BookmarksScreen> {
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 8),
-                          Row(
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
                             children: [
                               _buildPill(venue, AppColors.secondary),
-                              if (year.isNotEmpty) ...[
-                                const SizedBox(width: 8),
+                              if (year.isNotEmpty) 
                                 _buildPill(year, AppColors.textSecondary, outline: true),
-                              ]
                             ],
                           )
                         ],
