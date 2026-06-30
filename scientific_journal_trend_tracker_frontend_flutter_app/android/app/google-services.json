@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "673014775519",
+    "project_id": "journal-trend-3a6d8",
+    "storage_bucket": "journal-trend-3a6d8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:673014775519:android:f70aaa64439fd6c2d2336a",
+        "android_client_info": {
+          "package_name": "com.example.scientific_journal_trend_tracker_frontend_flutter_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDsVkTfDdHnvJNKSRD6PLTuQwc5pQcNzzo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
