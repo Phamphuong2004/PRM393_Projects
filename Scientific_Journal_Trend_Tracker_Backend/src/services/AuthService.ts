@@ -113,7 +113,13 @@ export class AuthService {
       });
       payload = ticket.getPayload();
     } catch (error) {
-      throw { status: 401, message: "Invalid Google ID token" };
+      try {
+        const { default: axios } = await import("axios");
+        const response = await axios.get(`https://www.googleapis.com/oauth2/v3/userinfo?access_token=${idToken}`);
+        payload = response.data;
+      } catch (axiosError) {
+        throw { status: 401, message: "Invalid Google token" };
+      }
     }
 
     if (!payload || !payload.email) {
