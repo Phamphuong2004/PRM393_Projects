@@ -9,9 +9,9 @@ import '../../../core/models/paper.dart';
 import '../../../core/models/keyword.dart';
 import '../../../core/repositories/keyword_repository.dart';
 import 'package:provider/provider.dart' as prov;
-import 'package:lucide_icons/lucide_icons.dart';
 import 'paper_detail_screen.dart';
 import '../../../core/providers/notification_provider.dart';
+import '../../../core/providers/network_provider.dart';
 
 class HomeDashboardScreen extends ConsumerStatefulWidget {
   const HomeDashboardScreen({super.key});
@@ -163,6 +163,23 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
           ),
         ),
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          try {
+            final dio = ref.read(dioProvider);
+            await dio.post('/api/notifications/test-realtime');
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Test notification sent!')),
+              );
+            }
+          } catch (e) {
+            print(e);
+          }
+        },
+        backgroundColor: AppColors.primary,
+        child: const Icon(Icons.send, color: Colors.white),
+      ),
     );
   }
 
@@ -202,7 +219,7 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
             return Stack(
               children: [
                 IconButton(
-                  icon: const Icon(LucideIcons.bell, color: AppColors.textPrimary),
+                  icon: const Icon(Icons.notifications_outlined, color: AppColors.textPrimary),
                   onPressed: () {
                     context.push('/app/notifications');
                   },
