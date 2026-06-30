@@ -67,11 +67,12 @@ class DashboardShell extends StatelessWidget {
     
     final String location = GoRouterState.of(context).matchedLocation;
     
-    return Container(
-      width: 280,
+    return Material(
       color: AppColors.surface,
-      child: Column(
-        children: [
+      child: SizedBox(
+        width: 280,
+        child: Column(
+          children: [
           // Branding & User Info
           Container(
             padding: const EdgeInsets.all(24),
@@ -161,7 +162,7 @@ class DashboardShell extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ));
   }
 
   Widget _buildSideMenuItem(BuildContext context, String title, IconData icon, IconData activeIcon, String path, String currentLocation) {

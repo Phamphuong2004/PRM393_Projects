@@ -1,4 +1,4 @@
-﻿import { Router, Request, Response } from "express";
+import { Router, Request, Response } from "express";
 import {
   authMiddleware,
   roleMiddleware,
@@ -8,6 +8,7 @@ import {
 import { validateIdParam, validateInputs } from "../middleware";
 import { body } from "express-validator";
 import { PublicationTrendService } from "../services";
+import { PublicationTrendController } from "../controllers/PublicationTrendController";
 
 const router = Router();
 
@@ -44,6 +45,9 @@ router.get(
     }
   },
 );
+
+// Analyze related keywords trend
+router.get("/analyze-related", PublicationTrendController.analyzeRelatedKeywords);
 
 // Get publication trend by ID
 router.get(
