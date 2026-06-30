@@ -128,9 +128,36 @@ export class WorkspaceService {
         }
       }
 
-      const newPaper = new Paper(paperData);
-      await newPaper.save();
-      paperId = newPaper._id;
+      let existingPaper = null;
+      if (paperData.doi) {
+        existingPaper = await Paper.findOne({ doi: paperData.doi });
+      }
+      if (!existingPaper && paperData.externalId_openalexId) {
+        existingPaper = await Paper.findOne({ externalId_openalexId: paperData.externalId_openalexId });
+      }
+      if (!existingPaper && paperData.externalId_semanticScholarId) {
+        existingPaper = await Paper.findOne({ externalId_semanticScholarId: paperData.externalId_semanticScholarId });
+      }
+      if (!existingPaper && paperData.externalId_crossref) {
+        existingPaper = await Paper.findOne({ externalId_crossref: paperData.externalId_crossref });
+      }
+
+      if (existingPaper) {
+        paperId = existingPaper._id;
+      } else {
+        try {
+          const newPaper = new Paper(paperData);
+          await newPaper.save();
+          paperId = newPaper._id;
+        } catch (error: any) {
+          if (error.code === 11000) {
+            // If another concurrent request just created it, or it exists with some other unique field
+            // we should try to find it again by title or something, but throw a better error for now
+            throw { status: 409, message: "Paper already exists in the database. Please try adding from Local Database." };
+          }
+          throw error;
+        }
+      }
     }
 
     if (!paperId) throw { status: 400, message: "paperId or paper object is required" };

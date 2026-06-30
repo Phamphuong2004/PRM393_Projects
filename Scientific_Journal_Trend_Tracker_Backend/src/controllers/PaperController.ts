@@ -253,9 +253,9 @@ export class PaperController {
       await paper.populate(["authors", "journalId", "keywords"]);
 
       res.status(201).json(paper);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      res.status(500).json({ message: "Server error during import" });
+      res.status(500).json({ message: "Server error during import", details: error.message || String(error) });
     }
   }
 }
