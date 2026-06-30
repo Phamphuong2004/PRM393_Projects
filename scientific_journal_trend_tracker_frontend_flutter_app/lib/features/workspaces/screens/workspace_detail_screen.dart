@@ -44,7 +44,7 @@ class WorkspaceDetailScreen extends ConsumerWidget {
               return const SizedBox.shrink();
             },
             loading: () => const SizedBox.shrink(),
-            error: (_, ___) => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
           ),
         ],
       ),
@@ -70,7 +70,7 @@ class WorkspaceDetailScreen extends ConsumerWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
-                              color: Theme.of(context).primaryColor.withOpacity(0.1),
+                              color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
@@ -159,7 +159,7 @@ class WorkspaceDetailScreen extends ConsumerWidget {
             TextField(controller: descCtrl, decoration: const InputDecoration(labelText: 'Description', border: OutlineInputBorder()), maxLines: 2),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: visibility,
+              initialValue: visibility,
               decoration: const InputDecoration(labelText: 'Visibility', border: OutlineInputBorder()),
               items: const [
                 DropdownMenuItem(value: 'team', child: Text('Team')),
@@ -628,7 +628,7 @@ class WorkspaceMembersTab extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: selectedRole,
+              initialValue: selectedRole,
               decoration: const InputDecoration(labelText: 'Role', border: OutlineInputBorder()),
               items: const [
                 DropdownMenuItem(value: 'viewer', child: Text('Viewer')),
@@ -769,7 +769,7 @@ class WorkspaceAlertsTab extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: frequency,
+              initialValue: frequency,
               decoration: const InputDecoration(labelText: 'Frequency', border: OutlineInputBorder()),
               items: const [
                 DropdownMenuItem(value: 'daily', child: Text('Daily')),
