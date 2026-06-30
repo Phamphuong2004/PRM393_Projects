@@ -26,7 +26,7 @@ class _UploadPdfScreenState extends ConsumerState<UploadPdfScreen> {
   List<int>? _fileBytes; // for web
 
   Future<void> _pickFile() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
+    FilePickerResult? result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
       withData: true,  // Always get bytes (works on both mobile and web)
