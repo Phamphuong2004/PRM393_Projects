@@ -5,6 +5,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../providers/workspace_detail_provider.dart';
 import '../../../core/repositories/workspace_repository.dart';
 import '../../../core/constants/api_constants.dart';
+import '../../../core/models/paper.dart';
+import '../../dashboard/screens/paper_detail_screen.dart';
 
 class WorkspaceDetailScreen extends ConsumerWidget {
   final String workspaceId;
@@ -295,11 +297,32 @@ class WorkspacePapersTab extends ConsumerWidget {
                       margin: const EdgeInsets.only(bottom: 12),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200)),
                       elevation: 0,
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () {
+                          try {
+                            // Ensure the map doesn't cause type cast issues
+                            final Map<String, dynamic> paperMap = Map<String, dynamic>.from(paper);
+                            // If authors is missing or contains ObjectIds (Strings) instead of populated maps, clear it
+                            if (paperMap['authors'] == null || (paperMap['authors'] is List && paperMap['authors'].isNotEmpty && paperMap['authors'][0] is String)) {
+                              paperMap['authors'] = [];
+                            }
+                            final paperObj = Paper.fromJson(paperMap);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => PaperDetailScreen(paper: paperObj),
+                              ),
+                            );
+                          } catch (e) {
+                            debugPrint('Error viewing paper details: $e');
+                          }
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
                             Row(
                               children: [
                                 const Icon(Icons.description, color: Colors.blue),
@@ -333,76 +356,92 @@ class WorkspacePapersTab extends ConsumerWidget {
                             ),
                             const SizedBox(height: 8),
                             Row(
+                              crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                Text(
-                                  'Added: ${wp['addedAt']?.toString().substring(0, 10) ?? ''}',
-                                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                                Expanded(
+                                  child: Wrap(
+                                    spacing: 16,
+                                    runSpacing: 8,
+                                    crossAxisAlignment: WrapCrossAlignment.center,
+                                    alignment: WrapAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Added: ${wp['addedAt']?.toString().substring(0, 10) ?? ''}',
+                                        style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                                      ),
+                                      Wrap(
+                                        spacing: 8,
+                                        crossAxisAlignment: WrapCrossAlignment.center,
+                                        children: [
+                                          if (role == 'owner' || role == 'editor')
+                                            IconButton(
+                                              icon: const Icon(Icons.delete_outline, size: 20, color: Colors.grey),
+                                              onPressed: () => _removePaper(context, ref, paper['_id']),
+                                              padding: EdgeInsets.zero,
+                                              constraints: const BoxConstraints(),
+                                            ),
+                                          if (hasPdf)
+                                            TextButton.icon(
+                                              onPressed: () async {
+                                                // Cloudinary returns an absolute URL; older
+                                                // records may still hold a relative /uploads path.
+                                                final fullUrl = pdfUrl.startsWith('http')
+                                                    ? pdfUrl
+                                                    : '${ApiConstants.baseUrl}$pdfUrl';
+                                                final uri = Uri.parse(fullUrl);
+                                                final ok = await launchUrl(
+                                                  uri,
+                                                  mode: LaunchMode.externalApplication,
+                                                );
+                                                if (!ok && context.mounted) {
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    const SnackBar(
+                                                      content: Text('Could not open PDF link'),
+                                                    ),
+                                                  );
+                                                }
+                                              },
+                                              icon: const Icon(Icons.picture_as_pdf, size: 14),
+                                              label: const Text('View PDF'),
+                                              style: TextButton.styleFrom(
+                                                foregroundColor: Colors.red.shade700,
+                                                padding: EdgeInsets.zero,
+                                                minimumSize: const Size(0, 32),
+                                              ),
+                                            )
+                                          else
+                                            TextButton.icon(
+                                              onPressed: () {
+                                                if (paper['_id'] != null) {
+                                                  context.push<bool>('/app/workspaces/$workspaceId/papers/${paper['_id']}/upload-pdf').then((success) {
+                                                    if (success == true) {
+                                                      // Wait for the navigation animation to fully complete before invalidating, 
+                                                      // ensuring Riverpod's state tree is stable.
+                                                      Future.delayed(const Duration(milliseconds: 400), () {
+                                                        ref.invalidate(workspacePapersProvider(workspaceId));
+                                                      });
+                                                    }
+                                                  });
+                                                }
+                                              },
+                                              icon: const Icon(Icons.upload_file, size: 14),
+                                              label: const Text('Upload PDF'),
+                                              style: TextButton.styleFrom(
+                                                foregroundColor: Colors.blue,
+                                                padding: EdgeInsets.zero,
+                                                minimumSize: const Size(0, 32),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                const Spacer(),
-                                if (role == 'owner' || role == 'editor')
-                                  IconButton(
-                                    icon: const Icon(Icons.delete_outline, size: 20, color: Colors.grey),
-                                    onPressed: () => _removePaper(context, ref, paper['_id']),
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(),
-                                  ),
-                                const SizedBox(width: 8),
-                                if (hasPdf)
-                                  TextButton.icon(
-                                    onPressed: () async {
-                                      // Cloudinary returns an absolute URL; older
-                                      // records may still hold a relative /uploads path.
-                                      final fullUrl = pdfUrl.startsWith('http')
-                                          ? pdfUrl
-                                          : '${ApiConstants.baseUrl}$pdfUrl';
-                                      final uri = Uri.parse(fullUrl);
-                                      final ok = await launchUrl(
-                                        uri,
-                                        mode: LaunchMode.externalApplication,
-                                      );
-                                      if (!ok && context.mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text('Could not open PDF link'),
-                                          ),
-                                        );
-                                      }
-                                    },
-                                    icon: const Icon(Icons.picture_as_pdf, size: 14),
-                                    label: const Text('View PDF'),
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: Colors.red.shade700,
-                                      padding: EdgeInsets.zero,
-                                      minimumSize: const Size(0, 32),
-                                    ),
-                                  )
-                                else
-                                  TextButton.icon(
-                                    onPressed: () {
-                                      if (paper['_id'] != null) {
-                                        context.push<bool>('/app/workspaces/$workspaceId/papers/${paper['_id']}/upload-pdf').then((success) {
-                                          if (success == true) {
-                                            // Wait for the navigation animation to fully complete before invalidating, 
-                                            // ensuring Riverpod's state tree is stable.
-                                            Future.delayed(const Duration(milliseconds: 400), () {
-                                              ref.invalidate(workspacePapersProvider(workspaceId));
-                                            });
-                                          }
-                                        });
-                                      }
-                                    },
-                                    icon: const Icon(Icons.upload_file, size: 14),
-                                    label: const Text('Upload PDF'),
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: Colors.blue,
-                                      padding: EdgeInsets.zero,
-                                      minimumSize: const Size(0, 32),
-                                    ),
-                                  ),
                               ],
                             ),
                           ],
                         ),
+                      ),
                       ),
                     );
                   },
