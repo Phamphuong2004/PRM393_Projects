@@ -37,7 +37,7 @@ export const uploadPdfBuffer = (
         // Keep the original filename available for downloads
         context: `original_filename=${filename}`,
       },
-      (error, result) => {
+      (error: any, result: any) => {
         if (error) return reject(error);
         if (!result) return reject(new Error("Cloudinary upload returned no result"));
         resolve(result.secure_url);

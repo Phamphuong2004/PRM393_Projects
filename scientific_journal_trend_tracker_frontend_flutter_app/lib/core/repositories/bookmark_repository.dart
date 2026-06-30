@@ -22,7 +22,10 @@ class BookmarkRepository {
       final data = (response.data['bookmarks'] as List?) ??
           (response.data['data'] as List?) ??
           [];
-      return data.map((e) => Paper.fromJson(e as Map<String, dynamic>)).toList();
+      return data
+          .where((e) => e != null)
+          .map((e) => Paper.fromJson(e as Map<String, dynamic>))
+          .toList();
     } catch (e) {
       rethrow;
     }

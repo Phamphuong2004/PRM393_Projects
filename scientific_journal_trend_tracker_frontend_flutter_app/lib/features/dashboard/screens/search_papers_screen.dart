@@ -82,9 +82,13 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
       final papers = await ref.read(bookmarkRepositoryProvider).getBookmarks();
       if (!mounted) return;
       setState(() {
-        _savedIds
-          ..clear()
-          ..addAll(papers.map((p) => p.id));
+        _savedIds.clear();
+        for (var p in papers) {
+          _savedIds.add(p.id);
+          if (p.externalIdOpenalexId != null) _savedIds.add(p.externalIdOpenalexId!);
+          if (p.externalIdSemanticScholarId != null) _savedIds.add(p.externalIdSemanticScholarId!);
+          if (p.externalIdCrossref != null) _savedIds.add(p.externalIdCrossref!);
+        }
       });
     } catch (_) {
       // Non-blocking: keep current state if bookmarks can't be loaded.
