@@ -23,6 +23,7 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
   final _searchController = TextEditingController();
   List<Paper> _results = [];
   int _page = 1;
+  bool _isImporting = false;
   int _totalPages = 1;
   int _totalResults = 0;
   bool _loading = false;
@@ -82,9 +83,13 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
       final papers = await ref.read(bookmarkRepositoryProvider).getBookmarks();
       if (!mounted) return;
       setState(() {
-        _savedIds
-          ..clear()
-          ..addAll(papers.map((p) => p.id));
+        _savedIds.clear();
+        for (var p in papers) {
+          _savedIds.add(p.id);
+          if (p.externalIdOpenalexId != null) _savedIds.add(p.externalIdOpenalexId!);
+          if (p.externalIdSemanticScholarId != null) _savedIds.add(p.externalIdSemanticScholarId!);
+          if (p.externalIdCrossref != null) _savedIds.add(p.externalIdCrossref!);
+        }
       });
     } catch (_) {
       // Non-blocking: keep current state if bookmarks can't be loaded.
@@ -151,11 +156,47 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
     super.dispose();
   }
 
-  void _showPaperDetail(Paper paper) {
+  Future<void> _showPaperDetail(Paper paper) async {
+    final isLocalPaper =
+        _selectedSource == 'Local Database' && _objectIdRegex.hasMatch(paper.id);
+
+    Paper displayPaper = paper;
+
+    if (!isLocalPaper) {
+      setState(() { _isImporting = true; });
+
+      try {
+        final importedPaper = await ref.read(bookmarkRepositoryProvider).importBookmark(paper.toJson());
+        displayPaper = importedPaper;
+        
+        if (mounted) {
+          setState(() {
+            _isImporting = false;
+            _savedIds.add(paper.id);
+            _savedIds.add(importedPaper.id);
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() { _isImporting = false; });
+          String errorMessage = 'Failed to import and open paper details.';
+          if (e is DioException && e.response?.data != null) {
+            final data = e.response!.data;
+            if (data is Map && data['details'] != null) {
+              errorMessage = 'Backend Error: ${data['details']}';
+            }
+          }
+          _showSnack(errorMessage, AppColors.error);
+        }
+        return;
+      }
+    }
+
+    if (!mounted) return;
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => PaperDetailScreen(paper: paper),
+        builder: (context) => PaperDetailScreen(paper: displayPaper),
       ),
     );
   }
@@ -193,25 +234,16 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
   Future<void> _handleSave(Paper paper) async {
     if (_savedIds.contains(paper.id) || _savingIds.contains(paper.id)) return;
 
-    // Only papers that live in the local library (real Mongo _id) can be bookmarked.
     final isLocalPaper =
         _selectedSource == 'Local Database' && _objectIdRegex.hasMatch(paper.id);
 
-    if (!isLocalPaper) {
-      final origin = _selectedSource == 'Local Database'
-          ? (paper.source ?? 'an external source')
-          : _selectedSource;
-      _showSnack(
-        'This result comes from "$origin" and isn\'t saved in the library yet, '
-        'so it can\'t be bookmarked. Only papers from the Local Database can be saved.',
-        AppColors.error,
-      );
-      return;
-    }
-
     setState(() => _savingIds.add(paper.id));
     try {
-      await ref.read(bookmarkRepositoryProvider).addBookmark(paper.id);
+      if (isLocalPaper) {
+        await ref.read(bookmarkRepositoryProvider).addBookmark(paper.id);
+      } else {
+        await ref.read(bookmarkRepositoryProvider).importBookmark(paper.toJson());
+      }
       if (!mounted) return;
       setState(() {
         _savingIds.remove(paper.id);
@@ -221,11 +253,8 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _savingIds.remove(paper.id));
-      final notFound = e is DioException && e.response?.statusCode == 404;
       _showSnack(
-        notFound
-            ? 'This paper isn\'t available in the library, so it can\'t be bookmarked.'
-            : 'Failed to save bookmark. Please try again.',
+        'Failed to save bookmark. Please try again.',
         AppColors.error,
       );
     }
@@ -233,18 +262,14 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Stack(
       children: [
+        Column(
+          children: [
         // Search Header
         Container(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF0F172A), Color(0xFF4F46E5)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+          color: AppColors.bg,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -252,49 +277,71 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
                 Row(
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
                       padding: EdgeInsets.zero,
                       alignment: Alignment.centerLeft,
                       onPressed: () => context.pop(),
                     ),
-                    const Text('Back to Workspace', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                    const Text('Back to Workspace', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
                   ],
                 ),
                 const SizedBox(height: 12),
               ],
-              const Text('Discovery Engine', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white)),
+              const Text('Search & Discovery', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.5)),
               const SizedBox(height: 4),
-              const Text('Search by title, abstract, author, or journal', style: TextStyle(color: Colors.white70, fontSize: 13)),
-              const SizedBox(height: 12),
+              const Text('Search by title, abstract, author, or journal', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+              const SizedBox(height: 20),
 
               // Search Bar + Filter Icon
               Row(
                 children: [
                   Expanded(
-                    child: TextField(
-                      controller: _searchController,
-                      style: const TextStyle(color: Colors.black),
-                      decoration: InputDecoration(
-                        hintText: 'Search papers, authors, journals...',
-                        prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.textPrimary.withValues(alpha: 0.03),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          )
+                        ]
                       ),
-                      onSubmitted: (_) { setState(() => _page = 1); _fetchPapers(); },
+                      child: TextField(
+                        controller: _searchController,
+                        style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w500),
+                        decoration: InputDecoration(
+                          hintText: 'Search papers, authors, journals...',
+                          hintStyle: const TextStyle(color: AppColors.textLight, fontWeight: FontWeight.w400),
+                          prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primary),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        ),
+                        onSubmitted: (_) { setState(() => _page = 1); _fetchPapers(); },
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 12),
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
+                      boxShadow: [
+                         BoxShadow(
+                            color: AppColors.textPrimary.withValues(alpha: 0.03),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          )
+                      ]
                     ),
                     child: IconButton(
+                      padding: const EdgeInsets.all(16),
                       icon: Stack(
                         children: [
-                          const Icon(Icons.tune, color: AppColors.primary),
+                          const Icon(Icons.tune_rounded, color: AppColors.primary),
                           if (_selectedYear != 'All Years')
                             Positioned(
                               right: 0,
@@ -303,7 +350,7 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
                                 width: 8,
                                 height: 8,
                                 decoration: const BoxDecoration(
-                                  color: Colors.orange,
+                                  color: AppColors.accent,
                                   shape: BoxShape.circle,
                                 ),
                               ),
@@ -315,24 +362,25 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
 
               // Source Dropdown + Reset
               Row(
                 children: [
                   Expanded(
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppColors.surface,
                         borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
                       ),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
                           value: _selectedSource,
                           isExpanded: true,
-                          icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.primary),
-                          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w600, fontSize: 14),
+                          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.primary),
+                          style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600, fontSize: 14),
                           items: ['Local Database', 'OpenAlex', 'Semantic Scholar', 'Crossref', 'IEEE Xplore', 'Exa Research']
                               .map((s) => DropdownMenuItem(value: s, child: Text(s, overflow: TextOverflow.ellipsis)))
                               .toList(),
@@ -349,23 +397,25 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  OutlinedButton.icon(
+                  const SizedBox(width: 12),
+                  TextButton.icon(
                     onPressed: _reset,
-                    icon: const Icon(Icons.filter_alt_off, size: 16, color: Colors.white),
-                    label: const Text('Reset', style: TextStyle(color: Colors.white)),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Colors.white),
-                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                    icon: const Icon(Icons.filter_alt_off_rounded, size: 18),
+                    label: const Text('Reset'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.textSecondary,
+                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      backgroundColor: AppColors.surface,
+                      side: BorderSide(color: AppColors.border.withValues(alpha: 0.4)),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Text(
                 '${_searchController.text.isNotEmpty ? "Search results" : "Recent papers"} • Page $_page of $_totalPages • $_totalResults results',
-                style: const TextStyle(color: Colors.white70, fontSize: 12),
+                style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w500),
               ),
             ],
           ),
@@ -402,8 +452,19 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
                         ),
         ),
       ],
-    );
-  }
+    ),
+    if (_isImporting)
+      Positioned.fill(
+        child: Container(
+          color: Colors.white.withValues(alpha: 0.7),
+          child: const Center(
+            child: CircularProgressIndicator(),
+          ),
+        ),
+      ),
+    ],
+  );
+}
 
   Widget _buildPaperCard(Paper paper) {
     final authorsList = paper.authors ?? [];
@@ -411,25 +472,19 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
         ? authorsList.map((a) => a.fullName).join(', ')
         : 'Unknown';
     final journal = paper.journalId != null
-        ? (paper.journalId is Map ? paper.journalId['name'] : paper.journalId.toString())
+        ? (paper.journalId is Map ? (paper.journalId['name']?.toString() ?? 'Unknown journal') : paper.journalId.toString())
         : 'Unknown journal';
     final year = paper.publicationYear?.toString() ?? '';
     final citations = paper.citationCount;
     final hasOpenAlex = paper.externalIdOpenalexId != null && paper.externalIdOpenalexId!.isNotEmpty;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.3)),
+        boxShadow: AppColors.softShadow,
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -445,9 +500,9 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
                     child: Text(
                       paper.title,
                       style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF4F46E5),
-                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                        fontSize: 16,
                         height: 1.3,
                       ),
                     ),
@@ -478,8 +533,8 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
               Text(
                 'DOI: ${paper.doi}',
                 style: const TextStyle(
-                  color: Color(0xFF8B5CF6),
-                  fontSize: 14,
+                  color: AppColors.primaryLight,
+                  fontSize: 13,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -487,9 +542,9 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
             const SizedBox(height: 8),
             Text(
               '$authors · ${year.isNotEmpty ? year : "N/A"} · $citations citations · $journal',
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 14,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 13,
                 height: 1.4,
               ),
             ),
@@ -498,9 +553,9 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
               paper.abstract?.isNotEmpty == true ? paper.abstract! : 'No abstract available.',
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 14,
-                color: Colors.grey.shade700,
+                color: AppColors.textSecondary,
                 height: 1.5,
               ),
             ),
@@ -508,66 +563,75 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
             const Divider(height: 1),
             const SizedBox(height: 12),
             Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Builder(
-                  builder: (_) {
-                    if (widget.workspaceId != null) {
-                      final isAdding = _addingToWorkspaceIds.contains(paper.id);
-                      final isAdded = _addedToWorkspaceIds.contains(paper.id);
+                Expanded(
+                  child: Wrap(
+                    spacing: 16,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Builder(
+                        builder: (_) {
+                          if (widget.workspaceId != null) {
+                            final isAdding = _addingToWorkspaceIds.contains(paper.id);
+                            final isAdded = _addedToWorkspaceIds.contains(paper.id);
 
-                      return TextButton.icon(
-                        onPressed: (isAdding || isAdded) ? null : () => _handleAddToWorkspace(paper),
-                        icon: isAdding
-                            ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                            : Icon(isAdded ? Icons.check : Icons.add, size: 18),
-                        label: Text(isAdded ? 'Added' : 'Add to Workspace'),
-                        style: TextButton.styleFrom(
-                          foregroundColor: isAdded ? Colors.green : const Color(0xFF4F46E5),
-                          disabledForegroundColor: isAdded ? Colors.green : Colors.grey,
-                          padding: EdgeInsets.zero,
-                          minimumSize: const Size(60, 36),
-                        ),
-                      );
-                    }
+                            return TextButton.icon(
+                              onPressed: (isAdding || isAdded) ? null : () => _handleAddToWorkspace(paper),
+                              icon: isAdding
+                                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                                  : Icon(isAdded ? Icons.check : Icons.add, size: 18),
+                              label: Text(isAdded ? 'Added' : 'Add to Workspace'),
+                              style: TextButton.styleFrom(
+                                foregroundColor: isAdded ? Colors.green : const Color(0xFF4F46E5),
+                                disabledForegroundColor: isAdded ? Colors.green : Colors.grey,
+                                padding: EdgeInsets.zero,
+                                minimumSize: const Size(60, 36),
+                              ),
+                            );
+                          }
 
-                    final saved = _savedIds.contains(paper.id);
-                    final saving = _savingIds.contains(paper.id);
-                    return TextButton.icon(
-                      onPressed: saving ? null : () => _handleSave(paper),
-                      icon: saving
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : Icon(saved ? Icons.bookmark : Icons.bookmark_border, size: 18),
-                      label: Text(saved ? 'Saved' : 'Save'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: saved ? AppColors.primary : Colors.grey.shade700,
-                        padding: EdgeInsets.zero,
-                        minimumSize: const Size(60, 36),
+                          final saved = _savedIds.contains(paper.id);
+                          final saving = _savingIds.contains(paper.id);
+                          return TextButton.icon(
+                            onPressed: saving ? null : () => _handleSave(paper),
+                            icon: saving
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                : Icon(saved ? Icons.bookmark : Icons.bookmark_border, size: 18),
+                            label: Text(saved ? 'Saved' : 'Save'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: saved ? AppColors.primary : Colors.grey.shade700,
+                              padding: EdgeInsets.zero,
+                              minimumSize: const Size(60, 36),
+                            ),
+                          );
+                        },
                       ),
-                    );
-                  },
-                ),
-                const SizedBox(width: 16),
-                if (paper.url != null && paper.url!.isNotEmpty)
-                  TextButton.icon(
-                    onPressed: () async {
-                      final url = Uri.parse(paper.url!);
-                      if (await canLaunchUrl(url)) {
-                        await launchUrl(url);
-                      }
-                    },
-                    icon: const Icon(Icons.open_in_new, size: 18),
-                    label: const Text('Source'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.grey.shade700,
-                      padding: EdgeInsets.zero,
-                      minimumSize: const Size(60, 36),
-                    ),
+                      if (paper.url != null && paper.url!.isNotEmpty)
+                        TextButton.icon(
+                          onPressed: () async {
+                            final url = Uri.parse(paper.url!);
+                            if (await canLaunchUrl(url)) {
+                              await launchUrl(url);
+                            }
+                          },
+                          icon: const Icon(Icons.open_in_new, size: 18),
+                          label: const Text('Source'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.grey.shade700,
+                            padding: EdgeInsets.zero,
+                            minimumSize: const Size(60, 36),
+                          ),
+                        ),
+                    ],
                   ),
-                const Spacer(),
+                ),
+                const SizedBox(width: 8),
                 TextButton(
                   onPressed: () => _showPaperDetail(paper),
                   style: TextButton.styleFrom(

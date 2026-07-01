@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import { validationResult } from "express-validator";
 import Paper from "../models/Paper";
+import Author from "../models/Author";
+import Journal from "../models/Journal";
+import User from "../models/User";
 
 export class PaperController {
   static async getAllPapers(req: Request, res: Response): Promise<void> {
@@ -136,6 +139,123 @@ export class PaperController {
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: "Server error" });
+    }
+  }
+
+  static async importExternalPaper(req: Request, res: Response): Promise<void> {
+    try {
+      const item = req.body;
+      const doi = item.doi;
+      let paper = null;
+      if (doi) {
+        paper = await Paper.findOne({ doi });
+      }
+
+      const openalexId = item.externalId_openalexId || item.externalIdOpenalexId || (item._id && String(item._id).startsWith("https://openalex.org/") ? item._id : null);
+
+      if (!paper) {
+        if (openalexId) {
+          paper = await Paper.findOne({
+            $or: [
+              { externalId_openalexId: openalexId },
+              { externalId_semanticScholarId: openalexId }
+            ]
+          });
+        } else if (item._id) {
+          paper = await Paper.findOne({
+            $or: [
+              { externalId_semanticScholarId: item._id },
+              { externalId_crossref: item._id }
+            ]
+          });
+        }
+      }
+
+      if (!paper) {
+        // Process Journal (Venue)
+        let journalId = null;
+        if (item.source) {
+          let journal = await Journal.findOne({ name: item.source });
+          if (!journal) {
+            journal = new Journal({ name: item.source, source: "Import" });
+            await journal.save();
+          }
+          journalId = journal._id;
+        }
+
+        // Process Authors
+        const authorIds = [];
+        if (item.authors && Array.isArray(item.authors)) {
+          for (const a of item.authors) {
+            const authorName = a.fullName || a.name;
+            if (!authorName) continue;
+            let author = null;
+            if (a.id || a.externalAuthorId) {
+              author = await Author.findOne({ externalAuthorId: a.id || a.externalAuthorId });
+            }
+            if (!author) {
+              author = await Author.findOne({ fullName: authorName });
+            }
+            if (!author) {
+              const newAuthorData: any = {
+                fullName: authorName,
+              };
+              const extId = a.id || a.externalAuthorId;
+              if (extId) {
+                newAuthorData.externalAuthorId = extId;
+              }
+              author = new Author(newAuthorData);
+              await author.save();
+            }
+            authorIds.push(author._id);
+          }
+        }
+
+        const paperData: any = {
+          title: item.title,
+          abstract: item.abstract,
+          url: item.url,
+          publicationYear: item.publicationYear || item.year,
+          citationCount: item.citationCount || 0,
+          authors: authorIds,
+          ...(journalId && { journalId }),
+          source: item.source || "External",
+          lastSyncedAt: new Date()
+        };
+        if (doi) paperData.doi = doi;
+
+        paper = new Paper(paperData);
+
+        if (openalexId) {
+          paper.externalId_openalexId = openalexId;
+        } else if (item._id) {
+          if (String(item._id).startsWith("http")) {
+            paper.externalId_crossref = item._id;
+          } else {
+            paper.externalId_semanticScholarId = item._id;
+          }
+        }
+
+        await paper.save();
+      }
+
+      // Add to bookmarks if userId is provided in req.user (requires authMiddleware)
+      const userId = (req as any).userId || (req as any).user?.id;
+      if (userId) {
+        const user = await User.findById(userId);
+        if (user && !user.bookmarks.includes(paper._id)) {
+          user.bookmarks.push(paper._id);
+          await user.save();
+        }
+      }
+
+      // Populate authors, journalId, and keywords so frontend receives complete, structured data
+      await paper.populate(["authors", "journalId", "keywords"]);
+
+      res.status(201).json(paper);
+    } catch (error: any) {
+      console.error(error);
+      res.status(500).json({ message: "Server error during import", details: error.message || String(error) });
     }
   }
 }

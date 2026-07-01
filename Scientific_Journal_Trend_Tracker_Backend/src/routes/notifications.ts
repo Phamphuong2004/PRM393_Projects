@@ -13,6 +13,23 @@ const router = Router();
 router.use(authMiddleware);
 router.use(rateLimit(rateLimits.api));
 
+// Test Real-time Notification
+router.post("/test-realtime", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const title = "Real-time Test";
+    const message = `Hello! This is a test notification sent at ${new Date().toLocaleTimeString()}`;
+    const notification = await NotificationService.createNotification(
+      req.userId!,
+      title,
+      message,
+      "system"
+    );
+    res.json({ success: true, notification });
+  } catch (error: any) {
+    res.status(error.status || 500).json({ message: error.message });
+  }
+});
+
 // Get user notifications
 router.get("/", async (req: Request, res: Response): Promise<void> => {
   try {

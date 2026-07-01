@@ -22,7 +22,10 @@ class BookmarkRepository {
       final data = (response.data['bookmarks'] as List?) ??
           (response.data['data'] as List?) ??
           [];
-      return data.map((e) => Paper.fromJson(e as Map<String, dynamic>)).toList();
+      return data
+          .where((e) => e != null)
+          .map((e) => Paper.fromJson(e as Map<String, dynamic>))
+          .toList();
     } catch (e) {
       rethrow;
     }
@@ -31,6 +34,15 @@ class BookmarkRepository {
   Future<void> addBookmark(String paperId) async {
     try {
       await _dio.post('${ApiConstants.bookmarks}/$paperId');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Paper> importBookmark(Map<String, dynamic> paperData) async {
+    try {
+      final response = await _dio.post('/api/papers/import', data: paperData);
+      return Paper.fromJson(response.data as Map<String, dynamic>);
     } catch (e) {
       rethrow;
     }

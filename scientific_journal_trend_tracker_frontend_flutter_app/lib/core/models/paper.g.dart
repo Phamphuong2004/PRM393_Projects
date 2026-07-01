@@ -30,12 +30,15 @@ _Paper _$PaperFromJson(Map<String, dynamic> json) => _Paper(
   publicationYear: (json['publicationYear'] as num?)?.toInt(),
   citationCount: (json['citationCount'] as num?)?.toInt() ?? 0,
   externalIdOpenalexId: json['externalId_openalexId'] as String?,
+  externalIdSemanticScholarId: json['externalId_semanticScholarId'] as String?,
+  externalIdCrossref: json['externalId_crossref'] as String?,
   authors: (json['authors'] as List<dynamic>?)
       ?.map((e) => PaperAuthor.fromJson(e as Map<String, dynamic>))
       .toList(),
   journalId: json['journalId'],
   keywords: json['keywords'] as List<dynamic>?,
   topics: json['topics'] as List<dynamic>?,
+  pdfUrl: json['pdfUrl'] as String?,
   source: json['source'] as String?,
   createdAt: json['createdAt'] == null
       ? null
@@ -54,10 +57,13 @@ Map<String, dynamic> _$PaperToJson(_Paper instance) => <String, dynamic>{
   'publicationYear': instance.publicationYear,
   'citationCount': instance.citationCount,
   'externalId_openalexId': instance.externalIdOpenalexId,
+  'externalId_semanticScholarId': instance.externalIdSemanticScholarId,
+  'externalId_crossref': instance.externalIdCrossref,
   'authors': instance.authors,
   'journalId': instance.journalId,
   'keywords': instance.keywords,
   'topics': instance.topics,
+  'pdfUrl': instance.pdfUrl,
   'source': instance.source,
   'createdAt': instance.createdAt?.toIso8601String(),
   'updatedAt': instance.updatedAt?.toIso8601String(),

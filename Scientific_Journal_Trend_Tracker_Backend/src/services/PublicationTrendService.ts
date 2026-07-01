@@ -54,13 +54,13 @@ export class PublicationTrendService {
     // Calculate growth rate if needed
     if (trendData.previousCount) {
       trendData.growthRate = calculateGrowthRate(
-        trendData.paperCount,
         trendData.previousCount,
+        trendData.paperCount,
       );
     }
 
     // Determine if trending based on growth rate
-    if (trendData.growthRate && trendData.growthRate > 0.2) {
+    if (trendData.growthRate && trendData.growthRate > 20) {
       trendData.isTrending = true;
     }
 
@@ -243,8 +243,8 @@ export class PublicationTrendService {
       
       let previousCount = 0;
       for (const data of yearsData) {
-        const growthRate = previousCount === 0 ? 0 : calculateGrowthRate(data.paperCount, previousCount);
-        const isTrending = growthRate > 0.2;
+        const growthRate = previousCount === 0 ? 0 : calculateGrowthRate(previousCount, data.paperCount);
+        const isTrending = growthRate > 20;
 
         trendBulkOps.push({
           updateOne: {

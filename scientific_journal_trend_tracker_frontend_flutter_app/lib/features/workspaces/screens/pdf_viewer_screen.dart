@@ -41,13 +41,17 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
             widget.pdfUrl,
             controller: _controller,
             onDocumentLoaded: (_) {
-              if (mounted) setState(() => _isLoading = false);
+              if (mounted) {
+                setState(() => _isLoading = false);
+              }
             },
             onDocumentLoadFailed: (details) {
-              if (mounted) setState(() {
-                _isLoading = false;
-                _error = details.description;
-              });
+              if (mounted) {
+                setState(() {
+                  _isLoading = false;
+                  _error = details.description;
+                });
+              }
             },
           ),
           if (_isLoading)

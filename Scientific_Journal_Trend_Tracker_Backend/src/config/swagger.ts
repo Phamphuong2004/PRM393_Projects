@@ -80,6 +80,32 @@ const swaggerSpec = {
         responses: { "200": { description: "OK" } },
       },
     },
+    "/api/auth/google-login": {
+      post: {
+        tags: ["Auth"],
+        summary: "Login with Google ID Token or Access Token and receive JWT",
+        security: [],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["idToken"],
+                properties: {
+                  idToken: { 
+                    type: "string", 
+                    description: "Google ID Token (Mobile) or Access Token (Web)",
+                    example: "ya29.a0... or eyJhbGciOiJ..." 
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: { "200": { description: "OK" } },
+      },
+    },
     "/api/auth/me": {
       get: {
         tags: ["Auth"],
@@ -116,6 +142,21 @@ const swaggerSpec = {
           content: {
             "application/json": {
               schema: { $ref: "#/components/schemas/PaperWriteRequest" },
+            },
+          },
+        },
+        responses: { "201": { description: "Created" } },
+      },
+    },
+    "/api/papers/import": {
+      post: {
+        tags: ["Papers"],
+        summary: "Import an external paper and automatically bookmark it",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { type: "object" },
             },
           },
         },

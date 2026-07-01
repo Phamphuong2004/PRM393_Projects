@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../providers/workspace_detail_provider.dart';
 import '../../../core/repositories/workspace_repository.dart';
 import '../../../core/constants/api_constants.dart';
-import 'pdf_viewer_screen.dart';
+import '../../../core/models/paper.dart';
+import '../../dashboard/screens/paper_detail_screen.dart';
 
 class WorkspaceDetailScreen extends ConsumerWidget {
   final String workspaceId;
@@ -42,7 +44,7 @@ class WorkspaceDetailScreen extends ConsumerWidget {
               return const SizedBox.shrink();
             },
             loading: () => const SizedBox.shrink(),
-            error: (_, ___) => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
           ),
         ],
       ),
@@ -68,7 +70,7 @@ class WorkspaceDetailScreen extends ConsumerWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
-                              color: Theme.of(context).primaryColor.withOpacity(0.1),
+                              color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
@@ -157,7 +159,7 @@ class WorkspaceDetailScreen extends ConsumerWidget {
             TextField(controller: descCtrl, decoration: const InputDecoration(labelText: 'Description', border: OutlineInputBorder()), maxLines: 2),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: visibility,
+              initialValue: visibility,
               decoration: const InputDecoration(labelText: 'Visibility', border: OutlineInputBorder()),
               items: const [
                 DropdownMenuItem(value: 'team', child: Text('Team')),
@@ -295,11 +297,32 @@ class WorkspacePapersTab extends ConsumerWidget {
                       margin: const EdgeInsets.only(bottom: 12),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200)),
                       elevation: 0,
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () {
+                          try {
+                            // Ensure the map doesn't cause type cast issues
+                            final Map<String, dynamic> paperMap = Map<String, dynamic>.from(paper);
+                            // If authors is missing or contains ObjectIds (Strings) instead of populated maps, clear it
+                            if (paperMap['authors'] == null || (paperMap['authors'] is List && paperMap['authors'].isNotEmpty && paperMap['authors'][0] is String)) {
+                              paperMap['authors'] = [];
+                            }
+                            final paperObj = Paper.fromJson(paperMap);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => PaperDetailScreen(paper: paperObj),
+                              ),
+                            );
+                          } catch (e) {
+                            debugPrint('Error viewing paper details: $e');
+                          }
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
                             Row(
                               children: [
                                 const Icon(Icons.description, color: Colors.blue),
@@ -333,73 +356,176 @@ class WorkspacePapersTab extends ConsumerWidget {
                             ),
                             const SizedBox(height: 8),
                             Row(
+                              crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                Text(
-                                  'Added: ${wp['addedAt']?.toString().substring(0, 10) ?? ''}',
-                                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                                Expanded(
+                                  child: Wrap(
+                                    spacing: 16,
+                                    runSpacing: 8,
+                                    crossAxisAlignment: WrapCrossAlignment.center,
+                                    alignment: WrapAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Added: ${wp['addedAt']?.toString().substring(0, 10) ?? ''}',
+                                        style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                                      ),
+                                      Wrap(
+                                        spacing: 8,
+                                        crossAxisAlignment: WrapCrossAlignment.center,
+                                        children: [
+                                          if (role == 'owner' || role == 'editor')
+                                            IconButton(
+                                              icon: const Icon(Icons.delete_outline, size: 20, color: Colors.grey),
+                                              onPressed: () => _removePaper(context, ref, paper['_id']),
+                                              padding: EdgeInsets.zero,
+                                              constraints: const BoxConstraints(),
+                                            ),
+                                          if (hasPdf)
+                                            PopupMenuButton<String>(
+                                              tooltip: 'PDF Options',
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.red.shade50,
+                                                  borderRadius: BorderRadius.circular(6),
+                                                  border: Border.all(color: Colors.red.shade200),
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Icon(Icons.picture_as_pdf, size: 14, color: Colors.red.shade700),
+                                                    const SizedBox(width: 4),
+                                                    Text('PDF Options', style: TextStyle(fontSize: 12, color: Colors.red.shade700, fontWeight: FontWeight.bold)),
+                                                    const Icon(Icons.arrow_drop_down, size: 16, color: Colors.red),
+                                                  ],
+                                                ),
+                                              ),
+                                              itemBuilder: (context) => [
+                                                const PopupMenuItem(
+                                                  value: 'view',
+                                                  child: Row(
+                                                    children: [
+                                                      Icon(Icons.visibility, size: 20, color: Colors.blue),
+                                                      SizedBox(width: 8),
+                                                      Text('View PDF'),
+                                                    ],
+                                                  ),
+                                                ),
+                                                if (role == 'owner' || role == 'editor')
+                                                  const PopupMenuItem(
+                                                    value: 'update',
+                                                    child: Row(
+                                                      children: [
+                                                        Icon(Icons.upload_file, size: 20, color: Colors.green),
+                                                        SizedBox(width: 8),
+                                                        Text('Update PDF'),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                if (role == 'owner' || role == 'editor')
+                                                  const PopupMenuItem(
+                                                    value: 'remove',
+                                                    child: Row(
+                                                      children: [
+                                                        Icon(Icons.delete, size: 20, color: Colors.red),
+                                                        SizedBox(width: 8),
+                                                        Text('Remove PDF', style: TextStyle(color: Colors.red)),
+                                                      ],
+                                                    ),
+                                                  ),
+                                              ],
+                                              onSelected: (value) async {
+                                                if (value == 'view') {
+                                                  final fullUrl = pdfUrl.startsWith('http')
+                                                      ? pdfUrl
+                                                      : '${ApiConstants.baseUrl}$pdfUrl';
+                                                  final uri = Uri.parse(fullUrl);
+                                                  final ok = await launchUrl(
+                                                    uri,
+                                                    mode: LaunchMode.externalApplication,
+                                                  );
+                                                  if (!ok && context.mounted) {
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      const SnackBar(
+                                                        content: Text('Could not open PDF link'),
+                                                      ),
+                                                    );
+                                                  }
+                                                } else if (value == 'update') {
+                                                  if (paper['_id'] != null) {
+                                                    context.push<bool>('/app/workspaces/$workspaceId/papers/${paper['_id']}/upload-pdf').then((success) {
+                                                      if (success == true) {
+                                                        Future.delayed(const Duration(milliseconds: 400), () {
+                                                          ref.invalidate(workspacePapersProvider(workspaceId));
+                                                        });
+                                                      }
+                                                    });
+                                                  }
+                                                } else if (value == 'remove') {
+                                                  final confirmed = await showDialog<bool>(
+                                                    context: context,
+                                                    builder: (ctx) => AlertDialog(
+                                                      title: const Text('Remove PDF'),
+                                                      content: const Text('Are you sure you want to remove the PDF from this paper?'),
+                                                      actions: [
+                                                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                                                        TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Remove', style: TextStyle(color: Colors.red))),
+                                                      ],
+                                                    ),
+                                                  );
+
+                                                  if (confirmed == true) {
+                                                    try {
+                                                      await ref.read(workspaceRepositoryProvider).deletePaperPdf(
+                                                        workspaceId: workspaceId,
+                                                        paperId: paper['_id'],
+                                                      );
+                                                      ref.invalidate(workspacePapersProvider(workspaceId));
+                                                      if (context.mounted) {
+                                                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('PDF removed')));
+                                                      }
+                                                    } catch (e) {
+                                                      if (context.mounted) {
+                                                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              },
+                                            )
+                                          else
+                                            TextButton.icon(
+                                              onPressed: () {
+                                                if (paper['_id'] != null) {
+                                                  context.push<bool>('/app/workspaces/$workspaceId/papers/${paper['_id']}/upload-pdf').then((success) {
+                                                    if (success == true) {
+                                                      // Wait for the navigation animation to fully complete before invalidating, 
+                                                      // ensuring Riverpod's state tree is stable.
+                                                      Future.delayed(const Duration(milliseconds: 400), () {
+                                                        ref.invalidate(workspacePapersProvider(workspaceId));
+                                                      });
+                                                    }
+                                                  });
+                                                }
+                                              },
+                                              icon: const Icon(Icons.upload_file, size: 14),
+                                              label: const Text('Upload PDF'),
+                                              style: TextButton.styleFrom(
+                                                foregroundColor: Colors.blue,
+                                                padding: EdgeInsets.zero,
+                                                minimumSize: const Size(0, 32),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                const Spacer(),
-                                if (role == 'owner' || role == 'editor')
-                                  IconButton(
-                                    icon: const Icon(Icons.delete_outline, size: 20, color: Colors.grey),
-                                    onPressed: () => _removePaper(context, ref, paper['_id']),
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(),
-                                  ),
-                                const SizedBox(width: 8),
-                                if (hasPdf)
-                                  TextButton.icon(
-                                    onPressed: () {
-                                      // Cloudinary returns an absolute URL; older
-                                      // records may still hold a relative /uploads path.
-                                      final fullUrl = pdfUrl.startsWith('http')
-                                          ? pdfUrl
-                                          : '${ApiConstants.baseUrl}$pdfUrl';
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => PdfViewerScreen(
-                                            pdfUrl: fullUrl,
-                                            title: paper['title'] ?? 'PDF Viewer',
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                    icon: const Icon(Icons.picture_as_pdf, size: 14),
-                                    label: const Text('View PDF'),
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: Colors.red.shade700,
-                                      padding: EdgeInsets.zero,
-                                      minimumSize: const Size(0, 32),
-                                    ),
-                                  )
-                                else
-                                  TextButton.icon(
-                                    onPressed: () {
-                                      if (paper['_id'] != null) {
-                                        context.push<bool>('/app/workspaces/$workspaceId/papers/${paper['_id']}/upload-pdf').then((success) {
-                                          if (success == true) {
-                                            // Wait for the navigation animation to fully complete before invalidating, 
-                                            // ensuring Riverpod's state tree is stable.
-                                            Future.delayed(const Duration(milliseconds: 400), () {
-                                              ref.invalidate(workspacePapersProvider(workspaceId));
-                                            });
-                                          }
-                                        });
-                                      }
-                                    },
-                                    icon: const Icon(Icons.upload_file, size: 14),
-                                    label: const Text('Upload PDF'),
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: Colors.blue,
-                                      padding: EdgeInsets.zero,
-                                      minimumSize: const Size(0, 32),
-                                    ),
-                                  ),
                               ],
                             ),
                           ],
                         ),
+                      ),
                       ),
                     );
                   },
@@ -586,7 +712,7 @@ class WorkspaceMembersTab extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: selectedRole,
+              initialValue: selectedRole,
               decoration: const InputDecoration(labelText: 'Role', border: OutlineInputBorder()),
               items: const [
                 DropdownMenuItem(value: 'viewer', child: Text('Viewer')),
@@ -727,7 +853,7 @@ class WorkspaceAlertsTab extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: frequency,
+              initialValue: frequency,
               decoration: const InputDecoration(labelText: 'Frequency', border: OutlineInputBorder()),
               items: const [
                 DropdownMenuItem(value: 'daily', child: Text('Daily')),

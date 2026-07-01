@@ -3,17 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import '../providers/workspace_paper_provider.dart';
-import '../providers/workspace_detail_provider.dart';
 
 class UploadPdfScreen extends ConsumerStatefulWidget {
   final String workspaceId;
   final String paperId;
 
   const UploadPdfScreen({
-    Key? key,
+    super.key,
     required this.workspaceId,
     required this.paperId,
-  }) : super(key: key);
+  });
 
   @override
   ConsumerState<UploadPdfScreen> createState() => _UploadPdfScreenState();
@@ -26,7 +25,7 @@ class _UploadPdfScreenState extends ConsumerState<UploadPdfScreen> {
   List<int>? _fileBytes; // for web
 
   Future<void> _pickFile() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
+    FilePickerResult? result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
       withData: true,  // Always get bytes (works on both mobile and web)

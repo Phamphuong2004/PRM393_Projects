@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../services/api.dart';
 
 class AuthProvider with ChangeNotifier {
@@ -62,6 +64,44 @@ class AuthProvider with ChangeNotifier {
 
     try {
       final response = await AuthApi.login(email, password);
+      _token = response['token'];
+      _user = response['user'];
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('token', _token!);
+    } catch (e) {
+      _error = e.toString();
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loginWithGoogle() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final GoogleSignIn googleSignIn = GoogleSignIn(
+        clientId: kIsWeb ? '673014775519-rju4plaf4dc5bjqc7h7dprhtjv61i5h0.apps.googleusercontent.com' : null,
+        serverClientId: kIsWeb ? null : '673014775519-rju4plaf4dc5bjqc7h7dprhtjv61i5h0.apps.googleusercontent.com',
+        scopes: ['email', 'profile'],
+      );
+
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+      
+      if (googleUser == null) return;
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final String? idToken = googleAuth.idToken ?? googleAuth.accessToken;
+
+      if (idToken == null) {
+        throw Exception("Failed to get ID Token from Google");
+      }
+
+      final response = await AuthApi.googleLogin(idToken);
       _token = response['token'];
       _user = response['user'];
 

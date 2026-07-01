@@ -2,6 +2,8 @@ import axios from "axios";
 import Paper from "../models/Paper";
 import Keyword from "../models/Keyword";
 import SyncLog from "../models/SyncLog";
+import Author from "../models/Author";
+import Journal from "../models/Journal";
 import { NotificationService } from "./NotificationService";
 import { PublicationTrendService } from "./PublicationTrendService";
 import mongoose from "mongoose";
@@ -27,7 +29,7 @@ export class SyncService {
 
     try {
       // 1. Fetch keywords to track
-      const keywords = await Keyword.find().limit(5); // limit for example
+      const keywords = await Keyword.find();
 
       for (const keyword of keywords) {
         console.log(`Syncing keyword: ${keyword.name}`);
@@ -38,7 +40,7 @@ export class SyncService {
           params: {
             query: keyword.name,
             limit: 10,
-            fields: "title,abstract,url,year,externalIds,authors,citationCount"
+            fields: "title,abstract,url,year,externalIds,authors,citationCount,venue"
           },
           headers: {
             ...(apiKey && { "x-api-key": apiKey })
@@ -61,6 +63,40 @@ export class SyncService {
           // Dedup theo DOI
           const existing = await Paper.findOne({ doi });
           if (!existing) {
+            // Process Journal (Venue)
+            let journalId = null;
+            if (item.venue) {
+              let journal = await Journal.findOne({ name: item.venue });
+              if (!journal) {
+                journal = new Journal({ name: item.venue, source: "SemanticScholar" });
+                await journal.save();
+              }
+              journalId = journal._id;
+            }
+
+            // Process Authors
+            const authorIds = [];
+            if (item.authors && Array.isArray(item.authors)) {
+              for (const a of item.authors) {
+                if (!a.name) continue;
+                let author = null;
+                if (a.authorId) {
+                  author = await Author.findOne({ externalAuthorId: a.authorId });
+                }
+                if (!author) {
+                  author = await Author.findOne({ fullName: a.name });
+                }
+                if (!author) {
+                  author = new Author({
+                    fullName: a.name,
+                    externalAuthorId: a.authorId,
+                  });
+                  await author.save();
+                }
+                authorIds.push(author._id);
+              }
+            }
+
             // Lưu paper mới
             const paper = new Paper({
               title: item.title,
@@ -71,6 +107,8 @@ export class SyncService {
               citationCount: item.citationCount || 0,
               externalId_semanticScholarId: item.paperId,
               keywords: [keyword._id],
+              authors: authorIds,
+              ...(journalId && { journalId }),
               source: "SemanticScholar",
               lastSyncedAt: new Date()
             });
