@@ -2,11 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/theme.dart';
 
-class LandingScreen extends StatelessWidget {
+class LandingScreen extends StatefulWidget {
   const LandingScreen({super.key});
 
   @override
+  State<LandingScreen> createState() => _LandingScreenState();
+}
+
+class _LandingScreenState extends State<LandingScreen> {
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final isDesktop = MediaQuery.of(context).size.width > 800;
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -28,6 +42,7 @@ class LandingScreen extends StatelessWidget {
           ),
         ),
       ),
+      bottomNavigationBar: isDesktop ? null : _buildModernBottomNav(context),
     );
   }
 
@@ -190,7 +205,62 @@ class LandingScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 48),
+              const SizedBox(height: 40),
+              
+              // Search Bar
+              Container(
+                width: isDesktop ? 600 : double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.textPrimary.withValues(alpha: 0.04),
+                      blurRadius: 15,
+                      offset: const Offset(0, 8),
+                    )
+                  ]
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w500),
+                  decoration: InputDecoration(
+                    hintText: 'Search papers, authors, journals...',
+                    hintStyle: const TextStyle(color: AppColors.textLight, fontWeight: FontWeight.w400),
+                    prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primary),
+                    suffixIcon: GestureDetector(
+                      onTap: () {
+                        final value = _searchController.text;
+                        if (value.trim().isNotEmpty) {
+                          context.go('/search?q=${Uri.encodeComponent(value.trim())}');
+                        } else {
+                          context.go('/search');
+                        }
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryLight.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.arrow_forward_rounded, color: AppColors.primary, size: 20),
+                      ),
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  ),
+                  onSubmitted: (value) {
+                    if (value.trim().isNotEmpty) {
+                      context.go('/search?q=${Uri.encodeComponent(value.trim())}');
+                    } else {
+                      context.go('/search');
+                    }
+                  },
+                ),
+              ),
+              
+              const SizedBox(height: 32),
               ElevatedButton(
                 onPressed: () => context.go('/auth/register'),
                 style: ElevatedButton.styleFrom(
@@ -211,6 +281,34 @@ class LandingScreen extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildModernBottomNav(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        boxShadow: AppColors.glassShadow,
+      ),
+      child: NavigationBar(
+        height: 80,
+        selectedIndex: 0,
+        elevation: 0,
+        onDestinationSelected: (index) {
+          switch (index) {
+            case 0: break; // Stay on home page
+            case 1: context.go('/app/workspaces'); break;
+            case 2: context.go('/app/trending'); break;
+            case 3: context.go('/app/bookmarks'); break;
+          }
+        },
+        destinations: const [
+          NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard_rounded), label: 'Dashboard'),
+          NavigationDestination(icon: Icon(Icons.workspaces_outline), selectedIcon: Icon(Icons.workspaces), label: 'Workspaces'),
+          NavigationDestination(icon: Icon(Icons.trending_up_rounded), selectedIcon: Icon(Icons.trending_up_rounded), label: 'Trending'),
+          NavigationDestination(icon: Icon(Icons.bookmark_outline_rounded), selectedIcon: Icon(Icons.bookmark_rounded), label: 'Bookmarks'),
+        ],
+      ),
     );
   }
 }
