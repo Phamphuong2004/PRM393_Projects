@@ -10,6 +10,8 @@ import '../../../core/models/keyword.dart';
 import '../../../core/repositories/keyword_repository.dart';
 import 'package:provider/provider.dart' as prov;
 import 'paper_detail_screen.dart';
+import '../../../core/providers/notification_provider.dart';
+import '../../../core/providers/network_provider.dart';
 
 class HomeDashboardScreen extends ConsumerStatefulWidget {
   const HomeDashboardScreen({super.key});
@@ -161,6 +163,23 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
           ),
         ),
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          try {
+            final dio = ref.read(dioProvider);
+            await dio.post('/api/notifications/test-realtime');
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Test notification sent!')),
+              );
+            }
+          } catch (e) {
+            print(e);
+          }
+        },
+        backgroundColor: AppColors.primary,
+        child: const Icon(Icons.send, color: Colors.white),
+      ),
     );
   }
 
@@ -168,26 +187,66 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
     final firstName = user?['fullName']?.toString().split(' ').first ?? 'User';
     final trendingCount = _trendingKeywords.length;
 
-    return Column(
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Hi $firstName.',
-          style: const TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 28,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.5,
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Hi $firstName.',
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.5,
           ),
         ),
-        const SizedBox(height: 6),
-        Text(
-          '$trendingCount Keywords are trending',
-          style: const TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-          ),
+                const SizedBox(height: 4),
+            Text(
+              'You have $trendingCount new trending topics today.',
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        prov.Consumer<NotificationProvider>(
+          builder: (context, notificationProvider, child) {
+            return Stack(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.notifications_outlined, color: AppColors.textPrimary),
+                  onPressed: () {
+                    context.push('/app/notifications');
+                  },
+                ),
+                if (notificationProvider.unreadCount > 0)
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: AppColors.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        '${notificationProvider.unreadCount}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
         ),
       ],
     );

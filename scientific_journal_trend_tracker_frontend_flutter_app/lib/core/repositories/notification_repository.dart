@@ -20,7 +20,7 @@ class NotificationRepository {
         ApiConstants.notifications,
         queryParameters: {'page': page, 'limit': limit},
       );
-      final notificationsJson = (response.data['data'] as List?) ?? [];
+      final notificationsJson = (response.data['notifications'] as List?) ?? [];
       final notifications = notificationsJson.map((e) => NotificationModel.fromJson(e as Map<String, dynamic>)).toList();
       return {
         'notifications': notifications,

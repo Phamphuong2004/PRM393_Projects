@@ -38,6 +38,7 @@ _Paper _$PaperFromJson(Map<String, dynamic> json) => _Paper(
   journalId: json['journalId'],
   keywords: json['keywords'] as List<dynamic>?,
   topics: json['topics'] as List<dynamic>?,
+  pdfUrl: json['pdfUrl'] as String?,
   source: json['source'] as String?,
   createdAt: json['createdAt'] == null
       ? null
@@ -62,6 +63,7 @@ Map<String, dynamic> _$PaperToJson(_Paper instance) => <String, dynamic>{
   'journalId': instance.journalId,
   'keywords': instance.keywords,
   'topics': instance.topics,
+  'pdfUrl': instance.pdfUrl,
   'source': instance.source,
   'createdAt': instance.createdAt?.toIso8601String(),
   'updatedAt': instance.updatedAt?.toIso8601String(),
