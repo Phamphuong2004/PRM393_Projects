@@ -19,15 +19,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   bool _isLoading = false;
   String? _errorMessage;
 
-  late AnimationController _bgAnimController;
-
   @override
   void initState() {
     super.initState();
-    _bgAnimController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 8),
-    )..repeat(reverse: true);
   }
 
   Future<void> _handleLogin() async {
@@ -86,7 +80,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-    _bgAnimController.dispose();
     super.dispose();
   }
 
@@ -99,84 +92,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       backgroundColor: AppColors.bg,
       body: Stack(
         children: [
-          // Dynamic animated background
           Positioned.fill(
             child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Color(0xFF1E3C72),
-                    Color(0xFF2A5298),
-                    Color(0xFF0D1B2A),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
+              color: const Color(0xFF1E293B), // Simple dark background
             ),
-          ),
-          
-          // Animated Orbs
-          AnimatedBuilder(
-            animation: _bgAnimController,
-            builder: (context, child) {
-              final val = _bgAnimController.value;
-              return Stack(
-                children: [
-                  Positioned(
-                    top: -100 + (val * 40),
-                    right: -50 + (val * 30),
-                    child: Container(
-                      width: 350,
-                      height: 350,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            Colors.blueAccent.withValues(alpha: 0.4),
-                            Colors.blueAccent.withValues(alpha: 0.0),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: -150 - (val * 30),
-                    left: -100 + (val * 40),
-                    child: Container(
-                      width: 400,
-                      height: 400,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            AppColors.secondary.withValues(alpha: 0.4),
-                            AppColors.secondary.withValues(alpha: 0.0),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: 200 + (val * 50),
-                    left: -50,
-                    child: Container(
-                      width: 200,
-                      height: 200,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            Colors.purple.withValues(alpha: 0.3),
-                            Colors.purple.withValues(alpha: 0.0),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            },
           ),
           
           SafeArea(
