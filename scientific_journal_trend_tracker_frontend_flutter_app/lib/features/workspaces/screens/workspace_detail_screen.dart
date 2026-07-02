@@ -7,6 +7,7 @@ import '../../../core/repositories/workspace_repository.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/models/paper.dart';
 import '../../dashboard/screens/paper_detail_screen.dart';
+import '../../../core/widgets/animated_background.dart';
 
 class WorkspaceDetailScreen extends ConsumerWidget {
   final String workspaceId;
@@ -48,7 +49,8 @@ class WorkspaceDetailScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: detailAsync.when(
+      body: AnimatedBackground(
+        child: detailAsync.when(
         data: (data) {
           final workspace = data['workspace'];
           final role = data['role'];
@@ -138,6 +140,7 @@ class WorkspaceDetailScreen extends ConsumerWidget {
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error loading workspace: $err')),
+      ),
       ),
     );
   }

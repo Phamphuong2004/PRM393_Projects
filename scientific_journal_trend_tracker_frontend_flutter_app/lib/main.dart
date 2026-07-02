@@ -9,6 +9,7 @@ import 'firebase_options.dart';
 import 'core/constants/theme.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/providers/network_provider.dart';
+import 'core/providers/notification_provider.dart';
 import 'core/router/app_router.dart';
 
 void main() async {
@@ -38,6 +39,7 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
       ],
       child: Builder(
         builder: (context) {

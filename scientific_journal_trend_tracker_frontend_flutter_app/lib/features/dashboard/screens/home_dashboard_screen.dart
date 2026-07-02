@@ -10,6 +10,8 @@ import '../../../core/models/keyword.dart';
 import '../../../core/repositories/keyword_repository.dart';
 import 'package:provider/provider.dart' as prov;
 import 'paper_detail_screen.dart';
+import '../../../core/providers/notification_provider.dart';
+import '../../../core/widgets/animated_background.dart';
 
 class HomeDashboardScreen extends ConsumerStatefulWidget {
   const HomeDashboardScreen({super.key});
@@ -90,8 +92,9 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
 
     return Scaffold(
       backgroundColor: AppColors.bg,
-      body: RefreshIndicator(
-        onRefresh: _fetchData,
+      body: AnimatedBackground(
+        child: RefreshIndicator(
+          onRefresh: _fetchData,
         color: AppColors.primary,
         backgroundColor: AppColors.surface,
         child: SafeArea(
@@ -161,6 +164,7 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
           ),
         ),
       ),
+      ),
     );
   }
 
@@ -168,26 +172,66 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
     final firstName = user?['fullName']?.toString().split(' ').first ?? 'User';
     final trendingCount = _trendingKeywords.length;
 
-    return Column(
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Hi $firstName.',
-          style: const TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 28,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.5,
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Hi $firstName.',
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.5,
           ),
         ),
-        const SizedBox(height: 6),
-        Text(
-          '$trendingCount Keywords are trending',
-          style: const TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-          ),
+                const SizedBox(height: 4),
+            Text(
+              'You have $trendingCount new trending topics today.',
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        prov.Consumer<NotificationProvider>(
+          builder: (context, notificationProvider, child) {
+            return Stack(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.notifications_outlined, color: AppColors.textPrimary),
+                  onPressed: () {
+                    context.push('/app/notifications');
+                  },
+                ),
+                if (notificationProvider.unreadCount > 0)
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: AppColors.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        '${notificationProvider.unreadCount}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
         ),
       ],
     );
@@ -295,15 +339,13 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
   }
 
   Widget _buildMonthlyPreview(bool isDesktop, Map<String, dynamic>? user) {
-    int totalPapers = _dashboardStats?['totalPapers'] ?? _recentPapers.length;
-    int totalCitations = 0;
-    for (var p in _recentPapers) {
-      if (p is Paper) {
-        totalCitations += p.citationCount;
-      } else if (p is Map) {
-        final cit = p['citationCount'];
-        totalCitations += ((cit is num) ? cit.toInt() : 0);
+    int totalPapers = 0;
+    if (_dashboardStats != null && _dashboardStats!['timelineData'] != null) {
+      for (var t in _dashboardStats!['timelineData']) {
+        totalPapers += (t['paperCount'] as num).toInt();
       }
+    } else {
+      totalPapers = _recentPapers.length;
     }
 
     return Column(
@@ -325,9 +367,9 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
               icon: Icons.article_outlined,
             ),
             _buildMetricSquareCard(
-              title: 'Total Citations',
-              value: totalCitations.toString(),
-              icon: Icons.format_quote_rounded,
+              title: 'Top Journals',
+              value: (_dashboardStats?['topJournals']?.length ?? 0).toString(),
+              icon: Icons.library_books_rounded,
             ),
             _buildMetricSquareCard(
               title: 'Hot Topics',
@@ -335,9 +377,9 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
               icon: Icons.local_fire_department_outlined,
             ),
             _buildMetricSquareCard(
-              title: 'Your Role',
-              value: _normalizeRole(user?['role'] ?? 'User'),
-              icon: Icons.person_outline,
+              title: 'Recent Updates',
+              value: _recentPapers.length.toString(),
+              icon: Icons.update,
             ),
           ],
         ),
@@ -565,8 +607,4 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
     );
   }
 
-  String _normalizeRole(String role) {
-    if (role.isEmpty) return 'User';
-    return role[0].toUpperCase() + role.substring(1).toLowerCase();
-  }
 }

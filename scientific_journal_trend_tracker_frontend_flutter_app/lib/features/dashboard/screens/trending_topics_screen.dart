@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../core/constants/theme.dart';
 import '../../../core/services/api.dart';
+import '../../../core/widgets/animated_background.dart';
 
 class TrendingTopicsScreen extends StatefulWidget {
   const TrendingTopicsScreen({super.key});
@@ -107,7 +108,8 @@ class _TrendingTopicsScreenState extends State<TrendingTopicsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bg,
-      body: ListView(
+      body: AnimatedBackground(
+        child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           // Header
@@ -486,6 +488,7 @@ class _TrendingTopicsScreenState extends State<TrendingTopicsScreen> {
             ],
           ],
         ],
+      ),
       ),
     );
   }

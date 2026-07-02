@@ -83,7 +83,7 @@ const swaggerSpec = {
     "/api/auth/google-login": {
       post: {
         tags: ["Auth"],
-        summary: "Login with Google ID Token and receive JWT",
+        summary: "Login with Google ID Token or Access Token and receive JWT",
         security: [],
         requestBody: {
           required: true,
@@ -93,7 +93,11 @@ const swaggerSpec = {
                 type: "object",
                 required: ["idToken"],
                 properties: {
-                  idToken: { type: "string", example: "eyJhbGciOiJSUzI1NiIs..." },
+                  idToken: { 
+                    type: "string", 
+                    description: "Google ID Token (Mobile) or Access Token (Web)",
+                    example: "ya29.a0... or eyJhbGciOiJ..." 
+                  },
                 },
               },
             },

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/theme.dart';
 import '../../../core/repositories/follow_repository.dart';
+import '../../../core/widgets/animated_background.dart';
 
 class FollowingScreen extends ConsumerStatefulWidget {
   const FollowingScreen({super.key});
@@ -152,12 +153,14 @@ class _FollowingScreenState extends ConsumerState<FollowingScreen> {
             ),
           ),
         ),
-        body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1000),
-          child: _buildBody(),
+        body: AnimatedBackground(
+          child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1000),
+            child: _buildBody(),
+          ),
         ),
-      ),
+        ),
       ),
     );
   }
