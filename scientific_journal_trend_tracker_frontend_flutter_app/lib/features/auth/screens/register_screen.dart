@@ -7,6 +7,7 @@ import '../../../core/constants/theme.dart';
 import '../../../core/models/institution.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/repositories/institution_repository.dart';
+import '../../../core/widgets/animated_background.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -135,87 +136,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> with SingleTick
 
     return Scaffold(
       backgroundColor: AppColors.bg,
-      body: Stack(
-        children: [
-          // Dynamic animated background
-          Positioned.fill(
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Color(0xFF0F2027),
-                    Color(0xFF203A43),
-                    Color(0xFF2C5364),
-                  ],
-                  begin: Alignment.topRight,
-                  end: Alignment.bottomLeft,
-                ),
-              ),
-            ),
-          ),
-          
-          // Animated Orbs
-          AnimatedBuilder(
-            animation: _bgAnimController,
-            builder: (context, child) {
-              final val = _bgAnimController.value;
-              return Stack(
-                children: [
-                  Positioned(
-                    top: -150 + (val * 30),
-                    left: -50 + (val * 50),
-                    child: Container(
-                      width: 400,
-                      height: 400,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            Colors.teal.withValues(alpha: 0.35),
-                            Colors.teal.withValues(alpha: 0.0),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: -100 - (val * 40),
-                    right: -100 + (val * 20),
-                    child: Container(
-                      width: 350,
-                      height: 350,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            AppColors.primary.withValues(alpha: 0.4),
-                            AppColors.primary.withValues(alpha: 0.0),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: 300 + (val * 60),
-                    right: -50 - (val * 20),
-                    child: Container(
-                      width: 250,
-                      height: 250,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            Colors.blueAccent.withValues(alpha: 0.3),
-                            Colors.blueAccent.withValues(alpha: 0.0),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
+      body: AnimatedBackground(
+        child: Stack(
+          children: [
           
           SafeArea(
             child: Center(
@@ -266,6 +189,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> with SingleTick
             ),
           ),
         ],
+      ),
       ),
     );
   }

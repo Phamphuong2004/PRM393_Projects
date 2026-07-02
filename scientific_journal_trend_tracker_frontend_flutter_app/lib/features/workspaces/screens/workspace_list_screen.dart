@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/widgets/animated_background.dart';
 import '../providers/workspace_list_provider.dart';
 
 class WorkspaceListScreen extends ConsumerWidget {
@@ -111,8 +112,9 @@ class WorkspaceListScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: Stack(
-        children: [
+      body: AnimatedBackground(
+        child: Stack(
+          children: [
           workspacesAsync.when(
             data: (workspaces) {
               if (workspaces.isEmpty) {
@@ -210,6 +212,7 @@ class WorkspaceListScreen extends ConsumerWidget {
               child: const Center(child: CircularProgressIndicator()),
             ),
         ],
+      ),
       ),
     );
   }

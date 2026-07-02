@@ -9,6 +9,7 @@ import '../../../core/models/paper.dart';
 import '../../../core/repositories/bookmark_repository.dart';
 import '../../../core/repositories/paper_repository.dart';
 import '../../../core/repositories/workspace_repository.dart';
+import '../../../core/widgets/animated_background.dart';
 import 'paper_detail_screen.dart';
 
 class SearchPapersScreen extends ConsumerStatefulWidget {
@@ -278,9 +279,10 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Column(
+    return AnimatedBackground(
+      child: Stack(
+        children: [
+          Column(
           children: [
         // Search Header
         Container(
@@ -479,6 +481,7 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
         ),
       ),
     ],
+  ),
   );
 }
 
