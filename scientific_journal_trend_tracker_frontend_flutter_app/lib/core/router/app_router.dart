@@ -21,6 +21,8 @@ import '../../features/dashboard/screens/following_screen.dart';
 import '../../features/dashboard/screens/notifications_screen.dart';
 import '../../features/dashboard/screens/profile_settings_screen.dart';
 import '../../features/dashboard/screens/authors_screen.dart';
+import '../../features/dashboard/screens/journals_screen.dart';
+import '../../features/dashboard/screens/topics_screen.dart';
 
 // Workspace Screens
 import '../../features/workspaces/screens/workspace_list_screen.dart';
@@ -68,6 +70,13 @@ class AppRouter {
         GoRoute(
           path: '/',
           builder: (context, state) => const LandingScreen(),
+        ),
+        GoRoute(
+          path: '/search',
+          builder: (context, state) {
+            final q = state.uri.queryParameters['q'];
+            return SearchPapersScreen(initialQuery: q, isPublic: true);
+          },
         ),
         GoRoute(
           path: '/features',
@@ -136,6 +145,14 @@ class AppRouter {
             GoRoute(
               path: '/app/authors',
               builder: (context, state) => const AuthorsScreen(),
+            ),
+            GoRoute(
+              path: '/app/journals',
+              builder: (context, state) => const JournalsScreen(),
+            ),
+            GoRoute(
+              path: '/app/topics',
+              builder: (context, state) => const TopicsScreen(),
             ),
             // Workspaces Routes
             GoRoute(

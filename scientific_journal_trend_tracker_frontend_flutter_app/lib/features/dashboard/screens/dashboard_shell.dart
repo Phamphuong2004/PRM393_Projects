@@ -112,6 +112,8 @@ class DashboardShell extends StatelessWidget {
                 _buildSideMenuItem(context, 'Workspaces', Icons.workspaces_outline, Icons.workspaces, '/app/workspaces', location),
                 _buildSideMenuItem(context, 'Search Papers', Icons.search_outlined, Icons.search_rounded, '/app/search', location),
                 _buildSideMenuItem(context, 'Trending', Icons.trending_up_rounded, Icons.trending_up_rounded, '/app/trending', location),
+                _buildSideMenuItem(context, 'Research Topics', Icons.topic_rounded, Icons.topic_rounded, '/app/topics', location),
+                _buildSideMenuItem(context, 'Journals', Icons.library_books_rounded, Icons.library_books_rounded, '/app/journals', location),
                 _buildSideMenuItem(context, 'Bookmarks', Icons.bookmark_outline_rounded, Icons.bookmark_rounded, '/app/bookmarks', location),
                 _buildSideMenuItem(context, 'Authors', Icons.people_outline_rounded, Icons.people_rounded, '/app/authors', location),
                 
@@ -236,6 +238,8 @@ class DashboardShell extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
               children: [
                 _buildDrawerItem(context, icon: Icons.workspaces_outline, activeIcon: Icons.workspaces, title: 'Workspaces', path: '/app/workspaces'),
+                _buildDrawerItem(context, icon: Icons.topic_outlined, activeIcon: Icons.topic_rounded, title: 'Research Topics', path: '/app/topics'),
+                _buildDrawerItem(context, icon: Icons.library_books_outlined, activeIcon: Icons.library_books_rounded, title: 'Journals', path: '/app/journals'),
                 _buildDrawerItem(context, icon: Icons.people_outline_rounded, activeIcon: Icons.people_rounded, title: 'Following', path: '/app/following'),
                 _buildDrawerItem(context, icon: Icons.person_outline_rounded, activeIcon: Icons.person_rounded, title: 'Profile Settings', path: '/app/profile'),
                 _buildDrawerItem(context, icon: Icons.people_outline_rounded, activeIcon: Icons.people_rounded, title: 'Authors', path: '/app/authors'),
