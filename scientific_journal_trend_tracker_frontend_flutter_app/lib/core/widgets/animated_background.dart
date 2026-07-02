@@ -90,7 +90,8 @@ class GridPainter extends CustomPainter {
 class Particle {
   double x = Random().nextDouble();
   double y = Random().nextDouble();
-  double speed = 0.0005 + Random().nextDouble() * 0.0015;
+  // Slower vertical speed
+  double speed = 0.00015 + Random().nextDouble() * 0.0005;
   double radius = 1 + Random().nextDouble() * 3;
   
   // Fainter Purple colors for tiny dots across all screens
@@ -100,8 +101,8 @@ class Particle {
     const Color(0xFF6D28D9).withValues(alpha: 0.1), // Dark Purple
   ][Random().nextInt(3)];
   
-  // Add some oscillation for a more organic floating effect
-  double oscillationSpeed = 0.01 + Random().nextDouble() * 0.03;
+  // Slower horizontal oscillation
+  double oscillationSpeed = 0.003 + Random().nextDouble() * 0.01;
   double oscillationOffset = Random().nextDouble() * pi * 2;
 
   void update() {
