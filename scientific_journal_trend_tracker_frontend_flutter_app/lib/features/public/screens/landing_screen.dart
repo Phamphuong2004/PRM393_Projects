@@ -207,62 +207,10 @@ class _LandingScreenState extends State<LandingScreen> {
               ),
               const SizedBox(height: 40),
               
-              // Search Bar
-              Container(
-                width: isDesktop ? 600 : double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.textPrimary.withValues(alpha: 0.04),
-                      blurRadius: 15,
-                      offset: const Offset(0, 8),
-                    )
-                  ]
-                ),
-                child: TextField(
-                  controller: _searchController,
-                  style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w500),
-                  decoration: InputDecoration(
-                    hintText: 'Search papers, authors, journals...',
-                    hintStyle: const TextStyle(color: AppColors.textLight, fontWeight: FontWeight.w400),
-                    prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primary),
-                    suffixIcon: GestureDetector(
-                      onTap: () {
-                        final value = _searchController.text;
-                        if (value.trim().isNotEmpty) {
-                          context.go('/search?q=${Uri.encodeComponent(value.trim())}');
-                        } else {
-                          context.go('/search');
-                        }
-                      },
-                      child: Container(
-                        margin: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryLight.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(Icons.arrow_forward_rounded, color: AppColors.primary, size: 20),
-                      ),
-                    ),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  ),
-                  onSubmitted: (value) {
-                    if (value.trim().isNotEmpty) {
-                      context.go('/search?q=${Uri.encodeComponent(value.trim())}');
-                    } else {
-                      context.go('/search');
-                    }
-                  },
-                ),
-              ),
-              
+
               const SizedBox(height: 32),
               ElevatedButton(
-                onPressed: () => context.go('/auth/register'),
+                onPressed: () => context.go('/auth/login'),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
                   backgroundColor: AppColors.primary,
