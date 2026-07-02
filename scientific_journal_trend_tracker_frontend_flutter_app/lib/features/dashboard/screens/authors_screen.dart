@@ -4,6 +4,7 @@ import '../../../core/constants/theme.dart';
 import '../../../core/models/author.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/services/api.dart';
+import '../../../core/widgets/animated_background.dart';
 
 class AuthorsScreen extends StatefulWidget {
   const AuthorsScreen({super.key});
@@ -266,7 +267,8 @@ class _AuthorsScreenState extends State<AuthorsScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.bg,
-      body: SafeArea(
+      body: AnimatedBackground(
+        child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
           child: Column(
@@ -391,6 +393,7 @@ class _AuthorsScreenState extends State<AuthorsScreen> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

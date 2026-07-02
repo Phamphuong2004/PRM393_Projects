@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/notification_api.dart';
 import '../constants/api_constants.dart';
@@ -8,7 +8,7 @@ class NotificationProvider with ChangeNotifier {
   List<dynamic> _notifications = [];
   int _unreadCount = 0;
   bool _isLoading = false;
-  IO.Socket? _socket;
+  io.Socket? _socket;
 
   List<dynamic> get notifications => _notifications;
   int get unreadCount => _unreadCount;
@@ -30,24 +30,24 @@ class NotificationProvider with ChangeNotifier {
 
     if (token == null) return;
 
-    _socket = IO.io(ApiConstants.baseUrl, <String, dynamic>{
+    _socket = io.io(ApiConstants.baseUrl, <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': true,
     });
 
     _socket?.onConnect((_) {
-      print('Socket connected');
+      debugPrint('Socket connected');
       _socket?.emit('authenticate', token);
     });
 
     _socket?.on('new_notification', (data) {
-      print('New notification received via socket: $data');
+      debugPrint('New notification received via socket: $data');
       _notifications.insert(0, data);
       _unreadCount++;
       notifyListeners();
     });
 
-    _socket?.onDisconnect((_) => print('Socket disconnected'));
+    _socket?.onDisconnect((_) => debugPrint('Socket disconnected'));
   }
 
   void disconnectSocket() {
@@ -66,7 +66,7 @@ class NotificationProvider with ChangeNotifier {
         _notifications.addAll(data['notifications'] ?? []);
       }
     } catch (e) {
-      print('Error fetching notifications: $e');
+      debugPrint('Error fetching notifications: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -78,7 +78,7 @@ class NotificationProvider with ChangeNotifier {
       _unreadCount = await NotificationApi.getUnreadCount();
       notifyListeners();
     } catch (e) {
-      print('Error fetching unread count: $e');
+      debugPrint('Error fetching unread count: $e');
     }
   }
 
@@ -93,7 +93,7 @@ class NotificationProvider with ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      print('Error marking as read: $e');
+      debugPrint('Error marking as read: $e');
     }
   }
 
@@ -106,7 +106,7 @@ class NotificationProvider with ChangeNotifier {
       _unreadCount = 0;
       notifyListeners();
     } catch (e) {
-      print('Error marking all as read: $e');
+      debugPrint('Error marking all as read: $e');
     }
   }
 
@@ -117,7 +117,7 @@ class NotificationProvider with ChangeNotifier {
       _unreadCount = 0;
       notifyListeners();
     } catch (e) {
-      print('Error clearing notifications: $e');
+      debugPrint('Error clearing notifications: $e');
     }
   }
 }

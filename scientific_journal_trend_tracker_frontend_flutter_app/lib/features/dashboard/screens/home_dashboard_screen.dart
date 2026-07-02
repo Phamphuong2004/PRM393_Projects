@@ -11,7 +11,7 @@ import '../../../core/repositories/keyword_repository.dart';
 import 'package:provider/provider.dart' as prov;
 import 'paper_detail_screen.dart';
 import '../../../core/providers/notification_provider.dart';
-import '../../../core/providers/network_provider.dart';
+import '../../../core/widgets/animated_background.dart';
 
 class HomeDashboardScreen extends ConsumerStatefulWidget {
   const HomeDashboardScreen({super.key});
@@ -92,8 +92,9 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
 
     return Scaffold(
       backgroundColor: AppColors.bg,
-      body: RefreshIndicator(
-        onRefresh: _fetchData,
+      body: AnimatedBackground(
+        child: RefreshIndicator(
+          onRefresh: _fetchData,
         color: AppColors.primary,
         backgroundColor: AppColors.surface,
         child: SafeArea(
@@ -162,6 +163,7 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
             ),
           ),
         ),
+      ),
       ),
     );
   }
@@ -605,8 +607,4 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
     );
   }
 
-  String _normalizeRole(String role) {
-    if (role.isEmpty) return 'User';
-    return role[0].toUpperCase() + role.substring(1).toLowerCase();
-  }
 }
