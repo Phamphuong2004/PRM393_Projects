@@ -94,11 +94,11 @@ class Particle {
   double speed = 0.00015 + Random().nextDouble() * 0.0005;
   double radius = 1 + Random().nextDouble() * 3;
   
-  // Fainter Purple colors for tiny dots across all screens
+  // Fainter Blue/Teal colors for tiny dots to match theme
   Color color = [
-    const Color(0xFFD8B4E2).withValues(alpha: 0.2), // Light Purple
-    const Color(0xFF8B5CF6).withValues(alpha: 0.15), // Purple
-    const Color(0xFF6D28D9).withValues(alpha: 0.1), // Dark Purple
+    const Color(0xFF06B6D4).withValues(alpha: 0.2), // Cyan/Teal
+    const Color(0xFF3B82F6).withValues(alpha: 0.15), // Light Blue
+    const Color(0xFF1E3A8A).withValues(alpha: 0.1), // Deep Blue
   ][Random().nextInt(3)];
   
   // Slower horizontal oscillation
