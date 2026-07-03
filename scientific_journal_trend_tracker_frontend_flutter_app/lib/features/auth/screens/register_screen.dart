@@ -176,12 +176,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> with SingleTick
                 filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
+                    color: Colors.white.withValues(alpha: 0.8),
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                    border: Border.all(color: AppColors.border),
                   ),
                   child: IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
                     onPressed: () => context.canPop() ? context.pop() : context.go('/'),
                   ),
                 ),
@@ -202,20 +202,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> with SingleTick
         crossAxisAlignment: isDesktop ? CrossAxisAlignment.start : CrossAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15),
+              color: Colors.white,
               borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+              border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 20,
-                  spreadRadius: 5,
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  blurRadius: 24,
+                  spreadRadius: 2,
                 )
               ],
             ),
-            child: const Icon(Icons.person_add_rounded, size: 56, color: Colors.white),
+            child: const Icon(Icons.person_add_rounded, size: 56, color: AppColors.primary),
           ),
           const SizedBox(height: 24),
           Text(
@@ -223,7 +223,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> with SingleTick
             style: TextStyle(
               fontSize: isDesktop ? 56 : 36,
               fontWeight: FontWeight.w900,
-              color: Colors.white,
+              color: AppColors.primary,
               letterSpacing: -1.0,
               height: 1.1,
             ),
@@ -235,9 +235,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> with SingleTick
             textAlign: isDesktop ? TextAlign.left : TextAlign.center,
             style: TextStyle(
               fontSize: isDesktop ? 20 : 16,
-              color: Colors.white.withValues(alpha: 0.9),
+              color: AppColors.textSecondary,
               height: 1.5,
-              fontWeight: FontWeight.w400,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
