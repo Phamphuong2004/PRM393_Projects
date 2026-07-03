@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/theme.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/services/api.dart';
+import '../../../core/widgets/animated_background.dart';
 
 class JournalsScreen extends StatefulWidget {
   const JournalsScreen({super.key});
@@ -228,7 +229,8 @@ class _JournalsScreenState extends State<JournalsScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.bg,
-      body: SafeArea(
+      body: AnimatedBackground(
+        child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
           child: Column(
@@ -308,6 +310,7 @@ class _JournalsScreenState extends State<JournalsScreen> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

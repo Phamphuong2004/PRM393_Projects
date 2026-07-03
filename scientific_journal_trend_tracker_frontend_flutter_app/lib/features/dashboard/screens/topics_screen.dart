@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/theme.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/services/api.dart';
+import '../../../core/widgets/animated_background.dart';
 
 class TopicsScreen extends StatefulWidget {
   const TopicsScreen({super.key});
@@ -177,7 +178,7 @@ class _TopicsScreenState extends State<TopicsScreen> with SingleTickerProviderSt
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
-                        value: status,
+                        initialValue: status,
                         decoration: const InputDecoration(labelText: 'Trend Status', prefixIcon: Icon(Icons.trending_up_rounded)),
                         items: ['emerging', 'growing', 'stable', 'declining'].map((s) {
                           return DropdownMenuItem(value: s, child: Text(s.toUpperCase()));
@@ -190,7 +191,7 @@ class _TopicsScreenState extends State<TopicsScreen> with SingleTickerProviderSt
                       SwitchListTile(
                         title: const Text('Mark as Emerging'),
                         value: isEmerging,
-                        activeColor: AppColors.primary,
+                        activeThumbColor: AppColors.primary,
                         contentPadding: EdgeInsets.zero,
                         onChanged: (val) => setDialogState(() => isEmerging = val),
                       ),
@@ -261,7 +262,8 @@ class _TopicsScreenState extends State<TopicsScreen> with SingleTickerProviderSt
     
     return Scaffold(
       backgroundColor: AppColors.bg,
-      body: SafeArea(
+      body: AnimatedBackground(
+        child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
           child: Column(
@@ -312,6 +314,7 @@ class _TopicsScreenState extends State<TopicsScreen> with SingleTickerProviderSt
             ],
           ),
         ),
+      ),
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 import '../core/constants/api_constants.dart';
 
 class NotificationApi {
@@ -27,8 +28,8 @@ class NotificationApi {
       });
       return response.data;
     } catch (e) {
-      print('Error getting notifications: $e');
-      throw e;
+      debugPrint('Error getting notifications: $e');
+      rethrow;
     }
   }
 
@@ -38,7 +39,7 @@ class NotificationApi {
       final response = await _dio.get('${ApiConstants.baseUrl}/api/notifications/unread-count');
       return response.data['unreadCount'] ?? 0;
     } catch (e) {
-      print('Error getting unread count: $e');
+      debugPrint('Error getting unread count: $e');
       return 0;
     }
   }
@@ -48,8 +49,8 @@ class NotificationApi {
     try {
       await _dio.put('${ApiConstants.baseUrl}/api/notifications/$notificationId/read');
     } catch (e) {
-      print('Error marking notification as read: $e');
-      throw e;
+      debugPrint('Error marking notification as read: $e');
+      rethrow;
     }
   }
 
@@ -58,8 +59,8 @@ class NotificationApi {
     try {
       await _dio.put('${ApiConstants.baseUrl}/api/notifications/read-all');
     } catch (e) {
-      print('Error marking all notifications as read: $e');
-      throw e;
+      debugPrint('Error marking all notifications as read: $e');
+      rethrow;
     }
   }
 
@@ -68,8 +69,8 @@ class NotificationApi {
     try {
       await _dio.delete('${ApiConstants.baseUrl}/api/notifications/$notificationId');
     } catch (e) {
-      print('Error deleting notification: $e');
-      throw e;
+      debugPrint('Error deleting notification: $e');
+      rethrow;
     }
   }
 
@@ -78,8 +79,8 @@ class NotificationApi {
     try {
       await _dio.delete('${ApiConstants.baseUrl}/api/notifications/all');
     } catch (e) {
-      print('Error clearing all notifications: $e');
-      throw e;
+      debugPrint('Error clearing all notifications: $e');
+      rethrow;
     }
   }
 }

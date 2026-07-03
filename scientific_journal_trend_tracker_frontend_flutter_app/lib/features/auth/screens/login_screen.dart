@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/theme.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/widgets/animated_background.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -90,13 +91,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
     return Scaffold(
       backgroundColor: AppColors.bg,
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: Container(
-              color: const Color(0xFF1E293B), // Simple dark background
-            ),
-          ),
+      body: AnimatedBackground(
+        child: Stack(
+          children: [
           
           SafeArea(
             child: Center(
@@ -147,6 +144,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             ),
           ),
         ],
+      ),
       ),
     );
   }

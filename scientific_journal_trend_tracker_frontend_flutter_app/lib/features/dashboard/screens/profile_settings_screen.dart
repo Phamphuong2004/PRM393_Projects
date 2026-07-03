@@ -6,6 +6,7 @@ import '../../../core/models/institution.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/repositories/institution_repository.dart';
 import '../../../core/repositories/user_repository.dart';
+import '../../../core/widgets/animated_background.dart';
 
 class ProfileSettingsScreen extends ConsumerStatefulWidget {
   const ProfileSettingsScreen({super.key});
@@ -154,7 +155,8 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.bg,
-      body: SingleChildScrollView(
+      body: AnimatedBackground(
+        child: SingleChildScrollView(
         child: Column(
           children: [
             // ── Profile Header ──────────────────────────────────────────────
@@ -257,6 +259,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
             const SizedBox(height: 48),
           ],
         ),
+      ),
       ),
     );
   }
