@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/theme.dart';
 import '../../../core/models/paper.dart';
 import '../../../core/repositories/bookmark_repository.dart';
+import '../../../core/widgets/animated_background.dart';
 import 'paper_detail_screen.dart';
 
 class BookmarksScreen extends ConsumerStatefulWidget {
@@ -70,11 +71,13 @@ class _BookmarksScreenState extends ConsumerState<BookmarksScreen> {
         backgroundColor: AppColors.bg,
         elevation: 0,
       ),
-      body: Center(
-        child: ConstrainedBox(
+      body: AnimatedBackground(
+        child: Center(
+          child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1000),
           child: _buildBody(),
         ),
+      ),
       ),
     );
   }

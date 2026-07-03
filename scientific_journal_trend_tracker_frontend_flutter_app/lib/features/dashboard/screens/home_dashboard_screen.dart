@@ -11,7 +11,7 @@ import '../../../core/repositories/keyword_repository.dart';
 import 'package:provider/provider.dart' as prov;
 import 'paper_detail_screen.dart';
 import '../../../core/providers/notification_provider.dart';
-import '../../../core/providers/network_provider.dart';
+import '../../../core/widgets/animated_background.dart';
 
 class HomeDashboardScreen extends ConsumerStatefulWidget {
   const HomeDashboardScreen({super.key});
@@ -92,8 +92,9 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
 
     return Scaffold(
       backgroundColor: AppColors.bg,
-      body: RefreshIndicator(
-        onRefresh: _fetchData,
+      body: AnimatedBackground(
+        child: RefreshIndicator(
+          onRefresh: _fetchData,
         color: AppColors.primary,
         backgroundColor: AppColors.surface,
         child: SafeArea(
@@ -163,22 +164,6 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          try {
-            final dio = ref.read(dioProvider);
-            await dio.post('/api/notifications/test-realtime');
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Test notification sent!')),
-              );
-            }
-          } catch (e) {
-            print(e);
-          }
-        },
-        backgroundColor: AppColors.primary,
-        child: const Icon(Icons.send, color: Colors.white),
       ),
     );
   }
@@ -354,15 +339,13 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
   }
 
   Widget _buildMonthlyPreview(bool isDesktop, Map<String, dynamic>? user) {
-    int totalPapers = _dashboardStats?['totalPapers'] ?? _recentPapers.length;
-    int totalCitations = 0;
-    for (var p in _recentPapers) {
-      if (p is Paper) {
-        totalCitations += p.citationCount;
-      } else if (p is Map) {
-        final cit = p['citationCount'];
-        totalCitations += ((cit is num) ? cit.toInt() : 0);
+    int totalPapers = 0;
+    if (_dashboardStats != null && _dashboardStats!['timelineData'] != null) {
+      for (var t in _dashboardStats!['timelineData']) {
+        totalPapers += (t['paperCount'] as num).toInt();
       }
+    } else {
+      totalPapers = _recentPapers.length;
     }
 
     return Column(
@@ -384,9 +367,9 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
               icon: Icons.article_outlined,
             ),
             _buildMetricSquareCard(
-              title: 'Total Citations',
-              value: totalCitations.toString(),
-              icon: Icons.format_quote_rounded,
+              title: 'Top Journals',
+              value: (_dashboardStats?['topJournals']?.length ?? 0).toString(),
+              icon: Icons.library_books_rounded,
             ),
             _buildMetricSquareCard(
               title: 'Hot Topics',
@@ -394,9 +377,9 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
               icon: Icons.local_fire_department_outlined,
             ),
             _buildMetricSquareCard(
-              title: 'Your Role',
-              value: _normalizeRole(user?['role'] ?? 'User'),
-              icon: Icons.person_outline,
+              title: 'Recent Updates',
+              value: _recentPapers.length.toString(),
+              icon: Icons.update,
             ),
           ],
         ),
@@ -624,8 +607,4 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
     );
   }
 
-  String _normalizeRole(String role) {
-    if (role.isEmpty) return 'User';
-    return role[0].toUpperCase() + role.substring(1).toLowerCase();
-  }
 }

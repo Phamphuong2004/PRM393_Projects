@@ -9,11 +9,14 @@ import '../../../core/models/paper.dart';
 import '../../../core/repositories/bookmark_repository.dart';
 import '../../../core/repositories/paper_repository.dart';
 import '../../../core/repositories/workspace_repository.dart';
+import '../../../core/widgets/animated_background.dart';
 import 'paper_detail_screen.dart';
 
 class SearchPapersScreen extends ConsumerStatefulWidget {
   final String? workspaceId;
-  const SearchPapersScreen({super.key, this.workspaceId});
+  final String? initialQuery;
+  final bool isPublic;
+  const SearchPapersScreen({super.key, this.workspaceId, this.initialQuery, this.isPublic = false});
 
   @override
   ConsumerState<SearchPapersScreen> createState() => _SearchPapersScreenState();
@@ -52,9 +55,14 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialQuery != null) {
+      _searchController.text = widget.initialQuery!;
+    }
     _fetchPapers();
-    _syncSavedIds();
-    _syncWorkspacePapers();
+    if (!widget.isPublic) {
+      _syncSavedIds();
+      _syncWorkspacePapers();
+    }
   }
 
   Future<void> _syncWorkspacePapers() async {
@@ -120,6 +128,15 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
         if (q.isNotEmpty) {
           res = await paperRepo.searchPapers(q, year: year);
         } else {
+          if (widget.isPublic) {
+            setState(() {
+              _results = [];
+              _totalPages = 1;
+              _totalResults = 0;
+              _loading = false;
+            });
+            return;
+          }
           res = await paperRepo.getPapers(page: _page, limit: 10);
         }
       }
@@ -262,9 +279,10 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Column(
+    return AnimatedBackground(
+      child: Stack(
+        children: [
+          Column(
           children: [
         // Search Header
         Container(
@@ -463,6 +481,7 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
         ),
       ),
     ],
+  ),
   );
 }
 
@@ -573,6 +592,8 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
                     children: [
                       Builder(
                         builder: (_) {
+                          if (widget.isPublic) return const SizedBox.shrink();
+                          
                           if (widget.workspaceId != null) {
                             final isAdding = _addingToWorkspaceIds.contains(paper.id);
                             final isAdded = _addedToWorkspaceIds.contains(paper.id);

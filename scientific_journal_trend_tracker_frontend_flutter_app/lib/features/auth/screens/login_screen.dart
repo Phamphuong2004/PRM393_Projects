@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/theme.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/widgets/animated_background.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,15 +20,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   bool _isLoading = false;
   String? _errorMessage;
 
-  late AnimationController _bgAnimController;
-
   @override
   void initState() {
     super.initState();
-    _bgAnimController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 8),
-    )..repeat(reverse: true);
   }
 
   Future<void> _handleLogin() async {
@@ -86,7 +81,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-    _bgAnimController.dispose();
     super.dispose();
   }
 
@@ -97,87 +91,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
     return Scaffold(
       backgroundColor: AppColors.bg,
-      body: Stack(
-        children: [
-          // Dynamic animated background
-          Positioned.fill(
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Color(0xFF1E3C72),
-                    Color(0xFF2A5298),
-                    Color(0xFF0D1B2A),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-            ),
-          ),
-          
-          // Animated Orbs
-          AnimatedBuilder(
-            animation: _bgAnimController,
-            builder: (context, child) {
-              final val = _bgAnimController.value;
-              return Stack(
-                children: [
-                  Positioned(
-                    top: -100 + (val * 40),
-                    right: -50 + (val * 30),
-                    child: Container(
-                      width: 350,
-                      height: 350,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            Colors.blueAccent.withValues(alpha: 0.4),
-                            Colors.blueAccent.withValues(alpha: 0.0),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: -150 - (val * 30),
-                    left: -100 + (val * 40),
-                    child: Container(
-                      width: 400,
-                      height: 400,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            AppColors.secondary.withValues(alpha: 0.4),
-                            AppColors.secondary.withValues(alpha: 0.0),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: 200 + (val * 50),
-                    left: -50,
-                    child: Container(
-                      width: 200,
-                      height: 200,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            Colors.purple.withValues(alpha: 0.3),
-                            Colors.purple.withValues(alpha: 0.0),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
+      body: AnimatedBackground(
+        child: Stack(
+          children: [
           
           SafeArea(
             child: Center(
@@ -215,12 +131,12 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                 filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
+                    color: Colors.white.withValues(alpha: 0.8),
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                    border: Border.all(color: AppColors.border),
                   ),
                   child: IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
                     onPressed: () => context.canPop() ? context.pop() : context.go('/'),
                   ),
                 ),
@@ -228,6 +144,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             ),
           ),
         ],
+      ),
       ),
     );
   }
@@ -240,20 +157,20 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         crossAxisAlignment: isDesktop ? CrossAxisAlignment.start : CrossAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15),
+              color: Colors.white,
               borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+              border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 20,
-                  spreadRadius: 5,
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  blurRadius: 24,
+                  spreadRadius: 2,
                 )
               ],
             ),
-            child: const Icon(Icons.analytics_rounded, size: 56, color: Colors.white),
+            child: const Icon(Icons.analytics_rounded, size: 56, color: AppColors.primary),
           ),
           const SizedBox(height: 24),
           Text(
@@ -261,7 +178,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             style: TextStyle(
               fontSize: isDesktop ? 56 : 36,
               fontWeight: FontWeight.w900,
-              color: Colors.white,
+              color: AppColors.primary,
               letterSpacing: -1.0,
               height: 1.1,
             ),
@@ -273,9 +190,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             textAlign: isDesktop ? TextAlign.left : TextAlign.center,
             style: TextStyle(
               fontSize: isDesktop ? 20 : 16,
-              color: Colors.white.withValues(alpha: 0.9),
+              color: AppColors.textSecondary,
               height: 1.5,
-              fontWeight: FontWeight.w400,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],

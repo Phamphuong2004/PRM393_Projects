@@ -7,6 +7,7 @@ import '../../../core/constants/theme.dart';
 import '../../../core/models/institution.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/repositories/institution_repository.dart';
+import '../../../core/widgets/animated_background.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -135,87 +136,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> with SingleTick
 
     return Scaffold(
       backgroundColor: AppColors.bg,
-      body: Stack(
-        children: [
-          // Dynamic animated background
-          Positioned.fill(
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Color(0xFF0F2027),
-                    Color(0xFF203A43),
-                    Color(0xFF2C5364),
-                  ],
-                  begin: Alignment.topRight,
-                  end: Alignment.bottomLeft,
-                ),
-              ),
-            ),
-          ),
-          
-          // Animated Orbs
-          AnimatedBuilder(
-            animation: _bgAnimController,
-            builder: (context, child) {
-              final val = _bgAnimController.value;
-              return Stack(
-                children: [
-                  Positioned(
-                    top: -150 + (val * 30),
-                    left: -50 + (val * 50),
-                    child: Container(
-                      width: 400,
-                      height: 400,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            Colors.teal.withValues(alpha: 0.35),
-                            Colors.teal.withValues(alpha: 0.0),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: -100 - (val * 40),
-                    right: -100 + (val * 20),
-                    child: Container(
-                      width: 350,
-                      height: 350,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            AppColors.primary.withValues(alpha: 0.4),
-                            AppColors.primary.withValues(alpha: 0.0),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: 300 + (val * 60),
-                    right: -50 - (val * 20),
-                    child: Container(
-                      width: 250,
-                      height: 250,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            Colors.blueAccent.withValues(alpha: 0.3),
-                            Colors.blueAccent.withValues(alpha: 0.0),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
+      body: AnimatedBackground(
+        child: Stack(
+          children: [
           
           SafeArea(
             child: Center(
@@ -253,12 +176,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> with SingleTick
                 filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
+                    color: Colors.white.withValues(alpha: 0.8),
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                    border: Border.all(color: AppColors.border),
                   ),
                   child: IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
                     onPressed: () => context.canPop() ? context.pop() : context.go('/'),
                   ),
                 ),
@@ -266,6 +189,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> with SingleTick
             ),
           ),
         ],
+      ),
       ),
     );
   }
@@ -278,20 +202,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> with SingleTick
         crossAxisAlignment: isDesktop ? CrossAxisAlignment.start : CrossAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15),
+              color: Colors.white,
               borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+              border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 20,
-                  spreadRadius: 5,
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  blurRadius: 24,
+                  spreadRadius: 2,
                 )
               ],
             ),
-            child: const Icon(Icons.person_add_rounded, size: 56, color: Colors.white),
+            child: const Icon(Icons.person_add_rounded, size: 56, color: AppColors.primary),
           ),
           const SizedBox(height: 24),
           Text(
@@ -299,7 +223,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> with SingleTick
             style: TextStyle(
               fontSize: isDesktop ? 56 : 36,
               fontWeight: FontWeight.w900,
-              color: Colors.white,
+              color: AppColors.primary,
               letterSpacing: -1.0,
               height: 1.1,
             ),
@@ -311,9 +235,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> with SingleTick
             textAlign: isDesktop ? TextAlign.left : TextAlign.center,
             style: TextStyle(
               fontSize: isDesktop ? 20 : 16,
-              color: Colors.white.withValues(alpha: 0.9),
+              color: AppColors.textSecondary,
               height: 1.5,
-              fontWeight: FontWeight.w400,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
