@@ -1,8 +1,7 @@
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 import '../../../core/constants/theme.dart';
 import '../../../core/models/institution.dart';
 import '../../../core/providers/auth_provider.dart';
@@ -58,7 +57,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> with SingleTick
     }
   }
 
-  // Tính độ mạnh mật khẩu: 0..4 dựa trên độ dài và độ đa dạng ký tự.
+  // TÃ­nh Ä‘á»™ máº¡nh máº­t kháº©u: 0..4 dá»±a trÃªn Ä‘á»™ dÃ i vÃ  Ä‘á»™ Ä‘a dáº¡ng kÃ½ tá»±.
   int _calcPasswordScore(String password) {
     if (password.isEmpty) return 0;
     var score = 0;
@@ -101,7 +100,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> with SingleTick
     });
 
     try {
-      await context.read<AuthProvider>().register(
+      await ref.read(authProvider.notifier).register(
         email,
         password,
         fullName,
@@ -648,3 +647,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> with SingleTick
     );
   }
 }
+
+
+
+

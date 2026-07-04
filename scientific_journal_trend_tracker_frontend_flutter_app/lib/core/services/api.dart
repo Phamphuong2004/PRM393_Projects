@@ -1,6 +1,5 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../constants/api_constants.dart';
 
 class ApiException implements Exception {
@@ -16,92 +15,92 @@ class ApiException implements Exception {
 class ApiService {
   static final ApiService _instance = ApiService._internal();
 
+  late final Dio _dio;
+  final _storage = const FlutterSecureStorage();
+
   factory ApiService() {
     return _instance;
   }
 
-  ApiService._internal();
+  ApiService._internal() {
+    _dio = Dio(BaseOptions(
+      baseUrl: ApiConstants.baseUrl,
+      headers: {'Content-Type': 'application/json'},
+    ));
 
-  Future<Map<String, String>> _getHeaders([
-    Map<String, String>? customHeaders,
-  ]) async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
-
-    final headers = {'Content-Type': 'application/json', ...?customHeaders};
-
-    if (token != null && token.isNotEmpty) {
-      headers['Authorization'] = 'Bearer $token';
-    }
-
-    return headers;
+    _dio.interceptors.add(InterceptorsWrapper(
+      onRequest: (options, handler) async {
+        final token = await _storage.read(key: 'jwt_token');
+        if (token != null && token.isNotEmpty) {
+          options.headers['Authorization'] = 'Bearer $token';
+        }
+        return handler.next(options);
+      },
+      onError: (error, handler) {
+        return handler.next(error);
+      }
+    ));
   }
 
-  dynamic _processResponse(http.Response response) {
-    dynamic data;
-    try {
-      if (response.body.isNotEmpty) {
-        data = json.decode(response.body);
-      }
-    } catch (_) {
-      data = {'message': response.body};
-    }
-
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      return data;
+  dynamic _processResponse(Response response) {
+    if (response.statusCode != null && response.statusCode! >= 200 && response.statusCode! < 300) {
+      return response.data;
     } else {
-      String message = data is Map && data['message'] != null
-          ? data['message']
+      String message = response.data is Map && response.data['message'] != null
+          ? response.data['message']
           : 'Error ${response.statusCode}';
       throw ApiException(message, statusCode: response.statusCode);
     }
   }
 
   Future<dynamic> get(String endpoint) async {
-    final uri = Uri.parse('${ApiConstants.baseUrl}$endpoint');
-    final headers = await _getHeaders();
-    final response = await http.get(uri, headers: headers);
-    return _processResponse(response);
+    try {
+      final response = await _dio.get(endpoint);
+      return _processResponse(response);
+    } on DioException catch (e) {
+      if (e.response != null) return _processResponse(e.response!);
+      throw ApiException(e.message ?? 'Unknown Error');
+    }
   }
 
   Future<dynamic> post(String endpoint, Map<String, dynamic> body) async {
-    final uri = Uri.parse('${ApiConstants.baseUrl}$endpoint');
-    final headers = await _getHeaders();
-    final response = await http.post(
-      uri,
-      headers: headers,
-      body: json.encode(body),
-    );
-    return _processResponse(response);
+    try {
+      final response = await _dio.post(endpoint, data: body);
+      return _processResponse(response);
+    } on DioException catch (e) {
+      if (e.response != null) return _processResponse(e.response!);
+      throw ApiException(e.message ?? 'Unknown Error');
+    }
   }
 
   Future<dynamic> put(String endpoint, Map<String, dynamic> body) async {
-    final uri = Uri.parse('${ApiConstants.baseUrl}$endpoint');
-    final headers = await _getHeaders();
-    final response = await http.put(
-      uri,
-      headers: headers,
-      body: json.encode(body),
-    );
-    return _processResponse(response);
+    try {
+      final response = await _dio.put(endpoint, data: body);
+      return _processResponse(response);
+    } on DioException catch (e) {
+      if (e.response != null) return _processResponse(e.response!);
+      throw ApiException(e.message ?? 'Unknown Error');
+    }
   }
 
   Future<dynamic> patch(String endpoint, Map<String, dynamic> body) async {
-    final uri = Uri.parse('${ApiConstants.baseUrl}$endpoint');
-    final headers = await _getHeaders();
-    final response = await http.patch(
-      uri,
-      headers: headers,
-      body: json.encode(body),
-    );
-    return _processResponse(response);
+    try {
+      final response = await _dio.patch(endpoint, data: body);
+      return _processResponse(response);
+    } on DioException catch (e) {
+      if (e.response != null) return _processResponse(e.response!);
+      throw ApiException(e.message ?? 'Unknown Error');
+    }
   }
 
   Future<dynamic> delete(String endpoint) async {
-    final uri = Uri.parse('${ApiConstants.baseUrl}$endpoint');
-    final headers = await _getHeaders();
-    final response = await http.delete(uri, headers: headers);
-    return _processResponse(response);
+    try {
+      final response = await _dio.delete(endpoint);
+      return _processResponse(response);
+    } on DioException catch (e) {
+      if (e.response != null) return _processResponse(e.response!);
+      throw ApiException(e.message ?? 'Unknown Error');
+    }
   }
 }
 

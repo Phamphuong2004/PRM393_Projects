@@ -9,21 +9,8 @@ class ApiConstants {
       return 'https://prm393-projects-journal-tracking.up.railway.app';
     }
 
-    // Tự động chọn địa chỉ Localhost phù hợp cho từng môi trường/thiết bị khi chạy nội bộ (Local)
-    if (kIsWeb) {
-      return 'http://localhost:5000'; // Web
-    }
-
-    switch (defaultTargetPlatform) {
-      case TargetPlatform.android:
-        return 'http://10.0.2.2:5000'; // Máy ảo Android Emulator kết nối với localhost của máy chủ
-      case TargetPlatform.iOS:
-      case TargetPlatform.macOS:
-      case TargetPlatform.windows:
-      case TargetPlatform.linux:
-      default:
-        return 'http://localhost:5000'; // iOS Simulator, Desktop App, v.v.
-    }
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) return 'http://10.0.2.2:5000';
+    return 'http://localhost:5000';
   }
 
   // Auth

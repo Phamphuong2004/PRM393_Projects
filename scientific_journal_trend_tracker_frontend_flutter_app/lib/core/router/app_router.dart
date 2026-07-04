@@ -35,37 +35,47 @@ import '../../features/admin/screens/analytics_report_screen.dart';
 import '../../features/admin/screens/sync_logs_screen.dart';
 import '../../features/admin/screens/system_settings_screen.dart';
 
-class AppRouter {
-  static GoRouter router(AuthProvider authProvider) {
-    return GoRouter(
-      initialLocation: '/',
-      refreshListenable: authProvider,
-      redirect: (context, state) {
-        final isAuthenticated = authProvider.isAuthenticated;
-        final location = state.matchedLocation;
-        final isAuthRoute = location.startsWith('/auth');
-        final isAppRoute = location.startsWith('/app');
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/material.dart';
 
-        if (authProvider.isLoading) return null;
+final appRouterProvider = Provider<GoRouter>((ref) {
+  final listenable = ValueNotifier<bool>(false);
+  ref.listen<AuthState>(authProvider, (previous, next) {
+    if (previous?.isAuthenticated != next.isAuthenticated || previous?.isLoading != next.isLoading) {
+      listenable.value = !listenable.value;
+    }
+  });
 
-        // If authenticated, prevent access to auth routes and the root landing page
-        if (isAuthenticated && (isAuthRoute || location == '/')) {
-          return '/app';
-        }
+  return GoRouter(
+    initialLocation: '/',
+    refreshListenable: listenable,
+    redirect: (context, state) {
+      final authState = ref.read(authProvider);
+      final isAuthenticated = authState.isAuthenticated;
+      final location = state.matchedLocation;
+      final isAuthRoute = location.startsWith('/auth');
+      final isAppRoute = location.startsWith('/app');
 
-        // If unauthenticated, prevent access to app routes
-        if (!isAuthenticated && isAppRoute) {
-          return '/auth/login';
-        }
+      if (authState.isLoading) return null;
 
-        // Admin-only route protection
-        if (location.startsWith('/app/admin') && !authProvider.isAdmin) {
-          return '/app';
-        }
+      // If authenticated, prevent access to auth routes and the root landing page
+      if (isAuthenticated && (isAuthRoute || location == '/')) {
+        return '/app';
+      }
 
-        return null;
-      },
-      routes: [
+      // If unauthenticated, prevent access to app routes
+      if (!isAuthenticated && isAppRoute) {
+        return '/auth/login';
+      }
+
+      // Admin-only route protection
+      if (location.startsWith('/app/admin') && !authState.isAdmin) {
+        return '/app';
+      }
+
+      return null;
+    },
+    routes: [
         // Public Flow
         GoRoute(
           path: '/',
@@ -198,6 +208,4 @@ class AppRouter {
         ),
       ],
     );
-  }
-}
-
+});

@@ -1,86 +1,117 @@
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import '../services/api.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../repositories/auth_repository.dart';
+import 'package:dio/dio.dart';
 
-class AuthProvider with ChangeNotifier {
-  String? _token;
-  Map<String, dynamic>? _user;
-  bool _isLoading = true;
-  String? _error;
+class AuthState {
+  final String? token;
+  final Map<String, dynamic>? user;
+  final bool isLoading;
+  final String? error;
 
-  String? get token => _token;
-  Map<String, dynamic>? get user => _user;
-  bool get isLoading => _isLoading;
-  String? get error => _error;
-  bool get isAuthenticated => _token != null;
-  
-  String get role => _user?['role'] ?? 'User';
+  const AuthState({
+    this.token,
+    this.user,
+    this.isLoading = true,
+    this.error,
+  });
+
+  bool get isAuthenticated => token != null;
+  String get role => user?['role'] ?? 'User';
   bool get isAdmin => role.toLowerCase() == 'admin';
   bool get isResearcher => role.toLowerCase() == 'researcher';
 
-  AuthProvider() {
+  AuthState copyWith({
+    String? token,
+    Map<String, dynamic>? user,
+    bool? isLoading,
+    String? error,
+    bool clearToken = false,
+    bool clearUser = false,
+    bool clearError = false,
+  }) {
+    return AuthState(
+      token: clearToken ? null : (token ?? this.token),
+      user: clearUser ? null : (user ?? this.user),
+      isLoading: isLoading ?? this.isLoading,
+      error: clearError ? null : (error ?? this.error),
+    );
+  }
+}
+
+final authProvider = NotifierProvider<AuthNotifier, AuthState>(() {
+  return AuthNotifier();
+});
+
+class AuthNotifier extends Notifier<AuthState> {
+  final _storage = const FlutterSecureStorage();
+
+  @override
+  AuthState build() {
     _loadUser();
+    return const AuthState();
   }
 
   Future<void> _loadUser() async {
-    _isLoading = true;
-    notifyListeners();
+    state = state.copyWith(isLoading: true, clearError: true);
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      _token = prefs.getString('token');
+      final token = await _storage.read(key: 'jwt_token');
 
-      if (_token != null) {
-        final userData = await AuthApi.me();
-        _user = userData;
+      if (token != null && token.isNotEmpty) {
+        final authRepo = ref.read(authRepositoryProvider);
+        final userData = await authRepo.me();
+        state = state.copyWith(token: token, user: userData, isLoading: false);
+      } else {
+        state = state.copyWith(isLoading: false);
       }
     } catch (e) {
       bool isUnauthorized = false;
-      if (e is ApiException && e.statusCode == 401) {
+      if (e is DioException && e.response?.statusCode == 401) {
         isUnauthorized = true;
       } else if (e.toString().toLowerCase().contains('unauthorized') || e.toString().contains('401')) {
         isUnauthorized = true;
       }
 
       if (isUnauthorized) {
-        _token = null;
-        _user = null;
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.remove('token');
+        await _storage.delete(key: 'jwt_token');
+        state = state.copyWith(
+          clearToken: true,
+          clearUser: true,
+          isLoading: false,
+        );
+      } else {
+        // If network timeout or backend sleep, keep the token so user stays logged in
+        final token = await _storage.read(key: 'jwt_token');
+        state = state.copyWith(token: token, isLoading: false);
       }
-      // If network timeout or backend sleep, keep the token so user stays logged in
-    } finally {
-      _isLoading = false;
-      notifyListeners();
     }
   }
 
   Future<void> login(String email, String password) async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
+    state = state.copyWith(isLoading: true, clearError: true);
 
     try {
-      final response = await AuthApi.login(email, password);
-      _token = response['token'];
-      _user = response['user'];
-
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('token', _token!);
+      final authRepo = ref.read(authRepositoryProvider);
+      final response = await authRepo.login(email, password);
+      final token = response['token'];
+      
+      await _storage.write(key: 'jwt_token', value: token);
+      state = state.copyWith(
+        token: token,
+        user: response['user'],
+        isLoading: false,
+      );
     } catch (e) {
-      _error = e.toString();
+      state = state.copyWith(error: e.toString(), isLoading: false);
       rethrow;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
     }
   }
 
   Future<void> loginWithGoogle() async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
+    state = state.copyWith(isLoading: true, clearError: true);
 
     try {
       final GoogleSignIn googleSignIn = GoogleSignIn(
@@ -90,8 +121,10 @@ class AuthProvider with ChangeNotifier {
       );
 
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
-      
-      if (googleUser == null) return;
+      if (googleUser == null) {
+        state = state.copyWith(isLoading: false);
+        return;
+      }
 
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
       final String? idToken = googleAuth.idToken ?? googleAuth.accessToken;
@@ -100,43 +133,41 @@ class AuthProvider with ChangeNotifier {
         throw Exception("Failed to get ID Token from Google");
       }
 
-      final response = await AuthApi.googleLogin(idToken);
-      _token = response['token'];
-      _user = response['user'];
+      final authRepo = ref.read(authRepositoryProvider);
+      final response = await authRepo.googleLogin(idToken);
+      final token = response['token'];
 
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('token', _token!);
+      await _storage.write(key: 'jwt_token', value: token);
+      state = state.copyWith(
+        token: token,
+        user: response['user'],
+        isLoading: false,
+      );
     } catch (e) {
-      _error = e.toString();
+      state = state.copyWith(error: e.toString(), isLoading: false);
       rethrow;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
     }
   }
 
   Future<void> register(String email, String password, String fullName, {String role = 'researcher', String? institution}) async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
+    state = state.copyWith(isLoading: true, clearError: true);
 
     try {
-      await AuthApi.register(email, password, fullName, role: role, institution: institution);
+      final authRepo = ref.read(authRepositoryProvider);
+      await authRepo.register(email, password, fullName, role: role, institution: institution);
       await login(email, password);
     } catch (e) {
-      _error = e.toString();
+      state = state.copyWith(error: e.toString(), isLoading: false);
       rethrow;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
     }
   }
 
   Future<void> logout() async {
-    _token = null;
-    _user = null;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('token');
-    notifyListeners();
+    await _storage.delete(key: 'jwt_token');
+    state = state.copyWith(
+      clearToken: true,
+      clearUser: true,
+      isLoading: false,
+    );
   }
 }
