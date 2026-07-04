@@ -1,19 +1,19 @@
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../../core/constants/theme.dart';
 import '../../../core/models/author.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/services/api.dart';
 import '../../../core/widgets/animated_background.dart';
 
-class AuthorsScreen extends StatefulWidget {
+class AuthorsScreen extends ConsumerStatefulWidget {
   const AuthorsScreen({super.key});
 
   @override
-  State<AuthorsScreen> createState() => _AuthorsScreenState();
+  ConsumerState<AuthorsScreen> createState() => _AuthorsScreenState();
 }
 
-class _AuthorsScreenState extends State<AuthorsScreen> {
+class _AuthorsScreenState extends ConsumerState<AuthorsScreen> {
   final TextEditingController _searchController = TextEditingController();
   List<Author> _authors = [];
   bool _isLoading = true;
@@ -258,9 +258,9 @@ class _AuthorsScreenState extends State<AuthorsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = context.watch<AuthProvider>();
-    final canEdit = authProvider.isAdmin || authProvider.isResearcher;
-    final isAdmin = authProvider.isAdmin;
+    final authState = ref.watch(authProvider);
+    final canEdit = authState.isAdmin || authState.isResearcher;
+    final isAdmin = authState.isAdmin;
     
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth > 800;
@@ -582,3 +582,7 @@ class _AuthorsScreenState extends State<AuthorsScreen> {
     );
   }
 }
+
+
+
+
