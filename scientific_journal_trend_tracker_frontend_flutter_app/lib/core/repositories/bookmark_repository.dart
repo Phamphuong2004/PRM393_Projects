@@ -16,9 +16,13 @@ class BookmarkRepository {
 
   // BE returns { bookmarks: [ ...Paper ], pagination }. The bookmarks array holds
   // populated Paper documents directly (not a Bookmark wrapper).
-  Future<List<Paper>> getBookmarks() async {
+  Future<List<Paper>> getBookmarks({String searchQuery = '', String sortOrder = 'newest'}) async {
     try {
-      final response = await _dio.get(ApiConstants.bookmarks);
+      final queryParams = <String, dynamic>{};
+      if (searchQuery.isNotEmpty) queryParams['search'] = searchQuery;
+      if (sortOrder.isNotEmpty) queryParams['sort'] = sortOrder;
+
+      final response = await _dio.get(ApiConstants.bookmarks, queryParameters: queryParams);
       final data = (response.data['bookmarks'] as List?) ??
           (response.data['data'] as List?) ??
           [];

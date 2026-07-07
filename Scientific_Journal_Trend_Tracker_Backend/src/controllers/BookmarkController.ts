@@ -5,22 +5,28 @@ import User from "../models/User";
 export class BookmarkController {
   static async getUserBookmarks(req: Request, res: Response): Promise<void> {
     try {
-      const user = await User.findById(req.userId).populate({
-        path: "bookmarks",
-        populate: [
-          { path: "authors" },
-          { path: "journalId" },
-          { path: "keywords" },
-          { path: "topics" }
-        ]
-      });
+      const search = req.query.search as string;
+      const sort = req.query.sort as string; // 'newest' | 'oldest'
 
+      const user = await User.findById(req.userId);
       if (!user) {
         res.status(404).json({ message: "User not found" });
         return;
       }
 
-      res.json(user.bookmarks);
+      let query: any = { _id: { $in: user.bookmarks } };
+      if (search) {
+        query.title = { $regex: search, $options: "i" };
+      }
+
+      let sortOpt: any = { createdAt: -1 }; // default newest
+      if (sort === "oldest") sortOpt = { createdAt: 1 };
+
+      const bookmarks = await Paper.find(query)
+        .sort(sortOpt)
+        .populate(["authors", "journalId", "keywords", "topics"]);
+
+      res.json(bookmarks);
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: "Server error" });

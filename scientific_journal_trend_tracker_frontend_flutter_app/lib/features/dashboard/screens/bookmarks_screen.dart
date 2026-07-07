@@ -16,12 +16,20 @@ class BookmarksScreen extends ConsumerStatefulWidget {
 
 class _BookmarksScreenState extends ConsumerState<BookmarksScreen> {
   List<Paper> _bookmarks = [];
+  List<Paper> _filteredBookmarks = [];
   bool _isLoading = true;
   String? _error;
+  
+  String _searchQuery = '';
+  String _sortOrder = 'newest';
 
   @override
   void initState() {
     super.initState();
+    _fetchBookmarks();
+  }
+
+  void _applyFiltersAndSort() {
     _fetchBookmarks();
   }
 
@@ -32,9 +40,10 @@ class _BookmarksScreenState extends ConsumerState<BookmarksScreen> {
         _error = null;
       });
       final repo = ref.read(bookmarkRepositoryProvider);
-      final res = await repo.getBookmarks();
+      final res = await repo.getBookmarks(searchQuery: _searchQuery, sortOrder: _sortOrder);
       setState(() {
         _bookmarks = res;
+        _filteredBookmarks = res;
         _isLoading = false;
       });
     } catch (e) {
@@ -52,6 +61,7 @@ class _BookmarksScreenState extends ConsumerState<BookmarksScreen> {
       setState(() {
         _bookmarks.removeWhere((b) => b.id == id);
       });
+      _applyFiltersAndSort();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Bookmark removed'), backgroundColor: AppColors.success));
       }
@@ -106,35 +116,97 @@ class _BookmarksScreenState extends ConsumerState<BookmarksScreen> {
       );
     }
 
-    if (_bookmarks.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(color: AppColors.primaryLight.withValues(alpha: 0.05), shape: BoxShape.circle),
-              child: const Icon(Icons.bookmark_border_rounded, size: 72, color: AppColors.primaryLight),
-            ),
-            const SizedBox(height: 32),
-            Text('No bookmarks yet', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, letterSpacing: -0.5)),
-            const SizedBox(height: 12),
-            const Text('Save interesting papers to read them later.', textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary, fontSize: 15)),
-          ],
+    return Column(
+      children: [
+        _buildFilterSortBar(),
+        Expanded(
+          child: _filteredBookmarks.isEmpty
+              ? _buildEmptyState()
+              : RefreshIndicator(
+                  onRefresh: _fetchBookmarks,
+                  color: AppColors.primary,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    itemCount: _filteredBookmarks.length,
+                    itemBuilder: (context, index) {
+                      final paper = _filteredBookmarks[index];
+                      return _buildBookmarkCard(paper);
+                    },
+                  ),
+                ),
         ),
-      );
-    }
+      ],
+    );
+  }
 
-    return RefreshIndicator(
-      onRefresh: _fetchBookmarks,
-      color: AppColors.primary,
-      child: ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        itemCount: _bookmarks.length,
-        itemBuilder: (context, index) {
-          final paper = _bookmarks[index];
-          return _buildBookmarkCard(paper);
-        },
+  Widget _buildFilterSortBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Filter by title...',
+                prefixIcon: const Icon(Icons.search, size: 20, color: AppColors.textSecondary),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                filled: true,
+                fillColor: AppColors.surface,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+              onChanged: (val) {
+                _searchQuery = val;
+                _applyFiltersAndSort();
+              },
+            ),
+          ),
+          const SizedBox(width: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: _sortOrder,
+                icon: const Icon(Icons.sort_rounded, size: 20, color: AppColors.textSecondary),
+                items: const [
+                  DropdownMenuItem(value: 'newest', child: Text('Newest First', style: TextStyle(fontSize: 14))),
+                  DropdownMenuItem(value: 'oldest', child: Text('Oldest First', style: TextStyle(fontSize: 14))),
+                ],
+                onChanged: (val) {
+                  if (val != null) {
+                    _sortOrder = val;
+                    _applyFiltersAndSort();
+                  }
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(color: AppColors.primaryLight.withValues(alpha: 0.05), shape: BoxShape.circle),
+            child: const Icon(Icons.bookmark_border_rounded, size: 72, color: AppColors.primaryLight),
+          ),
+          const SizedBox(height: 32),
+          Text(_searchQuery.isNotEmpty ? 'No bookmarks match your search' : 'No bookmarks yet', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, letterSpacing: -0.5)),
+          const SizedBox(height: 12),
+          Text(_searchQuery.isNotEmpty ? 'Try a different filter.' : 'Save interesting papers to read them later.', textAlign: TextAlign.center, style: const TextStyle(color: AppColors.textSecondary, fontSize: 15)),
+        ],
       ),
     );
   }
