@@ -29,6 +29,7 @@ import adminRoutes from "./routes/admin";
 import authorsRoutes from "./routes/authors";
 import syncLogsRoutes from "./routes/syncLogs";
 import workspacesRoutes from "./routes/workspaces";
+import chatRoutes from "./routes/chat";
 
 const app = express();
 const server = http.createServer(app);
@@ -51,8 +52,8 @@ app.use(
     credentials: true,
   }),
 );
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Serve uploaded files (PDFs, etc.) as static assets
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
@@ -139,6 +140,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/authors", authorsRoutes);
 app.use("/api/sync-logs", syncLogsRoutes);
 app.use("/api/workspaces", workspacesRoutes);
+app.use("/api/chat", chatRoutes);
 
 // API Documentation
 app.get("/api", (req, res) => {
@@ -163,6 +165,7 @@ app.get("/api", (req, res) => {
       authors: "/api/authors",
       "sync-logs": "/api/sync-logs",
       workspaces: "/api/workspaces",
+      chat: "/api/chat",
     },
   });
 });

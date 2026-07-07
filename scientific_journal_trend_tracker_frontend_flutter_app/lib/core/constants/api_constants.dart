@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 
 class ApiConstants {
   // Đặt là true nếu chạy Local Backend, đặt là false nếu chạy Railway Backend (Production)
-  static const bool useLocal = false;
+  static const bool useLocal = true;
 
   static String get baseUrl {
     if (!useLocal) {

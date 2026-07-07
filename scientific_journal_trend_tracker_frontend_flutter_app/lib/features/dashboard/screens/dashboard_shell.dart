@@ -57,6 +57,12 @@ class DashboardShell extends ConsumerWidget {
             )
           : child,
       bottomNavigationBar: isDesktop ? null : _buildModernBottomNav(context),
+      floatingActionButton: isDesktop ? null : FloatingActionButton(
+        backgroundColor: AppColors.primary,
+        onPressed: () => context.push('/app/chat'),
+        elevation: 4,
+        child: const Icon(Icons.auto_awesome_rounded, color: Colors.white),
+      ),
     );
   }
 
