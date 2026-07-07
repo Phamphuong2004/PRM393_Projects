@@ -1,6 +1,5 @@
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:provider/provider.dart' as prov;
 import '../../../core/constants/theme.dart';
 import '../../../core/models/institution.dart';
 import '../../../core/providers/auth_provider.dart';
@@ -44,7 +43,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
     _interestsController = TextEditingController();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final user = prov.Provider.of<AuthProvider>(context, listen: false).user;
+      final user = ref.read(authProvider).user;
       if (user != null) {
         setState(() {
           _nameController.text = user['fullName'] ?? '';
@@ -66,7 +65,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
       final list = await repo.getInstitutions();
       if (mounted) setState(() => _institutions = list);
     } catch (_) {
-      // Silently ignore — dropdown just stays with current value only.
+      // Silently ignore â€” dropdown just stays with current value only.
     }
   }
 
@@ -136,7 +135,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = prov.Provider.of<AuthProvider>(context);
+    final authState = ref.watch(authProvider);
     final user = authState.user;
 
     if (user == null) {
@@ -159,7 +158,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
         child: SingleChildScrollView(
         child: Column(
           children: [
-            // ── Profile Header ──────────────────────────────────────────────
+            // â”€â”€ Profile Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
@@ -222,7 +221,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
             ),
             const SizedBox(height: 32),
 
-            // ── Content ─────────────────────────────────────────────────────
+            // â”€â”€ Content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: isWide
@@ -264,7 +263,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
     );
   }
 
-  // ── Account Activity Card ──────────────────────────────────────────────────
+  // â”€â”€ Account Activity Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildActivityCard(String createdAt, int savedPapers) {
     return Container(
       decoration: _cardDecoration(),
@@ -294,7 +293,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
     );
   }
 
-  // ── General Information Card ───────────────────────────────────────────────
+  // â”€â”€ General Information Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildGeneralInfoCard(Map<String, dynamic> user) {
     return Container(
       decoration: _cardDecoration(),
@@ -351,7 +350,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
     );
   }
 
-  // ── Security Card ──────────────────────────────────────────────────────────
+  // â”€â”€ Security Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildSecurityCard(Map<String, dynamic> user) {
     return Container(
       decoration: _cardDecoration(),
@@ -440,13 +439,13 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
           textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
         ),
         onPressed: () {
-          prov.Provider.of<AuthProvider>(context, listen: false).logout();
+          ref.read(authProvider.notifier).logout();
         },
       ),
     );
   }
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
+  // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   BoxDecoration _cardDecoration() => BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(24),
@@ -636,3 +635,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
     }
   }
 }
+
+
+
+

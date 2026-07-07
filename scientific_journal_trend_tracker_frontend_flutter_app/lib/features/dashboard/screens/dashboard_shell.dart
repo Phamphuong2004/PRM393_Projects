@@ -1,16 +1,16 @@
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 import '../../../core/constants/theme.dart';
 import '../../../core/providers/auth_provider.dart';
 
-class DashboardShell extends StatelessWidget {
+class DashboardShell extends ConsumerWidget {
   final Widget child;
   const DashboardShell({super.key, required this.child});
 
   @override
-  Widget build(BuildContext context) {
-    final authProvider = context.watch<AuthProvider>();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authProvider);
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth > 800;
 
@@ -38,11 +38,11 @@ class DashboardShell extends StatelessWidget {
                 ),
               ],
             ),
-      drawer: isDesktop ? null : _buildPremiumDrawer(context, authProvider),
+      drawer: isDesktop ? null : _buildPremiumDrawer(context, authState, ref),
       body: isDesktop
           ? Row(
               children: [
-                _buildDesktopSideMenu(context, authProvider),
+                _buildDesktopSideMenu(context, authState, ref),
                 const VerticalDivider(width: 1, thickness: 1, color: AppColors.border),
                 Expanded(
                   child: ClipRRect(
@@ -60,8 +60,8 @@ class DashboardShell extends StatelessWidget {
     );
   }
 
-  Widget _buildDesktopSideMenu(BuildContext context, AuthProvider authProvider) {
-    final user = authProvider.user;
+  Widget _buildDesktopSideMenu(BuildContext context, AuthState authState, WidgetRef ref) {
+    final user = authState.user;
     final fullName = user?['fullName'] ?? 'User';
     final initial = fullName.isNotEmpty ? fullName[0].toUpperCase() : 'U';
     
@@ -127,7 +127,7 @@ class DashboardShell extends StatelessWidget {
                 _buildSideMenuItem(context, 'Following', Icons.people_outline_rounded, Icons.people_rounded, '/app/following', location),
                 _buildSideMenuItem(context, 'Profile Settings', Icons.person_outline_rounded, Icons.person_rounded, '/app/profile', location),
                 
-                if (authProvider.isAdmin) ...[
+                if (authState.isAdmin) ...[
                   const Padding(padding: EdgeInsets.symmetric(vertical: 16), child: Divider(color: AppColors.border)),
                   const Padding(
                     padding: EdgeInsets.only(left: 16.0, bottom: 8.0),
@@ -157,7 +157,7 @@ class DashboardShell extends StatelessWidget {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               hoverColor: AppColors.error.withValues(alpha: 0.05),
               onTap: () {
-                authProvider.logout();
+                ref.read(authProvider.notifier).logout();
                 context.go('/');
               },
             ),
@@ -183,8 +183,8 @@ class DashboardShell extends StatelessWidget {
     );
   }
 
-  Widget _buildPremiumDrawer(BuildContext context, AuthProvider authProvider) {
-    final user = authProvider.user;
+  Widget _buildPremiumDrawer(BuildContext context, AuthState authState, WidgetRef ref) {
+    final user = authState.user;
     final fullName = user?['fullName'] ?? 'User';
     final email = user?['email'] ?? '';
     final initial = fullName.isNotEmpty ? fullName[0].toUpperCase() : 'U';
@@ -245,7 +245,7 @@ class DashboardShell extends StatelessWidget {
                 _buildDrawerItem(context, icon: Icons.people_outline_rounded, activeIcon: Icons.people_rounded, title: 'Authors', path: '/app/authors'),
                 const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Divider(color: AppColors.border)),
                 
-                if (authProvider.isAdmin) ...[
+                if (authState.isAdmin) ...[
                   const Padding(
                     padding: EdgeInsets.only(left: 16.0, top: 8.0, bottom: 8.0),
                     child: Text('ADMINISTRATION', style: TextStyle(color: AppColors.textLight, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 1.2)),
@@ -262,7 +262,7 @@ class DashboardShell extends StatelessWidget {
                   title: const Text('Logout', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w600, fontSize: 15)),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   onTap: () {
-                    authProvider.logout();
+                    ref.read(authProvider.notifier).logout();
                     context.go('/');
                   },
                 ),
@@ -336,3 +336,4 @@ class DashboardShell extends StatelessWidget {
     );
   }
 }
+

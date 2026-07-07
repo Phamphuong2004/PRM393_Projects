@@ -1,21 +1,51 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
-import 'package:shared_preferences/shared_preferences.dart';
-import '../../services/notification_api.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../repositories/notification_repository.dart';
 import '../constants/api_constants.dart';
 
-class NotificationProvider with ChangeNotifier {
-  List<dynamic> _notifications = [];
-  int _unreadCount = 0;
-  bool _isLoading = false;
+class NotificationState {
+  final List<dynamic> notifications;
+  final int unreadCount;
+  final bool isLoading;
+
+  const NotificationState({
+    this.notifications = const [],
+    this.unreadCount = 0,
+    this.isLoading = false,
+  });
+
+  NotificationState copyWith({
+    List<dynamic>? notifications,
+    int? unreadCount,
+    bool? isLoading,
+  }) {
+    return NotificationState(
+      notifications: notifications ?? this.notifications,
+      unreadCount: unreadCount ?? this.unreadCount,
+      isLoading: isLoading ?? this.isLoading,
+    );
+  }
+}
+
+final notificationProvider = NotifierProvider<NotificationNotifier, NotificationState>(() {
+  return NotificationNotifier();
+});
+
+class NotificationNotifier extends Notifier<NotificationState> {
   io.Socket? _socket;
+  final _storage = const FlutterSecureStorage();
 
-  List<dynamic> get notifications => _notifications;
-  int get unreadCount => _unreadCount;
-  bool get isLoading => _isLoading;
-
-  NotificationProvider() {
+  @override
+  NotificationState build() {
     _init();
+    
+    ref.onDispose(() {
+      _socket?.disconnect();
+    });
+    
+    return const NotificationState();
   }
 
   Future<void> _init() async {
@@ -25,9 +55,7 @@ class NotificationProvider with ChangeNotifier {
   }
 
   void _connectSocket() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
-
+    final token = await _storage.read(key: 'jwt_token');
     if (token == null) return;
 
     _socket = io.io(ApiConstants.baseUrl, <String, dynamic>{
@@ -42,9 +70,10 @@ class NotificationProvider with ChangeNotifier {
 
     _socket?.on('new_notification', (data) {
       debugPrint('New notification received via socket: $data');
-      _notifications.insert(0, data);
-      _unreadCount++;
-      notifyListeners();
+      state = state.copyWith(
+        notifications: [data, ...state.notifications],
+        unreadCount: state.unreadCount + 1,
+      );
     });
 
     _socket?.onDisconnect((_) => debugPrint('Socket disconnected'));
@@ -55,28 +84,34 @@ class NotificationProvider with ChangeNotifier {
   }
 
   Future<void> fetchNotifications({int page = 1}) async {
-    _isLoading = true;
-    notifyListeners();
+    state = state.copyWith(isLoading: true);
 
     try {
-      final data = await NotificationApi.getNotifications(page: page);
+      final repo = ref.read(notificationRepositoryProvider);
+      final data = await repo.getNotifications(page: page);
+      
       if (page == 1) {
-        _notifications = data['notifications'] ?? [];
+        state = state.copyWith(
+          notifications: data['notifications'] ?? [],
+          isLoading: false,
+        );
       } else {
-        _notifications.addAll(data['notifications'] ?? []);
+        state = state.copyWith(
+          notifications: [...state.notifications, ...(data['notifications'] ?? [])],
+          isLoading: false,
+        );
       }
     } catch (e) {
       debugPrint('Error fetching notifications: $e');
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+      state = state.copyWith(isLoading: false);
     }
   }
 
   Future<void> fetchUnreadCount() async {
     try {
-      _unreadCount = await NotificationApi.getUnreadCount();
-      notifyListeners();
+      final repo = ref.read(notificationRepositoryProvider);
+      final count = await repo.getUnreadCount();
+      state = state.copyWith(unreadCount: count);
     } catch (e) {
       debugPrint('Error fetching unread count: $e');
     }
@@ -84,13 +119,36 @@ class NotificationProvider with ChangeNotifier {
 
   Future<void> markAsRead(String id) async {
     try {
-      await NotificationApi.markAsRead(id);
+      final repo = ref.read(notificationRepositoryProvider);
+      await repo.markAsRead(id);
       
-      final index = _notifications.indexWhere((n) => n['_id'] == id);
-      if (index != -1 && _notifications[index]['isRead'] == false) {
-        _notifications[index]['isRead'] = true;
-        _unreadCount = _unreadCount > 0 ? _unreadCount - 1 : 0;
-        notifyListeners();
+      final notifications = List<dynamic>.from(state.notifications);
+      final index = notifications.indexWhere((n) {
+        // Handle both Map and Model if possible. Our repository returns models but old api returned maps.
+        // Assuming notifications are converted to Map or we handle model properties.
+        // In the old code it was n['_id'], if we use models it will be n.id
+        if (n is Map) return n['_id'] == id;
+        return (n as dynamic).id == id;
+      });
+
+      if (index != -1) {
+        final n = notifications[index];
+        bool isRead = n is Map ? (n['isRead'] == true) : ((n as dynamic).isRead == true);
+        
+        if (!isRead) {
+          if (n is Map) {
+            notifications[index] = {...n, 'isRead': true};
+          } else {
+            // Need a copyWith on model ideally, for now just decrement count 
+            // since we might not be able to mutate the model directly
+            notifications[index] = (n as dynamic).copyWith(isRead: true);
+          }
+          
+          state = state.copyWith(
+            notifications: notifications,
+            unreadCount: state.unreadCount > 0 ? state.unreadCount - 1 : 0,
+          );
+        }
       }
     } catch (e) {
       debugPrint('Error marking as read: $e');
@@ -99,12 +157,18 @@ class NotificationProvider with ChangeNotifier {
 
   Future<void> markAllAsRead() async {
     try {
-      await NotificationApi.markAllAsRead();
-      for (var n in _notifications) {
-        n['isRead'] = true;
-      }
-      _unreadCount = 0;
-      notifyListeners();
+      final repo = ref.read(notificationRepositoryProvider);
+      await repo.markAllAsRead();
+      
+      final notifications = state.notifications.map((n) {
+        if (n is Map) return {...n, 'isRead': true};
+        return (n as dynamic).copyWith(isRead: true);
+      }).toList();
+
+      state = state.copyWith(
+        notifications: notifications,
+        unreadCount: 0,
+      );
     } catch (e) {
       debugPrint('Error marking all as read: $e');
     }
@@ -112,10 +176,12 @@ class NotificationProvider with ChangeNotifier {
 
   Future<void> clearAll() async {
     try {
-      await NotificationApi.clearAllNotifications();
-      _notifications.clear();
-      _unreadCount = 0;
-      notifyListeners();
+      final repo = ref.read(notificationRepositoryProvider);
+      await repo.clearAll();
+      state = state.copyWith(
+        notifications: [],
+        unreadCount: 0,
+      );
     } catch (e) {
       debugPrint('Error clearing notifications: $e');
     }
