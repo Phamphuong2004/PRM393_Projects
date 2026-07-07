@@ -399,7 +399,7 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
                           isExpanded: true,
                           icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.primary),
                           style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600, fontSize: 14),
-                          items: ['Local Database', 'OpenAlex', 'Semantic Scholar', 'Crossref', 'IEEE Xplore', 'Exa Research']
+                          items: ['Local Database', 'OpenAlex', 'Semantic Scholar', 'Crossref']
                               .map((s) => DropdownMenuItem(value: s, child: Text(s, overflow: TextOverflow.ellipsis)))
                               .toList(),
                           onChanged: (val) {

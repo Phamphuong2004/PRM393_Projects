@@ -1,4 +1,4 @@
-﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/theme.dart';
@@ -108,36 +108,8 @@ class DashboardShell extends ConsumerWidget {
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
               children: [
-                _buildSideMenuItem(context, 'Dashboard', Icons.dashboard_outlined, Icons.dashboard_rounded, '/app', location),
                 _buildSideMenuItem(context, 'Workspaces', Icons.workspaces_outline, Icons.workspaces, '/app/workspaces', location),
-                _buildSideMenuItem(context, 'Search Papers', Icons.search_outlined, Icons.search_rounded, '/app/search', location),
-                _buildSideMenuItem(context, 'Trending', Icons.trending_up_rounded, Icons.trending_up_rounded, '/app/trending', location),
-                _buildSideMenuItem(context, 'Research Topics', Icons.topic_rounded, Icons.topic_rounded, '/app/topics', location),
-                _buildSideMenuItem(context, 'Journals', Icons.library_books_rounded, Icons.library_books_rounded, '/app/journals', location),
-                _buildSideMenuItem(context, 'Bookmarks', Icons.bookmark_outline_rounded, Icons.bookmark_rounded, '/app/bookmarks', location),
-                _buildSideMenuItem(context, 'Authors', Icons.people_outline_rounded, Icons.people_rounded, '/app/authors', location),
-                
-                const Padding(padding: EdgeInsets.symmetric(vertical: 16), child: Divider(color: AppColors.border)),
-                
-                const Padding(
-                  padding: EdgeInsets.only(left: 16.0, bottom: 8.0),
-                  child: Text('PERSONAL', style: TextStyle(color: AppColors.textLight, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 1.2)),
-                ),
-                _buildSideMenuItem(context, 'Notifications', Icons.notifications_none_rounded, Icons.notifications_active_rounded, '/app/notifications', location),
-                _buildSideMenuItem(context, 'Following', Icons.people_outline_rounded, Icons.people_rounded, '/app/following', location),
                 _buildSideMenuItem(context, 'Profile Settings', Icons.person_outline_rounded, Icons.person_rounded, '/app/profile', location),
-                
-                if (authState.isAdmin) ...[
-                  const Padding(padding: EdgeInsets.symmetric(vertical: 16), child: Divider(color: AppColors.border)),
-                  const Padding(
-                    padding: EdgeInsets.only(left: 16.0, bottom: 8.0),
-                    child: Text('ADMINISTRATION', style: TextStyle(color: AppColors.textLight, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 1.2)),
-                  ),
-                  _buildSideMenuItem(context, 'User Management', Icons.manage_accounts_outlined, Icons.manage_accounts_rounded, '/app/admin/users', location),
-                  _buildSideMenuItem(context, 'Analytics Reports', Icons.analytics_outlined, Icons.analytics_rounded, '/app/admin/analytics', location),
-                  _buildSideMenuItem(context, 'Sync Logs', Icons.history_rounded, Icons.history_rounded, '/app/admin/sync-logs', location),
-                  _buildSideMenuItem(context, 'System Settings', Icons.settings_outlined, Icons.settings_rounded, '/app/admin/settings', location),
-                ],
               ],
             ),
           ),
@@ -238,24 +210,8 @@ class DashboardShell extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
               children: [
                 _buildDrawerItem(context, icon: Icons.workspaces_outline, activeIcon: Icons.workspaces, title: 'Workspaces', path: '/app/workspaces'),
-                _buildDrawerItem(context, icon: Icons.topic_outlined, activeIcon: Icons.topic_rounded, title: 'Research Topics', path: '/app/topics'),
-                _buildDrawerItem(context, icon: Icons.library_books_outlined, activeIcon: Icons.library_books_rounded, title: 'Journals', path: '/app/journals'),
-                _buildDrawerItem(context, icon: Icons.people_outline_rounded, activeIcon: Icons.people_rounded, title: 'Following', path: '/app/following'),
                 _buildDrawerItem(context, icon: Icons.person_outline_rounded, activeIcon: Icons.person_rounded, title: 'Profile Settings', path: '/app/profile'),
-                _buildDrawerItem(context, icon: Icons.people_outline_rounded, activeIcon: Icons.people_rounded, title: 'Authors', path: '/app/authors'),
                 const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Divider(color: AppColors.border)),
-                
-                if (authState.isAdmin) ...[
-                  const Padding(
-                    padding: EdgeInsets.only(left: 16.0, top: 8.0, bottom: 8.0),
-                    child: Text('ADMINISTRATION', style: TextStyle(color: AppColors.textLight, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 1.2)),
-                  ),
-                  _buildDrawerItem(context, icon: Icons.manage_accounts_outlined, activeIcon: Icons.manage_accounts_rounded, title: 'User Management', path: '/app/admin/users'),
-                  _buildDrawerItem(context, icon: Icons.analytics_outlined, activeIcon: Icons.analytics_rounded, title: 'Analytics Reports', path: '/app/admin/analytics'),
-                  _buildDrawerItem(context, icon: Icons.history_rounded, activeIcon: Icons.history_rounded, title: 'Sync Logs', path: '/app/admin/sync-logs'),
-                  _buildDrawerItem(context, icon: Icons.settings_outlined, activeIcon: Icons.settings_rounded, title: 'System Settings', path: '/app/admin/settings'),
-                  const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Divider(color: AppColors.border)),
-                ],
                 
                 ListTile(
                   leading: const Icon(Icons.logout_rounded, color: AppColors.error),

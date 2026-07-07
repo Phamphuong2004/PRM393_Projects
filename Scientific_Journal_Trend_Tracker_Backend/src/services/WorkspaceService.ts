@@ -5,6 +5,7 @@ import {
   WorkspaceNote,
   WorkspaceAlert,
   Paper,
+  Notification,
 } from "../models";
 
 export class WorkspaceService {
@@ -171,6 +172,42 @@ export class WorkspaceService {
       addedBy: userId,
     });
     await wp.save();
+
+    // Check alerts and notify members
+    const workspace = await Workspace.findById(workspaceId);
+    const paperObj = await Paper.findById(paperId);
+    if (workspace && paperObj) {
+      const alerts = await WorkspaceAlert.find({ workspace: workspaceId });
+      let matchedQuery = "";
+      for (const alert of alerts) {
+        const query = (alert.query || "").toLowerCase();
+        if (query) {
+          const title = (paperObj.title || "").toLowerCase();
+          const abstract = (paperObj.abstract || "").toLowerCase();
+          if (title.includes(query) || abstract.includes(query)) {
+            matchedQuery = alert.query;
+            break;
+          }
+        }
+      }
+
+      if (matchedQuery) {
+        const titleText = `New Papers Found!`;
+        const messageText = `We found a new paper matching your alert keyword "${matchedQuery}" in workspace "${workspace.name}".`;
+        
+        const notifications = workspace.members.map(member => ({
+          userId: member.user,
+          title: titleText,
+          message: messageText,
+          type: "alert",
+          refId: workspaceId,
+          refType: "Workspace",
+        }));
+        
+        await Notification.insertMany(notifications);
+      }
+    }
+
     return wp;
   }
 
@@ -188,6 +225,7 @@ export class WorkspaceService {
     if (tag) query.tags = tag;
 
     const papers = await WorkspacePaper.find(query)
+      .sort({ createdAt: -1 })
       .populate("paper")
       .skip(skip)
       .limit(limit)
