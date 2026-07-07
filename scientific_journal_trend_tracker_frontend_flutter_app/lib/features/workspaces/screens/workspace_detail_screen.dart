@@ -281,7 +281,8 @@ class WorkspacePapersTab extends ConsumerWidget {
         ),
         Expanded(
           child: papersAsync.when(
-            data: (papers) {
+            data: (papersRaw) {
+              final papers = papersRaw.toList();
               if (papers.isEmpty) {
                 return _buildEmptyState(Icons.description_outlined, 'No papers yet', 'Click the button above to add a paper');
               }
@@ -550,38 +551,71 @@ class WorkspaceNotesTab extends ConsumerWidget {
   final String role;
   const WorkspaceNotesTab({super.key, required this.workspaceId, required this.role});
 
-  void _showAddNoteDialog(BuildContext context, WidgetRef ref, {dynamic note}) {
+  void _showAddNoteDialog(BuildContext context, WidgetRef ref, {dynamic note}) async {
     final contentCtrl = TextEditingController(text: note?['content']);
+    
+    String? selectedPaperId;
+    if (note != null && note['paperId'] != null) {
+      selectedPaperId = note['paperId'] is Map ? note['paperId']['_id'] : note['paperId'];
+    }
+    
+    // Await to ensure papers are loaded even if user clicks fast
+    final papers = await ref.read(workspacePapersProvider(workspaceId).future);
+
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(note == null ? 'Create Note' : 'Edit Note'),
-        content: TextField(
-          controller: contentCtrl,
-          maxLines: 3,
-          decoration: const InputDecoration(labelText: 'Note content', border: OutlineInputBorder()),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () async {
-              if (contentCtrl.text.isNotEmpty) {
-                try {
-                  if (note == null) {
-                    await ref.read(workspaceRepositoryProvider).createWorkspaceNote(workspaceId, '', contentCtrl.text.trim());
-                  } else {
-                    await ref.read(workspaceRepositoryProvider).updateWorkspaceNote(workspaceId, note['_id'], contentCtrl.text.trim());
-                  }
-                  ref.invalidate(workspaceNotesProvider(workspaceId));
-                  if (context.mounted) Navigator.pop(ctx);
-                } catch (e) {
-                  if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-                }
-              }
-            },
-            child: const Text('Save Note'),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text(note == null ? 'Create Note' : 'Edit Note'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: contentCtrl,
+                maxLines: 3,
+                decoration: const InputDecoration(labelText: 'Note content', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                decoration: const InputDecoration(labelText: 'Related Paper (Optional)', border: OutlineInputBorder()),
+                value: selectedPaperId,
+                isExpanded: true,
+                items: [
+                  const DropdownMenuItem(value: null, child: Text('None')),
+                  ...papers.map((p) {
+                    final paper = p['paper'] ?? {};
+                    return DropdownMenuItem<String>(
+                      value: paper['_id'],
+                      child: Text(paper['title']?.toString() ?? 'Unknown', overflow: TextOverflow.ellipsis),
+                    );
+                  }),
+                ],
+                onChanged: (val) => setState(() => selectedPaperId = val),
+              ),
+            ],
           ),
-        ],
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () async {
+                if (contentCtrl.text.isNotEmpty) {
+                  try {
+                    if (note == null) {
+                      await ref.read(workspaceRepositoryProvider).createWorkspaceNote(workspaceId, selectedPaperId ?? '', contentCtrl.text.trim());
+                    } else {
+                      await ref.read(workspaceRepositoryProvider).updateWorkspaceNote(workspaceId, note['_id'], contentCtrl.text.trim());
+                    }
+                    ref.invalidate(workspaceNotesProvider(workspaceId));
+                    if (context.mounted) Navigator.pop(ctx);
+                  } catch (e) {
+                    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                  }
+                }
+              },
+              child: const Text('Save Note'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -785,9 +819,20 @@ class WorkspaceMembersTab extends ConsumerWidget {
                       backgroundColor: Colors.blue.shade50,
                       child: const Icon(Icons.person, color: Colors.blue),
                     ),
-                    title: Text(
-                      member['user'] is Map ? member['user']['fullName'] ?? member['user']['email'] ?? 'Unknown' : 'User ID: ${member['user']}', 
-                      style: const TextStyle(fontWeight: FontWeight.bold)
+                    title: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            member['user'] is Map ? member['user']['fullName'] ?? member['user']['email'] ?? 'Unknown' : 'User ID: ${member['user']}', 
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (member['role'] == 'owner') ...[
+                          const SizedBox(width: 8),
+                          const Icon(Icons.stars, color: Colors.amber, size: 18),
+                        ],
+                      ],
                     ),
                     subtitle: Text('Role: ${member['role'].toString().toUpperCase()}'),
                     trailing: (role == 'owner' && member['role'] != 'owner')
@@ -846,13 +891,13 @@ class WorkspaceAlertsTab extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Create Alert'),
+        title: const Text('Create Keyword Alert'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: queryCtrl,
-              decoration: const InputDecoration(labelText: 'Keywords / Query', border: OutlineInputBorder()),
+              decoration: const InputDecoration(labelText: 'Keyword for new papers alert', border: OutlineInputBorder()),
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
