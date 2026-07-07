@@ -23,6 +23,7 @@ import '../../features/dashboard/screens/profile_settings_screen.dart';
 import '../../features/dashboard/screens/authors_screen.dart';
 import '../../features/dashboard/screens/journals_screen.dart';
 import '../../features/dashboard/screens/topics_screen.dart';
+import '../../features/chat/screens/chat_screen.dart';
 
 // Workspace Screens
 import '../../features/workspaces/screens/workspace_list_screen.dart';
@@ -205,6 +206,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               builder: (context, state) => const SystemSettingsScreen(),
             ),
           ],
+        ),
+        GoRoute(
+          path: '/app/chat',
+          builder: (context, state) => const ChatScreen(),
         ),
       ],
     );

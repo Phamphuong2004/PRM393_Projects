@@ -1,4 +1,4 @@
-﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/theme.dart';
@@ -57,6 +57,12 @@ class DashboardShell extends ConsumerWidget {
             )
           : child,
       bottomNavigationBar: isDesktop ? null : _buildModernBottomNav(context),
+      floatingActionButton: isDesktop ? null : FloatingActionButton(
+        backgroundColor: AppColors.primary,
+        onPressed: () => context.push('/app/chat'),
+        elevation: 4,
+        child: const Icon(Icons.auto_awesome_rounded, color: Colors.white),
+      ),
     );
   }
 
