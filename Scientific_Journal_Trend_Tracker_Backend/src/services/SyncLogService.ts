@@ -4,7 +4,7 @@ export class SyncLogService {
   static async getAllSyncLogs(page: number, limit: number, status?: string) {
     const skip = (page - 1) * limit;
 
-    let query: any = {};
+    const query: any = {};
     if (status && ["success", "failed", "running"].includes(status)) {
       query.status = status;
     }

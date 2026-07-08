@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import '../models/chat_message.dart';
@@ -68,7 +69,7 @@ class ChatController extends Notifier<ChatState> {
       final sessions = data.map((json) => ChatSession.fromJson(json)).toList();
       state = state.copyWith(sessions: sessions);
     } catch (e) {
-      print('Failed to load sessions: $e');
+      debugPrint('Failed to load sessions: $e');
     }
   }
 
@@ -115,7 +116,7 @@ class ChatController extends Notifier<ChatState> {
         startNewSession();
       }
     } catch (e) {
-      print('Failed to delete session: $e');
+      debugPrint('Failed to delete session: $e');
     }
   }
 

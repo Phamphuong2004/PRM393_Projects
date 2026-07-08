@@ -47,7 +47,8 @@ export class UserService {
     }
 
     // Prevent password change through this endpoint
-    const { password, ...updateData } = userData;
+    const updateData = { ...userData };
+    delete updateData.password;
 
     const user = await User.findByIdAndUpdate(id, updateData, {
       new: true,
