@@ -1,18 +1,18 @@
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../../core/constants/theme.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/services/api.dart';
 import '../../../core/widgets/animated_background.dart';
 
-class JournalsScreen extends StatefulWidget {
+class JournalsScreen extends ConsumerStatefulWidget {
   const JournalsScreen({super.key});
 
   @override
-  State<JournalsScreen> createState() => _JournalsScreenState();
+  ConsumerState<JournalsScreen> createState() => _JournalsScreenState();
 }
 
-class _JournalsScreenState extends State<JournalsScreen> {
+class _JournalsScreenState extends ConsumerState<JournalsScreen> {
   List<dynamic> _journals = [];
   bool _isLoading = true;
   String? _error;
@@ -221,9 +221,9 @@ class _JournalsScreenState extends State<JournalsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = context.watch<AuthProvider>();
-    final canEdit = authProvider.isAdmin || authProvider.isResearcher;
-    final isAdmin = authProvider.isAdmin;
+    final authState = ref.watch(authProvider);
+    final canEdit = authState.isAdmin || authState.isResearcher;
+    final isAdmin = authState.isAdmin;
     
     final isDesktop = MediaQuery.of(context).size.width > 800;
 
@@ -423,3 +423,7 @@ class _JournalsScreenState extends State<JournalsScreen> {
     );
   }
 }
+
+
+
+

@@ -1,16 +1,16 @@
+import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/notification_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/theme.dart';
-import '../../../core/providers/auth_provider.dart';
 import '../../../core/repositories/dashboard_repository.dart';
 import '../../../core/repositories/paper_repository.dart';
 import '../../../core/models/paper.dart';
 import '../../../core/models/keyword.dart';
 import '../../../core/repositories/keyword_repository.dart';
-import 'package:provider/provider.dart' as prov;
 import 'paper_detail_screen.dart';
-import '../../../core/providers/notification_provider.dart';
 import '../../../core/widgets/animated_background.dart';
 
 class HomeDashboardScreen extends ConsumerStatefulWidget {
@@ -86,7 +86,7 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
 
   @override
   Widget build(BuildContext context) {
-    final user = prov.Provider.of<AuthProvider>(context).user;
+    final user = ref.read(authProvider).user;
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth > 800;
 
@@ -124,7 +124,7 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                _buildSectionHeader('Recent Publications'),
+                                Expanded(child: _buildSectionHeader('Recent Publications')),
                                 TextButton(
                                   onPressed: () => context.push('/app/search'),
                                   style: TextButton.styleFrom(
@@ -199,8 +199,8 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
             ),
           ],
         ),
-        prov.Consumer<NotificationProvider>(
-          builder: (context, notificationProvider, child) {
+        Consumer(
+          builder: (context, ref, child) {
             return Stack(
               children: [
                 IconButton(
@@ -209,7 +209,7 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
                     context.push('/app/notifications');
                   },
                 ),
-                if (notificationProvider.unreadCount > 0)
+                if (ref.watch(notificationProvider).unreadCount > 0)
                   Positioned(
                     right: 8,
                     top: 8,
@@ -220,7 +220,7 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
                         shape: BoxShape.circle,
                       ),
                       child: Text(
-                        '${notificationProvider.unreadCount}',
+                        '${ref.watch(notificationProvider).unreadCount}',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 10,
@@ -244,7 +244,6 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
       final first = _trendingKeywords.first;
       if (first is Keyword) {
         keywordText = first.name;
-        trendScoreText = first.trendScore > 0 ? 'Score: ${first.trendScore.toStringAsFixed(1)}' : '';
       } else if (first is Map) {
         keywordText = (first['keyword'] ?? first['name'] ?? 'Trend').toString();
       } else {
@@ -266,24 +265,14 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.auto_awesome, color: AppColors.primary, size: 18),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Top Trending Keyword',
+              const Expanded(child: Text('Top Trending Keyword',
                 style: TextStyle(
                   color: AppColors.textSecondary,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.2,
                 ),
-              ),
+              )),
             ],
           ),
           const SizedBox(height: 20),
@@ -298,7 +287,7 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
           ),
           const SizedBox(height: 24),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -309,26 +298,7 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
                 child: Row(
                   children: [
                     const Icon(Icons.trending_up_rounded, color: Colors.white, size: 16),
-                    if (trendScoreText.isNotEmpty) ...[
-                      const SizedBox(width: 6),
-                      Text(
-                        trendScoreText,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
                   ],
-                ),
-              ),
-              const Text(
-                'Updated Now',
-                style: TextStyle(
-                  color: AppColors.textLight,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
@@ -353,8 +323,8 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
       children: [
         _buildSectionHeader('Dashboard Metrics'),
         const SizedBox(height: 16),
-        GridView.count(
-          crossAxisCount: isDesktop ? 4 : 2,
+        GridView.extent(
+          maxCrossAxisExtent: 200,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           mainAxisSpacing: 16,
@@ -608,3 +578,4 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
   }
 
 }
+

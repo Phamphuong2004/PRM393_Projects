@@ -1,19 +1,19 @@
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 import '../../../core/constants/theme.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/widgets/animated_background.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
+class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProviderStateMixin {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
@@ -40,7 +40,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     });
 
     try {
-      await context.read<AuthProvider>().login(email, password);
+      await ref.read(authProvider.notifier).login(email, password);
       if (mounted) {
         context.go('/app');
       }
@@ -62,7 +62,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     });
 
     try {
-      await context.read<AuthProvider>().loginWithGoogle();
+      await ref.read(authProvider.notifier).loginWithGoogle();
       if (mounted) {
         context.go('/app');
       }
@@ -131,12 +131,12 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                 filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
+                    color: Colors.white.withValues(alpha: 0.8),
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                    border: Border.all(color: AppColors.border),
                   ),
                   child: IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
                     onPressed: () => context.canPop() ? context.pop() : context.go('/'),
                   ),
                 ),
@@ -157,20 +157,20 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         crossAxisAlignment: isDesktop ? CrossAxisAlignment.start : CrossAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15),
+              color: Colors.white,
               borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+              border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 20,
-                  spreadRadius: 5,
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  blurRadius: 24,
+                  spreadRadius: 2,
                 )
               ],
             ),
-            child: const Icon(Icons.analytics_rounded, size: 56, color: Colors.white),
+            child: const Icon(Icons.analytics_rounded, size: 56, color: AppColors.primary),
           ),
           const SizedBox(height: 24),
           Text(
@@ -178,7 +178,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             style: TextStyle(
               fontSize: isDesktop ? 56 : 36,
               fontWeight: FontWeight.w900,
-              color: Colors.white,
+              color: AppColors.primary,
               letterSpacing: -1.0,
               height: 1.1,
             ),
@@ -190,9 +190,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             textAlign: isDesktop ? TextAlign.left : TextAlign.center,
             style: TextStyle(
               fontSize: isDesktop ? 20 : 16,
-              color: Colors.white.withValues(alpha: 0.9),
+              color: AppColors.textSecondary,
               height: 1.5,
-              fontWeight: FontWeight.w400,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -425,3 +425,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     );
   }
 }
+
+
+
+
