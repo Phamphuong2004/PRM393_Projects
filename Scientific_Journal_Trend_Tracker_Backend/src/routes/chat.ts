@@ -7,6 +7,26 @@ const router = Router();
 // Apply rate limiting for chat requests
 router.use(rateLimit(rateLimits.api));
 
+// Strip heavy base64 payloads before persisting: keep only lightweight file
+// metadata so ChatSession documents don't balloon past MongoDB's 16MB limit.
+const stripFileData = (files: any[]): any[] =>
+  (files || []).map((f: any) => ({
+    filename: f?.filename,
+    mime_type: f?.mime_type,
+  }));
+
+// Build a chat_history entry, folding any attachment names into the text so the
+// AI keeps context about files referenced in previous turns.
+const toHistory = (m: any) => {
+  const names = (m.files || [])
+    .map((f: any) => f?.filename)
+    .filter(Boolean);
+  const content = names.length
+    ? `${m.content}\n[Attached files: ${names.join(", ")}]`
+    : m.content;
+  return { role: m.role, content };
+};
+
 // Get all chat sessions for user
 router.get(
   "/sessions",
@@ -78,8 +98,8 @@ router.post(
       if (sessionId) {
         session = await ChatSession.findOne({ _id: sessionId, user: userId });
         if (session) {
-          chat_history = session.messages.map((m: any) => ({ role: m.role, content: m.content }));
-          session.messages.push({ role: "user", content: question, files: files || [], createdAt: new Date() });
+          chat_history = session.messages.map(toHistory);
+          session.messages.push({ role: "user", content: question, files: stripFileData(files), createdAt: new Date() });
           await session.save();
         }
       }
@@ -88,7 +108,7 @@ router.post(
         session = new ChatSession({
           user: userId,
           title: question.substring(0, 30) + (question.length > 30 ? "..." : ""),
-          messages: [{ role: "user", content: question, files: files || [], createdAt: new Date() }]
+          messages: [{ role: "user", content: question, files: stripFileData(files), createdAt: new Date() }]
         });
         await session.save();
       }
