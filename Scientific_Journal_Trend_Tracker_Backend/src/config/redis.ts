@@ -7,7 +7,7 @@ const redisClient = new Redis(redisUrl, {
   enableOfflineQueue: false,
   maxRetriesPerRequest: 0,
   connectTimeout: 500,
-  retryStrategy: (times) => {
+  retryStrategy: (_times) => {
     // Stop retrying to avoid console spam in local dev
     return null;
   },

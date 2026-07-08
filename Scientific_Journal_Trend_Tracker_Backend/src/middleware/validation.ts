@@ -3,7 +3,6 @@ import {
   body,
   param,
   query,
-  ValidationChain,
   validationResult,
 } from "express-validator";
 

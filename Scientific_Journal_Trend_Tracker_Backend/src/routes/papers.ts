@@ -11,6 +11,7 @@ import {
   validateInputs,
 } from "../middleware";
 import { PaperService } from "../services";
+import { PaperController } from "../controllers/PaperController";
 
 const router = Router();
 
@@ -66,8 +67,6 @@ router.post(
   rateLimit(rateLimits.write),
   async (req: Request, res: Response): Promise<void> => {
     try {
-      // Need to import PaperController manually since it's not exported from index yet
-      const { PaperController } = require("../controllers/PaperController");
       await PaperController.importExternalPaper(req, res);
     } catch (error: any) {
       res.status(error.status || 500).json({ message: error.message });

@@ -562,6 +562,8 @@ class WorkspaceNotesTab extends ConsumerWidget {
     // Await to ensure papers are loaded even if user clicks fast
     final papers = await ref.read(workspacePapersProvider(workspaceId).future);
 
+    if (!context.mounted) return;
+
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -578,7 +580,7 @@ class WorkspaceNotesTab extends ConsumerWidget {
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 decoration: const InputDecoration(labelText: 'Related Paper (Optional)', border: OutlineInputBorder()),
-                value: selectedPaperId,
+                initialValue: selectedPaperId,
                 isExpanded: true,
                 items: [
                   const DropdownMenuItem(value: null, child: Text('None')),
