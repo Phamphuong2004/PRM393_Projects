@@ -21,14 +21,8 @@ class ChatRequest(BaseModel):
     files: Optional[List[ChatFile]] = []
     chat_history: Optional[List[ChatMessageDict]] = []
     
-class Source(BaseModel):
-    title: Optional[str] = None
-    doi: Optional[str] = None
-    year: Optional[int] = None
-
 class ChatResponse(BaseModel):
     answer: str
-    sources: List[Source] = []
 
 @router.post("/ask", response_model=ChatResponse)
 async def ai_chat(req: ChatRequest):

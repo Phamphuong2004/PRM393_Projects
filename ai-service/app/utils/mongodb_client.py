@@ -5,11 +5,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
-DB_NAME = "ScientificTracking"  # The database name used in the cluster
 
 # Create a singleton client
 _client = AsyncIOMotorClient(MONGODB_URI)
-db = _client[DB_NAME]
+db = _client.get_default_database(default="JournalTrackerDB")
 
 async def get_db():
     return db
