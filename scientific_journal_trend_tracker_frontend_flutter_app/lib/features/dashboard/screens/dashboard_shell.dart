@@ -290,43 +290,6 @@ class DashboardShell extends ConsumerWidget {
   Widget _buildModernBottomNav(BuildContext context, AuthState authState) {
     final String location = GoRouterState.of(context).matchedLocation;
 
-    if (authState.isAdmin) {
-      int currentIndex = 0;
-      if (location.startsWith('/app/admin/users')) {
-        currentIndex = 1;
-      } else if (location.startsWith('/app/admin/analytics')) {
-        currentIndex = 2;
-      } else if (location.startsWith('/app/admin/settings') || location.startsWith('/app/admin/sync-logs')) {
-        currentIndex = 3;
-      }
-
-      return Container(
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          boxShadow: AppColors.glassShadow,
-        ),
-        child: NavigationBar(
-          height: 80,
-          selectedIndex: currentIndex,
-          elevation: 0,
-          onDestinationSelected: (index) {
-            switch (index) {
-              case 0: context.go('/app'); break;
-              case 1: context.go('/app/admin/users'); break;
-              case 2: context.go('/app/admin/analytics'); break;
-              case 3: context.go('/app/admin/settings'); break;
-            }
-          },
-          destinations: const [
-            NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard_rounded), label: 'Overview'),
-            NavigationDestination(icon: Icon(Icons.manage_accounts_outlined), selectedIcon: Icon(Icons.manage_accounts_rounded), label: 'Users'),
-            NavigationDestination(icon: Icon(Icons.insights_outlined), selectedIcon: Icon(Icons.insights_rounded), label: 'Analytics'),
-            NavigationDestination(icon: Icon(Icons.settings_input_component_outlined), selectedIcon: Icon(Icons.settings_input_component_rounded), label: 'Settings'),
-          ],
-        ),
-      );
-    }
-
     int currentIndex = 0;
     if (location.startsWith('/app/workspaces')) {
       currentIndex = 1;
