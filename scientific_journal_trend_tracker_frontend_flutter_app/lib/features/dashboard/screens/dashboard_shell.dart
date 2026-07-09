@@ -19,7 +19,20 @@ class DashboardShell extends ConsumerWidget {
       appBar: isDesktop 
           ? null 
           : AppBar(
-              title: Text('Journal Trends', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -0.5)),
+              title: InkWell(
+                onTap: () => context.go('/'),
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  child: Text(
+                    'Journal Trends',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ),
+              ),
               backgroundColor: AppColors.surface,
               surfaceTintColor: Colors.transparent,
               elevation: 0,
@@ -34,6 +47,7 @@ class DashboardShell extends ConsumerWidget {
                   child: IconButton(
                     icon: const Icon(Icons.notifications_none_rounded, color: AppColors.primary),
                     onPressed: () => context.push('/app/notifications'),
+                    tooltip: 'Notifications',
                   ),
                 ),
               ],
@@ -56,7 +70,13 @@ class DashboardShell extends ConsumerWidget {
               ],
             )
           : child,
-      bottomNavigationBar: isDesktop ? null : _buildModernBottomNav(context),
+      bottomNavigationBar: isDesktop ? null : _buildModernBottomNav(context, authState),
+      floatingActionButton: (isDesktop || authState.isAdmin) ? null : FloatingActionButton(
+        backgroundColor: AppColors.primary,
+        onPressed: () => context.push('/app/chat'),
+        elevation: 4,
+        child: const Icon(Icons.auto_awesome_rounded, color: Colors.white),
+      ),
     );
   }
 
@@ -107,10 +127,19 @@ class DashboardShell extends ConsumerWidget {
           Expanded(
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-              children: [
-                _buildSideMenuItem(context, 'Workspaces', Icons.workspaces_outline, Icons.workspaces, '/app/workspaces', location),
-                _buildSideMenuItem(context, 'Profile Settings', Icons.person_outline_rounded, Icons.person_rounded, '/app/profile', location),
-              ],
+              children: authState.isAdmin
+                  ? [
+                      _buildSideMenuItem(context, 'Overview Dashboard', Icons.dashboard_outlined, Icons.dashboard_rounded, '/app', location),
+                      _buildSideMenuItem(context, 'User Management', Icons.manage_accounts_outlined, Icons.manage_accounts_rounded, '/app/admin/users', location),
+                      _buildSideMenuItem(context, 'Trend Analysis', Icons.insights_outlined, Icons.insights_rounded, '/app/admin/analytics', location),
+                      _buildSideMenuItem(context, 'API Sources Settings', Icons.settings_input_component_outlined, Icons.settings_input_component_rounded, '/app/admin/settings', location),
+                      _buildSideMenuItem(context, 'Background Sync Logs', Icons.receipt_long_outlined, Icons.receipt_long_rounded, '/app/admin/sync-logs', location),
+                      _buildSideMenuItem(context, 'Profile Settings', Icons.person_outline_rounded, Icons.person_rounded, '/app/profile', location),
+                    ]
+                  : [
+                      _buildSideMenuItem(context, 'Workspaces', Icons.workspaces_outline, Icons.workspaces, '/app/workspaces', location),
+                      _buildSideMenuItem(context, 'Profile Settings', Icons.person_outline_rounded, Icons.person_rounded, '/app/profile', location),
+                    ],
             ),
           ),
           
@@ -209,7 +238,15 @@ class DashboardShell extends ConsumerWidget {
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
               children: [
-                _buildDrawerItem(context, icon: Icons.workspaces_outline, activeIcon: Icons.workspaces, title: 'Workspaces', path: '/app/workspaces'),
+                if (authState.isAdmin) ...[
+                  _buildDrawerItem(context, icon: Icons.dashboard_outlined, activeIcon: Icons.dashboard_rounded, title: 'Overview Dashboard', path: '/app'),
+                  _buildDrawerItem(context, icon: Icons.manage_accounts_outlined, activeIcon: Icons.manage_accounts_rounded, title: 'User Management', path: '/app/admin/users'),
+                  _buildDrawerItem(context, icon: Icons.insights_rounded, activeIcon: Icons.insights_rounded, title: 'Trend Analysis', path: '/app/admin/analytics'),
+                  _buildDrawerItem(context, icon: Icons.settings_input_component_outlined, activeIcon: Icons.settings_input_component_rounded, title: 'API Sources Settings', path: '/app/admin/settings'),
+                  _buildDrawerItem(context, icon: Icons.receipt_long_rounded, activeIcon: Icons.receipt_long_rounded, title: 'Background Sync Logs', path: '/app/admin/sync-logs'),
+                ] else ...[
+                  _buildDrawerItem(context, icon: Icons.workspaces_outline, activeIcon: Icons.workspaces, title: 'Workspaces', path: '/app/workspaces'),
+                ],
                 _buildDrawerItem(context, icon: Icons.person_outline_rounded, activeIcon: Icons.person_rounded, title: 'Profile Settings', path: '/app/profile'),
                 const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Divider(color: AppColors.border)),
                 
@@ -232,7 +269,7 @@ class DashboardShell extends ConsumerWidget {
 
   Widget _buildDrawerItem(BuildContext context, {required IconData icon, required IconData activeIcon, required String title, required String path}) {
     final location = GoRouterState.of(context).matchedLocation;
-    final isSelected = location.startsWith(path);
+    final isSelected = path == '/app' ? location == '/app' : location.startsWith(path);
     
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
@@ -250,8 +287,9 @@ class DashboardShell extends ConsumerWidget {
     );
   }
 
-  Widget _buildModernBottomNav(BuildContext context) {
+  Widget _buildModernBottomNav(BuildContext context, AuthState authState) {
     final String location = GoRouterState.of(context).matchedLocation;
+
     int currentIndex = 0;
     if (location.startsWith('/app/workspaces')) {
       currentIndex = 1;

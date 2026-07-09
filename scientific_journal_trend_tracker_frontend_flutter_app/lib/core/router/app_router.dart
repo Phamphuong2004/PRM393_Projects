@@ -23,6 +23,7 @@ import '../../features/dashboard/screens/profile_settings_screen.dart';
 import '../../features/dashboard/screens/authors_screen.dart';
 import '../../features/dashboard/screens/journals_screen.dart';
 import '../../features/dashboard/screens/topics_screen.dart';
+import '../../features/chat/screens/chat_screen.dart';
 
 // Workspace Screens
 import '../../features/workspaces/screens/workspace_list_screen.dart';
@@ -30,6 +31,7 @@ import '../../features/workspaces/screens/workspace_detail_screen.dart';
 import '../../features/workspaces/screens/upload_pdf_screen.dart';
 
 // Admin Screens
+import '../../features/admin/screens/admin_dashboard_screen.dart';
 import '../../features/admin/screens/user_management_screen.dart';
 import '../../features/admin/screens/analytics_report_screen.dart';
 import '../../features/admin/screens/sync_logs_screen.dart';
@@ -58,8 +60,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       if (authState.isLoading) return null;
 
-      // If authenticated, prevent access to auth routes and the root landing page
-      if (isAuthenticated && (isAuthRoute || location == '/')) {
+      // If authenticated, prevent access to auth routes
+      if (isAuthenticated && isAuthRoute) {
         return '/app';
       }
 
@@ -123,7 +125,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           routes: [
             GoRoute(
               path: '/app',
-              builder: (context, state) => const HomeDashboardScreen(),
+              builder: (context, state) => const AppDashboardRedirector(),
             ),
             GoRoute(
               path: '/app/search',
@@ -206,6 +208,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ),
           ],
         ),
+        GoRoute(
+          path: '/app/chat',
+          builder: (context, state) => const ChatScreen(),
+        ),
       ],
     );
 });
+
+class AppDashboardRedirector extends ConsumerWidget {
+  const AppDashboardRedirector({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authProvider);
+    if (authState.isAdmin) {
+      return const AdminDashboardScreen();
+    }
+    return const HomeDashboardScreen();
+  }
+}
+

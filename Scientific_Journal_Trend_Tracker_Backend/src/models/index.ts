@@ -22,4 +22,4 @@ export { default as Workspace, type IWorkspace, type IWorkspaceMember } from "./
 export { default as WorkspacePaper, type IWorkspacePaper } from "./WorkspacePaper";
 export { default as WorkspaceNote, type IWorkspaceNote } from "./WorkspaceNote";
 export { default as WorkspaceAlert, type IWorkspaceAlert } from "./WorkspaceAlert";
-
+export { default as ChatSession, type IChatSession, type IChatMessage } from "./ChatSession";

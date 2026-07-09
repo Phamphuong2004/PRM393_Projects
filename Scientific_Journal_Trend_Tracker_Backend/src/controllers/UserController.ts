@@ -1,4 +1,4 @@
-﻿import { Request, Response } from "express";
+import { Request, Response } from "express";
 import { validationResult } from "express-validator";
 import bcrypt from "bcryptjs";
 import User from "../models/User";
@@ -58,7 +58,8 @@ export class UserController {
       }
 
       // Prevent password change through this endpoint
-      const { password, ...updateData } = req.body;
+      const updateData = { ...req.body };
+      delete updateData.password;
 
       const user = await User.findByIdAndUpdate(req.params.id, updateData, {
         new: true,

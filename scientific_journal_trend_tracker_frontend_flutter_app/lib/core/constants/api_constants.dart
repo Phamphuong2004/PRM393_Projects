@@ -9,7 +9,8 @@ class ApiConstants {
       return 'https://prm393-projects-journal-tracking.up.railway.app';
     }
 
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) return 'http://10.0.2.2:5000';
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android)
+      return 'http://10.0.2.2:5000';
     return 'http://localhost:5000';
   }
 

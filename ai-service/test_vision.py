@@ -1,0 +1,1 @@
+import os; import google.generativeai as genai; from PIL import Image; from dotenv import load_dotenv; load_dotenv(); genai.configure(api_key=os.getenv('GEMINI_API_KEY')); model = genai.GenerativeModel('gemini-1.5-flash'); img = Image.new('RGB', (100, 100)); response = model.generate_content(['Describe this', img]); print(response.text)  

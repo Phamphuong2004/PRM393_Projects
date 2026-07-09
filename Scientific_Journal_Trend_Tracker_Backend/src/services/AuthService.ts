@@ -112,12 +112,12 @@ export class AuthService {
         audience: process.env.GOOGLE_CLIENT_ID,
       });
       payload = ticket.getPayload();
-    } catch (error) {
+    } catch {
       try {
         const { default: axios } = await import("axios");
         const response = await axios.get(`https://www.googleapis.com/oauth2/v3/userinfo?access_token=${idToken}`);
         payload = response.data;
-      } catch (axiosError) {
+      } catch {
         throw { status: 401, message: "Invalid Google token" };
       }
     }
@@ -182,7 +182,7 @@ export class AuthService {
         process.env.JWT_SECRET || "your-secret-key",
       );
       return decoded;
-    } catch (error) {
+    } catch {
       throw { status: 401, message: "Invalid token" };
     }
   }

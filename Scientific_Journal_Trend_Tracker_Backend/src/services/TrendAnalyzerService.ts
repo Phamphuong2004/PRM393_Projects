@@ -22,7 +22,7 @@ export class TrendAnalyzerService {
         }
       });
 
-      let topKeywords = groupRes.data.group_by
+      const topKeywords = groupRes.data.group_by
         .filter((item: any) => item.key_display_name.toLowerCase() !== keyword.toLowerCase())
         .slice(0, 10)
         .map((item: any) => ({
@@ -131,7 +131,7 @@ export class TrendAnalyzerService {
       const topKeywords = Object.entries(keywordFreq)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 10)
-        .map(([name, count]) => ({ keyword: name }));
+        .map(([name]) => ({ keyword: name }));
 
       const topKeywordNames = topKeywords.map(k => k.keyword);
 

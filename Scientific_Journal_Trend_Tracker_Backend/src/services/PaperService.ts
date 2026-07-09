@@ -1,4 +1,4 @@
-import { Paper, Author, Journal, Keyword, Topic } from "../models";
+import { Paper, Author, Journal } from "../models";
 import axios from "axios";
 
 type PaperSearchSortField = "publicationYear" | "citationCount";
