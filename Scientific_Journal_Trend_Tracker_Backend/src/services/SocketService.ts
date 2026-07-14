@@ -4,8 +4,8 @@ import jwt from "jsonwebtoken";
 
 export class SocketService {
   private static io: Server;
-  // Map of userId -> socketId
-  private static userSockets: Map<string, string> = new Map();
+  // Map of userId -> Set of socketIds
+  private static userSockets: Map<string, Set<string>> = new Map();
 
   static init(server: HttpServer) {
     this.io = new Server(server, {
@@ -27,8 +27,13 @@ export class SocketService {
           ) as { userId: string };
 
           // Register user's socket
-          this.userSockets.set(decoded.userId, socket.id);
-          console.log(`[Socket] Authenticated user: ${decoded.userId}`);
+          const userId = decoded.userId.toString();
+          if (!this.userSockets.has(userId)) {
+            this.userSockets.set(userId, new Set());
+          }
+          this.userSockets.get(userId)!.add(socket.id);
+          
+          console.log(`[Socket] Authenticated user: ${userId}, total devices: ${this.userSockets.get(userId)!.size}`);
           
           socket.emit("authenticated", { status: "success" });
         } catch (error) {
@@ -39,9 +44,12 @@ export class SocketService {
 
       socket.on("disconnect", () => {
         // Remove user from map
-        for (const [userId, socketId] of this.userSockets.entries()) {
-          if (socketId === socket.id) {
-            this.userSockets.delete(userId);
+        for (const [userId, sockets] of this.userSockets.entries()) {
+          if (sockets.has(socket.id)) {
+            sockets.delete(socket.id);
+            if (sockets.size === 0) {
+              this.userSockets.delete(userId);
+            }
             console.log(`[Socket] User disconnected: ${userId}`);
             break;
           }
@@ -60,10 +68,12 @@ export class SocketService {
   static sendNotificationToUser(userId: string, notificationData: any) {
     if (!this.io) return;
     
-    const socketId = this.userSockets.get(userId.toString());
-    if (socketId) {
-      this.io.to(socketId).emit("new_notification", notificationData);
-      console.log(`[Socket] Sent notification to user ${userId}`);
+    const sockets = this.userSockets.get(userId.toString());
+    if (sockets && sockets.size > 0) {
+      for (const socketId of sockets) {
+        this.io.to(socketId).emit("new_notification", notificationData);
+      }
+      console.log(`[Socket] Sent notification to user ${userId} on ${sockets.size} devices`);
     }
   }
 }
