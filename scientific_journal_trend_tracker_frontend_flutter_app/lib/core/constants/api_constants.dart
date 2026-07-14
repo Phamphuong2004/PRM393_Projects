@@ -1,16 +1,17 @@
 import 'package:flutter/foundation.dart';
 
 class ApiConstants {
-  // Đặt là true nếu chạy Local Backend, đặt là false nếu chạy Railway Backend (Production)
-  static const bool useLocal = false;
+  // Đặt là true để dùng hệ thống Microservices backend mới đang chạy local
+  static const bool useLocal = true;
 
   static String get baseUrl {
     if (!useLocal) {
       return 'https://prm393-projects-journal-tracking.up.railway.app';
     }
 
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android)
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
       return 'http://10.0.2.2:5000';
+    }
     return 'http://localhost:5000';
   }
 

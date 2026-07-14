@@ -1,42 +1,70 @@
 version: "3.8"
 
 services:
-  app:
-    build: .
-    container_name: journal-tracker-backend
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
     ports:
       - "5000:5000"
+    env_file: .env
     environment:
-      - NODE_ENV=development
       - PORT=5000
-      - MONGODB_URI=mongodb+srv://${MONGO_USER}:${MONGO_PASSWORD}@${MONGO_CLUSTER}/journal_tracker?retryWrites=true&w=majority
-      - JWT_SECRET=${JWT_SECRET}
-      - FRONTEND_URL=http://localhost:5173
-    volumes:
-      - .:/app
-      - /app/node_modules
     depends_on:
-      - mongodb
-    networks:
-      - journal-network
+      - auth-service
+      - core-service
+      - interaction-service
+      - admin-service
+    restart: unless-stopped
 
-  mongodb:
-    image: mongo:7.0
-    container_name: journal-tracker-mongo
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
-      MONGO_INITDB_DATABASE: journal_tracker
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
     ports:
-      - "27017:27017"
-    volumes:
-      - mongodb_data:/data/db
-    networks:
-      - journal-network
+      - "5001:5001"
+    env_file: .env
+    environment:
+      - PORT=5001
+      - MONGODB_URI=mongodb+srv://thanhtu_user:Thanhtu%40204@cluster0.h3nsaiz.mongodb.net/auth_db?appName=Cluster0
+      - INTERNAL_API_SECRET=super_secret_internal_key_123
+    restart: unless-stopped
 
-networks:
-  journal-network:
-    driver: bridge
+  core-service:
+    build:
+      context: ./core-service
+      dockerfile: Dockerfile
+    ports:
+      - "5002:5002"
+    env_file: .env
+    environment:
+      - PORT=5002
+      - MONGODB_URI=mongodb+srv://thanhtu_user:Thanhtu%40204@cluster0.h3nsaiz.mongodb.net/core_db?appName=Cluster0
+      - INTERNAL_API_SECRET=super_secret_internal_key_123
+    restart: unless-stopped
 
-volumes:
-  mongodb_data:
+  interaction-service:
+    build:
+      context: ./interaction-service
+      dockerfile: Dockerfile
+    ports:
+      - "5003:5003"
+    env_file: .env
+    environment:
+      - PORT=5003
+      - MONGODB_URI=mongodb+srv://thanhtu_user:Thanhtu%40204@cluster0.h3nsaiz.mongodb.net/interaction_db?appName=Cluster0
+      - INTERNAL_API_SECRET=super_secret_internal_key_123
+    restart: unless-stopped
+
+  admin-service:
+    build:
+      context: ./admin-service
+      dockerfile: Dockerfile
+    ports:
+      - "5004:5004"
+    env_file: .env
+    environment:
+      - PORT=5004
+      - MONGODB_URI=mongodb+srv://thanhtu_user:Thanhtu%40204@cluster0.h3nsaiz.mongodb.net/admin_db?appName=Cluster0
+      - INTERNAL_API_SECRET=super_secret_internal_key_123
+    restart: unless-stopped
