@@ -322,7 +322,20 @@ class _AnalyticsReportScreenState extends ConsumerState<AnalyticsReportScreen> {
   }
 
   Widget _buildRunCard(Map<String, dynamic> run) {
-    final seedKeyword = run['seedKeyword'] ?? 'Unknown Keyword';
+    String seedKeyword = 'Unknown Keyword';
+    if (run['seedKeyword'] != null && run['seedKeyword'].toString().isNotEmpty) {
+      seedKeyword = run['seedKeyword'].toString();
+    } else if (run['keywordId'] != null) {
+      if (run['keywordId'] is Map) {
+        seedKeyword = (run['keywordId']['name'] ?? run['keywordId']['keyword'] ?? '').toString();
+      } else {
+        seedKeyword = run['keywordId'].toString();
+      }
+    }
+    if (seedKeyword.isEmpty) {
+      seedKeyword = 'Unknown Keyword';
+    }
+
     final source = run['source'] ?? 'Unknown Source';
     final startYear = run['startYear'] ?? 2015;
     final endYear = run['endYear'] ?? 2026;

@@ -14,7 +14,7 @@ export class BookmarkController {
         return;
       }
 
-      let query: any = { _id: { $in: user.bookmarks } };
+      const query: any = { _id: { $in: user.bookmarks } };
       if (search) {
         query.title = { $regex: search, $options: "i" };
       }

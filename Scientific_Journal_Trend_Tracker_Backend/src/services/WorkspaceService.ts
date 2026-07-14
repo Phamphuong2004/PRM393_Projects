@@ -84,7 +84,6 @@ export class WorkspaceService {
 
   static async addMember(workspaceId: string, ownerId: string, email: string, role: string) {
     await this.checkRole(workspaceId, ownerId, ["owner"]);
-    const mongoose = require("mongoose");
     const User = mongoose.model("user");
     const user = await User.findOne({ email });
     if (!user) throw { status: 404, message: "User not found" };

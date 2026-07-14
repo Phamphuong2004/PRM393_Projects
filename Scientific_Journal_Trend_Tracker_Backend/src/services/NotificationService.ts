@@ -186,7 +186,7 @@ export class NotificationService {
               `<p>Hello ${user.fullName},</p><p>${message}</p><p>Visit your dashboard to see the latest publications.</p>`
             );
           } catch (err) {
-            console.error("Failed to send notification email to", user.email);
+            console.error("Failed to send notification email to", user.email, err);
           }
         }
       }

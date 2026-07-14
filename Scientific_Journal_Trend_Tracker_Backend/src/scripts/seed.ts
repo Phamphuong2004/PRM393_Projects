@@ -1,4 +1,4 @@
-﻿import mongoose from "mongoose";
+import mongoose from "mongoose";
 import dotenv from "dotenv";
 import User from "../models/User";
 import Journal from "../models/Journal";
@@ -52,7 +52,7 @@ const seedData = async () => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash("admin123", salt);
     
-    const admin = await User.create({
+    await User.create({
       email: "admin@example.com",
       password: hashedPassword,
       fullName: "admin",
@@ -63,7 +63,7 @@ const seedData = async () => {
     });
 
     console.log("Creating Researcher...");
-    const researcher = await User.create({
+    await User.create({
       email: "researcher@example.com",
       password: hashedPassword,
       fullName: "Test Researcher",
@@ -74,7 +74,7 @@ const seedData = async () => {
     });
 
     console.log("Creating Lecturer/Student...");
-    const student = await User.create({
+    await User.create({
       email: "student@example.com",
       password: hashedPassword,
       fullName: "Test Student",
