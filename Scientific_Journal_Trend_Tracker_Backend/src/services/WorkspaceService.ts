@@ -8,6 +8,8 @@ import {
   Notification,
 } from "../models";
 
+import { SocketService } from "./SocketService";
+
 export class WorkspaceService {
   static async checkRole(workspaceId: string, userId: string, requiredRoles: string[]) {
     const workspace = await Workspace.findById(workspaceId);
@@ -203,7 +205,12 @@ export class WorkspaceService {
           refType: "Workspace",
         }));
         
-        await Notification.insertMany(notifications);
+        const createdNotifications = await Notification.insertMany(notifications);
+        
+        // Broadcast via Socket.IO to each member
+        for (const notif of createdNotifications) {
+          SocketService.sendNotificationToUser(notif.userId.toString(), notif);
+        }
       }
     }
 
