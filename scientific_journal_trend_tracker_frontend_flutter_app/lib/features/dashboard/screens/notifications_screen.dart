@@ -4,6 +4,7 @@ import '../../../core/constants/theme.dart';
 import '../../../core/models/notification.dart';
 import '../../../core/repositories/notification_repository.dart';
 import '../../../core/widgets/animated_background.dart';
+import '../../../core/providers/notification_provider.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
@@ -52,6 +53,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
           _notifications[index] = _notifications[index].copyWith(isRead: true);
         }
       });
+      ref.read(notificationProvider.notifier).fetchUnreadCount();
     } catch (e) {
       // Ignore
     }
@@ -63,6 +65,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       setState(() {
         _notifications = _notifications.map((n) => n.copyWith(isRead: true)).toList();
       });
+      ref.read(notificationProvider.notifier).fetchUnreadCount();
     } catch (e) {
       // Ignore
     }
@@ -92,6 +95,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     try {
       await ref.read(notificationRepositoryProvider).clearAll();
       setState(() => _notifications = []);
+      ref.read(notificationProvider.notifier).fetchUnreadCount();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
