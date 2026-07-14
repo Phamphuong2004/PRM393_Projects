@@ -1,5 +1,4 @@
 import '../../../core/providers/auth_provider.dart';
-import '../../../core/providers/notification_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -198,58 +197,19 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
             ),
           ],
         ),
-        Consumer(
-          builder: (context, ref, child) {
-            return Stack(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.notifications_outlined, color: AppColors.textPrimary),
-                  onPressed: () {
-                    context.push('/app/notifications');
-                  },
-                ),
-                if (ref.watch(notificationProvider).unreadCount > 0)
-                  Positioned(
-                    right: 8,
-                    top: 8,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: AppColors.primary,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Text(
-                        '${ref.watch(notificationProvider).unreadCount}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            );
-          },
-        ),
+
       ],
     );
   }
 
   Widget _buildOngoingCard() {
     String keywordText = 'Research Trends';
-    String trendScoreText = '';
     if (_trendingKeywords.isNotEmpty) {
       final first = _trendingKeywords.first;
       if (first is Keyword) {
         keywordText = first.name;
-        trendScoreText = 'Score: ${first.trendScore.toStringAsFixed(1)}';
       } else if (first is Map) {
         keywordText = (first['keyword'] ?? first['name'] ?? 'Trend').toString();
-        final score = first['trendScore'] ?? first['score'];
-        if (score != null) {
-          trendScoreText = 'Score: ${double.tryParse(score.toString())?.toStringAsFixed(1) ?? score.toString()}';
-        }
       } else {
         keywordText = first.toString();
       }
@@ -289,35 +249,7 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
               letterSpacing: -0.5,
             ),
           ),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.trending_up_rounded, color: Colors.white, size: 16),
-                    if (trendScoreText.isNotEmpty) ...[
-                      const SizedBox(width: 6),
-                      Text(
-                        trendScoreText,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ),
+
         ],
       ),
     );
