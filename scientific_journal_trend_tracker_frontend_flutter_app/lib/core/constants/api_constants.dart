@@ -2,11 +2,11 @@ import 'package:flutter/foundation.dart';
 
 class ApiConstants {
   // Đặt là true để dùng hệ thống Microservices backend mới đang chạy local
-  static const bool useLocal = true;
+  static const bool useLocal = false;
 
   static String get baseUrl {
     if (!useLocal) {
-      return 'https://prm393-projects-journal-tracking.up.railway.app';
+      return 'https://api-gateway-production-db98.up.railway.app';
     }
 
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
