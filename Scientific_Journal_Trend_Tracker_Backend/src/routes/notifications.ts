@@ -61,6 +61,16 @@ router.get(
   },
 );
 
+// Mark all notifications as read
+router.put("/all/read", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const result = await NotificationService.markAllAsRead(req.userId!);
+    res.json(result);
+  } catch (error: any) {
+    res.status(error.status || 500).json({ message: error.message });
+  }
+});
+
 // Mark notification as read
 router.put(
   "/:id/read",
@@ -74,16 +84,6 @@ router.put(
     }
   },
 );
-
-// Mark all notifications as read
-router.put("/all/read", async (req: Request, res: Response): Promise<void> => {
-  try {
-    const result = await NotificationService.markAllAsRead(req.userId!);
-    res.json(result);
-  } catch (error: any) {
-    res.status(error.status || 500).json({ message: error.message });
-  }
-});
 
 // Delete notification
 router.delete(
