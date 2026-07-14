@@ -58,10 +58,13 @@ class NotificationNotifier extends Notifier<NotificationState> {
     final token = await _storage.read(key: 'jwt_token');
     if (token == null) return;
 
-    _socket = io.io(ApiConstants.baseUrl, <String, dynamic>{
-      'transports': ['websocket'],
-      'autoConnect': true,
-    });
+    _socket = io.io(
+      ApiConstants.baseUrl,
+      io.OptionBuilder()
+          .setTransports(['websocket', 'polling'])
+          .enableAutoConnect()
+          .build(),
+    );
 
     _socket?.onConnect((_) {
       debugPrint('Socket connected');
