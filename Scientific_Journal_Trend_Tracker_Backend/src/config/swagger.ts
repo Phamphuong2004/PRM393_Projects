@@ -34,6 +34,7 @@ const swaggerSpec = {
     { name: "Follows" },
     { name: "PublicationTrends" },
     { name: "Workspaces" },
+    { name: "Chat" },
   ],
   paths: {
     "/health": {
@@ -1255,6 +1256,74 @@ const swaggerSpec = {
           }
         },
         responses: { "201": { description: "Created" } },
+      },
+    },
+    "/api/chat/sessions": {
+      get: {
+        tags: ["Chat"],
+        summary: "Get all chat sessions",
+        responses: { "200": { description: "OK" } },
+      },
+    },
+    "/api/chat/sessions/{id}": {
+      get: {
+        tags: ["Chat"],
+        summary: "Get chat session by ID",
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+          },
+        ],
+        responses: { "200": { description: "OK" } },
+      },
+      delete: {
+        tags: ["Chat"],
+        summary: "Delete chat session",
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+          },
+        ],
+        responses: { "200": { description: "OK" } },
+      },
+    },
+    "/api/chat/ask": {
+      post: {
+        tags: ["Chat"],
+        summary: "Ask AI a question",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["question"],
+                properties: {
+                  question: { type: "string" },
+                  sessionId: { type: "string" },
+                  files: { 
+                    type: "array", 
+                    items: {
+                      type: "object",
+                      properties: {
+                        filename: { type: "string" },
+                        mime_type: { type: "string" },
+                        base64_data: { type: "string" }
+                      }
+                    }
+                  }
+                },
+              },
+            },
+          },
+        },
+        responses: { "200": { description: "OK" } },
       },
     },
   },
