@@ -9,22 +9,26 @@ class NotificationState {
   final List<dynamic> notifications;
   final int unreadCount;
   final bool isLoading;
+  final dynamic latestNotification; // To trigger snackbar
 
   const NotificationState({
     this.notifications = const [],
     this.unreadCount = 0,
     this.isLoading = false,
+    this.latestNotification,
   });
 
   NotificationState copyWith({
     List<dynamic>? notifications,
     int? unreadCount,
     bool? isLoading,
+    dynamic latestNotification,
   }) {
     return NotificationState(
       notifications: notifications ?? this.notifications,
       unreadCount: unreadCount ?? this.unreadCount,
       isLoading: isLoading ?? this.isLoading,
+      latestNotification: latestNotification ?? this.latestNotification,
     );
   }
 }
@@ -76,6 +80,7 @@ class NotificationNotifier extends Notifier<NotificationState> {
       state = state.copyWith(
         notifications: [data, ...state.notifications],
         unreadCount: state.unreadCount + 1,
+        latestNotification: data, // Save to trigger UI
       );
     });
 

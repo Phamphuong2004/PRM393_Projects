@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/theme.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/notification_provider.dart';
 
 class DashboardShell extends ConsumerWidget {
   final Widget child;
@@ -10,6 +11,39 @@ class DashboardShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(notificationProvider, (previous, next) {
+      if (previous != null && next.latestNotification != null && next.latestNotification != previous.latestNotification) {
+        final newNotif = next.latestNotification;
+        final title = newNotif is Map ? newNotif['title'] : (newNotif as dynamic).title;
+        final message = newNotif is Map ? newNotif['message'] : (newNotif as dynamic).message;
+
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(title?.toString() ?? 'New Notification', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                if (message != null)
+                  Text(message.toString(), maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white70)),
+              ],
+            ),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.only(bottom: 24, left: 16, right: 16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            backgroundColor: AppColors.primary,
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'VIEW',
+              textColor: Colors.white,
+              onPressed: () => context.push('/app/notifications'),
+            ),
+          ),
+        );
+      }
+    });
+
     final authState = ref.watch(authProvider);
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth > 800;
