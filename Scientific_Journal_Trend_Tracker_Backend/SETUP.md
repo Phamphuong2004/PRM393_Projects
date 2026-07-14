@@ -204,7 +204,7 @@ npm run build
 
 - Research keywords and terms
 - Trend scoring and analysis
-- Embedding support for similarity
+- AI Chatbot Integration
 - Yearly usage statistics
 
 ### Journal

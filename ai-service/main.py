@@ -5,12 +5,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Import routes
-from app.routes import embedding_routes, recommendation_routes, summarization_routes
-
 app = FastAPI(
     title="Scientific Journal Trend AI Service",
-    description="AI-powered microservice for trend analysis, embeddings, recommendations, and summarization",
+    description="AI-powered microservice for Chatbot / RAG Agent",
     version="1.0.0",
     docs_url="/docs",
     openapi_url="/openapi.json"
@@ -28,10 +25,6 @@ app.add_middleware(
 )
 
 # Include routes
-app.include_router(embedding_routes.router, prefix="/api/v1/embeddings", tags=["Embeddings"])
-app.include_router(recommendation_routes.router, prefix="/api/v1/recommendations", tags=["Recommendations"])
-app.include_router(summarization_routes.router, prefix="/api/v1/summarization", tags=["Summarization"])
-
 from app.routes import chat_routes
 app.include_router(chat_routes.router, prefix="/api/v1/chat", tags=["Chat"])
 

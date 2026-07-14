@@ -164,7 +164,7 @@ npm run lint
 ### Keyword
 
 - Trend analysis
-- Embedding support
+- AI Chatbot Integration
 - Growth rate tracking
 - Yearly usage statistics
 
