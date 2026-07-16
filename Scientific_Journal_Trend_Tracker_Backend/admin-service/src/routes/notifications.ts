@@ -9,10 +9,6 @@ import { NotificationService } from "../services/NotificationService";
 
 const router = Router();
 
-// Apply rate limiting
-router.use(authMiddleware);
-router.use(rateLimit(rateLimits.api));
-
 // Internal API for cross-service bulk notification creation
 router.post("/internal/bulk", async (req: Request, res: Response): Promise<void> => {
   try {
@@ -38,6 +34,10 @@ router.post("/internal/bulk", async (req: Request, res: Response): Promise<void>
     res.status(error.status || 500).json({ message: error.message });
   }
 });
+
+// Apply rate limiting and auth to user routes
+router.use(authMiddleware);
+router.use(rateLimit(rateLimits.api));
 
 // Test Real-time Notification
 router.post("/test-realtime", async (req: Request, res: Response): Promise<void> => {
