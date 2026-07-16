@@ -1,24 +1,17 @@
 import { Request, Response } from "express";
 
 
+import { createInternalClient, SERVICES } from "../utils/internalApiClient";
+
 export class DashboardController {
   static async getDashboardStats(req: Request, res: Response): Promise<void> {
     try {
-      // In a microservices architecture, Dashboard needs to aggregate data from Core Service.
-      // This is a placeholder for the API composition layer.
-      res.json({
-        totalPapers: 0,
-        totalJournals: 0,
-        totalKeywords: 0,
-        totalAuthors: 0,
-        recentPapers: [],
-        topKeywords: [],
-        topJournals: [],
-        message: "Dashboard aggregation needs to be implemented via API Composition (fetching from Core Service)."
-      });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Server error" });
+      const coreClient = createInternalClient(SERVICES.CORE, req.headers.authorization);
+      const response = await coreClient.get("/api/dashboard/stats");
+      res.json(response.data);
+    } catch (error: any) {
+      console.error("Error fetching dashboard stats from core-service:", error.message);
+      res.status(500).json({ message: "Server error while fetching dashboard stats" });
     }
   }
 

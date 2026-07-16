@@ -43,7 +43,19 @@ class WorkspaceDetailScreen extends ConsumerWidget {
                   ],
                 );
               }
-              return const SizedBox.shrink();
+              return PopupMenuButton<String>(
+                onSelected: (value) {
+                  if (value == 'leave') {
+                    _showLeaveWorkspaceDialog(context, ref, data['workspace']);
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'leave', 
+                    child: Row(children: [Icon(Icons.exit_to_app, color: Colors.red, size: 20), SizedBox(width: 8), Text('Leave Workspace', style: TextStyle(color: Colors.red))])
+                  ),
+                ],
+              );
             },
             loading: () => const SizedBox.shrink(),
             error: (_, _) => const SizedBox.shrink(),
@@ -218,6 +230,36 @@ class WorkspaceDetailScreen extends ConsumerWidget {
               }
             },
             child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLeaveWorkspaceDialog(BuildContext context, WidgetRef ref, dynamic workspace) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Leave Workspace', style: TextStyle(color: Colors.red)),
+        content: Text('Are you sure you want to leave "${workspace['name']}"? You will lose access to this workspace until you are invited again.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            onPressed: () async {
+              try {
+                await ref.read(workspaceRepositoryProvider).leaveWorkspace(workspaceId);
+                ref.invalidate(workspacesProvider);
+                if (context.mounted) {
+                  Navigator.pop(ctx);
+                  context.go('/app/workspaces');
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('You have left the workspace')));
+                }
+              } catch (e) {
+                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+              }
+            },
+            child: const Text('Leave'),
           ),
         ],
       ),

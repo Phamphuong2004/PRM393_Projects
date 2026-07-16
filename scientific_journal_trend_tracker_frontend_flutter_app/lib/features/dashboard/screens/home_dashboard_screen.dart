@@ -256,14 +256,10 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
   }
 
   Widget _buildMonthlyPreview(bool isDesktop, Map<String, dynamic>? user) {
-    int totalPapers = 0;
-    if (_dashboardStats != null && _dashboardStats!['timelineData'] != null) {
-      for (var t in _dashboardStats!['timelineData']) {
-        totalPapers += (t['paperCount'] as num).toInt();
-      }
-    } else {
-      totalPapers = _recentPapers.length;
-    }
+    int totalPapers = _dashboardStats?['totalPapers'] as int? ?? _recentPapers.length;
+    int totalJournals = _dashboardStats?['totalJournals'] as int? ?? (_dashboardStats?['topJournals']?.length ?? 0);
+    int totalKeywords = _dashboardStats?['totalKeywords'] as int? ?? _trendingKeywords.length;
+    int recentUpdates = _recentPapers.length;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -284,18 +280,18 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen>
               icon: Icons.article_outlined,
             ),
             _buildMetricSquareCard(
-              title: 'Top Journals',
-              value: (_dashboardStats?['topJournals']?.length ?? 0).toString(),
+              title: 'Total Journals',
+              value: totalJournals.toString(),
               icon: Icons.library_books_rounded,
             ),
             _buildMetricSquareCard(
               title: 'Hot Topics',
-              value: _trendingKeywords.length.toString(),
+              value: totalKeywords.toString(),
               icon: Icons.local_fire_department_outlined,
             ),
             _buildMetricSquareCard(
               title: 'Recent Updates',
-              value: _recentPapers.length.toString(),
+              value: recentUpdates.toString(),
               icon: Icons.update,
             ),
           ],
