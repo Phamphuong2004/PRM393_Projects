@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/workspace_detail_provider.dart';
+import '../providers/workspace_list_provider.dart';
 import '../../../core/repositories/workspace_repository.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/models/paper.dart';
@@ -180,6 +181,7 @@ class WorkspaceDetailScreen extends ConsumerWidget {
                 try {
                   await ref.read(workspaceRepositoryProvider).updateWorkspace(workspaceId, name: nameCtrl.text, description: descCtrl.text, visibility: visibility);
                   ref.invalidate(workspaceDetailProvider(workspaceId));
+                  ref.invalidate(workspacesProvider);
                   if (context.mounted) Navigator.pop(ctx);
                 } catch (e) {
                   if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
@@ -206,6 +208,7 @@ class WorkspaceDetailScreen extends ConsumerWidget {
             onPressed: () async {
               try {
                 await ref.read(workspaceRepositoryProvider).deleteWorkspace(workspaceId);
+                ref.invalidate(workspacesProvider);
                 if (context.mounted) {
                   Navigator.pop(ctx);
                   context.go('/app/workspaces');

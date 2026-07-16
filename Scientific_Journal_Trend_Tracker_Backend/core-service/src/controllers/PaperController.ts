@@ -265,15 +265,15 @@ export class PaperController {
       if (userId) {
         // Automatically bookmark the imported paper for the user via internal API call
         try {
-          const { createInternalClient, SERVICES } = require("shared/src/utils/internalApiClient");
-          const internalClient = createInternalClient(SERVICES.AUTH);
-          await internalClient.post(`/api/users/bookmarks/${paper._id}`, {}, {
+          const axios = require("axios");
+          const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || "http://auth-service:5001";
+          await axios.post(`${AUTH_SERVICE_URL}/api/bookmarks/${paper._id}`, {}, {
             headers: {
               Authorization: req.headers.authorization
             }
           });
-        } catch (bookmarkErr) {
-          console.error("Failed to bookmark imported paper via Auth Service", bookmarkErr);
+        } catch (bookmarkErr: any) {
+          console.error("Failed to bookmark imported paper via Auth Service", bookmarkErr.message);
         }
       }
 
