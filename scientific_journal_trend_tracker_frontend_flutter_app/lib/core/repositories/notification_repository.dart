@@ -34,7 +34,7 @@ class NotificationRepository {
   Future<int> getUnreadCount() async {
     try {
       final response = await _dio.get('${ApiConstants.notifications}/unread/count');
-      return response.data['count'] ?? 0;
+      return response.data['unreadCount'] ?? 0;
     } catch (e) {
       return 0;
     }
