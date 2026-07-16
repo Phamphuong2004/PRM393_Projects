@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import '../models/chat_message.dart';
 import '../../../core/providers/network_provider.dart';
+import '../../../core/constants/api_constants.dart';
 
 import '../models/chat_session.dart';
 
@@ -64,7 +65,7 @@ class ChatController extends Notifier<ChatState> {
 
   Future<void> loadSessions() async {
     try {
-      final response = await _dio.get('/api/chat/sessions');
+      final response = await _dio.get(ApiConstants.chatSessions);
       final List<dynamic> data = response.data;
       final sessions = data.map((json) => ChatSession.fromJson(json)).toList();
       state = state.copyWith(sessions: sessions);
@@ -85,7 +86,7 @@ class ChatController extends Notifier<ChatState> {
   Future<void> loadSessionMessages(String sessionId) async {
     state = state.copyWith(isLoading: true, currentSessionId: sessionId, error: null);
     try {
-      final response = await _dio.get('/api/chat/sessions/$sessionId');
+      final response = await _dio.get('${ApiConstants.chatSessions}/$sessionId');
       final sessionData = response.data;
       final messagesList = (sessionData['messages'] as List).map((m) {
         return ChatMessage(
@@ -108,7 +109,7 @@ class ChatController extends Notifier<ChatState> {
 
   Future<void> deleteSession(String sessionId) async {
     try {
-      await _dio.delete('/api/chat/sessions/$sessionId');
+      await _dio.delete('${ApiConstants.chatSessions}/$sessionId');
       final updatedSessions = state.sessions.where((s) => s.id != sessionId).toList();
       state = state.copyWith(sessions: updatedSessions);
       
@@ -143,7 +144,7 @@ class ChatController extends Notifier<ChatState> {
     );
 
     try {
-      final response = await _dio.post('/api/chat/ask', data: {
+      final response = await _dio.post(ApiConstants.chatAsk, data: {
         'question': finalQuery,
         if (hasFiles) 'files': files,
         if (state.currentSessionId != null) 'sessionId': state.currentSessionId,
