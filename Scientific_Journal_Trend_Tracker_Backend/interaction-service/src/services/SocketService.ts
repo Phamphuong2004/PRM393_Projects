@@ -1,6 +1,7 @@
 import { Server as HttpServer } from "http";
 import { Server, Socket } from "socket.io";
 import jwt from "jsonwebtoken";
+import Redis from "ioredis";
 
 export class SocketService {
   private static io: Server;
@@ -13,6 +14,29 @@ export class SocketService {
         origin: "*", // allow all origins or restrict to flutter app's origins
         methods: ["GET", "POST"],
       },
+    });
+
+    // Initialize Redis subscriber
+    const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
+    const redisSubscriber = new Redis(redisUrl);
+    
+    redisSubscriber.subscribe("realtime_notifications", (err, count) => {
+      if (err) {
+        console.error("[Socket] Redis Subscribe Error:", err);
+      } else {
+        console.log(`[Socket] Subscribed to ${count} Redis channel(s)`);
+      }
+    });
+
+    redisSubscriber.on("message", (channel, message) => {
+      if (channel === "realtime_notifications") {
+        try {
+          const data = JSON.parse(message);
+          this.sendNotificationToUser(data.userId, data.notification);
+        } catch (error) {
+          console.error("[Socket] Failed to parse Redis message:", error);
+        }
+      }
     });
 
     this.io.on("connection", (socket: Socket) => {
