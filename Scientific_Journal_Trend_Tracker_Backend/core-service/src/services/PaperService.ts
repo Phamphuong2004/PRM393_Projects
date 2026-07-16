@@ -29,7 +29,7 @@ export class PaperService {
     }
 
     let sort: any = { publicationYear: -1 };
-    if (sortValue) {
+    if (sortValue && sortValue !== 'relevance') {
       const sortField = sortValue.replace(/^-/, "");
       const sortDirection = sortValue.startsWith("-") ? -1 : 1;
       const normalizedSortField = sortField === "citationCount" ? "citationCount" : "publicationYear";
@@ -181,7 +181,7 @@ export class PaperService {
       try {
         const params: any = { search: query, "per-page": limit, page };
         if (year) params.filter = `publication_year:${year}`;
-        if (sortValue) {
+        if (sortValue && sortValue !== 'relevance') {
           if (sortValue === "-publicationYear") params.sort = "publication_year:desc";
           else if (sortValue === "publicationYear") params.sort = "publication_year:asc";
           else if (sortValue === "-citationCount") params.sort = "cited_by_count:desc";
@@ -217,7 +217,7 @@ export class PaperService {
       try {
         const params: any = { query, rows: limit, offset: (page - 1) * limit };
         if (year) params.filter = `from-pub-date:${year}-01-01,until-pub-date:${year}-12-31`;
-        if (sortValue) {
+        if (sortValue && sortValue !== 'relevance') {
           params.order = sortValue.startsWith("-") ? "desc" : "asc";
           if (sortValue.includes("publicationYear")) params.sort = "published";
           else if (sortValue.includes("citationCount")) params.sort = "is-referenced-by-count";
