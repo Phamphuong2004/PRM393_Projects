@@ -55,7 +55,13 @@ export class WorkspaceController {
   static async addMember(req: Request, res: Response) {
     try {
       const { email, role } = req.body;
-      const workspace = await WorkspaceService.addMember(req.params.id, req.userId as string, email, role);
+      const workspace = await WorkspaceService.addMember(
+        req.params.id,
+        req.userId as string,
+        email,
+        role,
+        req.headers.authorization
+      );
       res.json({ success: true, data: workspace });
     } catch (error: any) {
       res.status(error.status || 500).json({ success: false, message: error.message });

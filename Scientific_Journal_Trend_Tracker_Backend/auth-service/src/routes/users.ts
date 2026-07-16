@@ -60,6 +60,25 @@ router.post(
   }
 );
 
+// Search user by email
+router.get(
+  "/search/email",
+  authMiddleware,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const email = req.query.email as string;
+      if (!email) {
+        res.status(400).json({ message: "Email is required" });
+        return;
+      }
+      const user = await UserService.getUserByEmail(email);
+      res.json(user);
+    } catch (error: any) {
+      res.status(error.status || 500).json({ message: error.message });
+    }
+  }
+);
+
 // Get user by ID
 router.get(
   "/:id",
