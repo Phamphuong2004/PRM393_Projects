@@ -54,6 +54,7 @@ services:
       - PORT=5003
       - MONGODB_URI=mongodb+srv://thanhtu_user:Thanhtu%40204@cluster0.h3nsaiz.mongodb.net/interaction_db?appName=Cluster0
       - INTERNAL_API_SECRET=super_secret_internal_key_123
+      - AI_SERVICE_URL=http://ai-service:8000
     restart: unless-stopped
 
   admin-service:
@@ -67,4 +68,15 @@ services:
       - PORT=5004
       - MONGODB_URI=mongodb+srv://thanhtu_user:Thanhtu%40204@cluster0.h3nsaiz.mongodb.net/admin_db?appName=Cluster0
       - INTERNAL_API_SECRET=super_secret_internal_key_123
+    restart: unless-stopped
+
+  ai-service:
+    build:
+      context: ../ai-service
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    env_file: ../ai-service/.env
+    environment:
+      - PORT=8000
     restart: unless-stopped
