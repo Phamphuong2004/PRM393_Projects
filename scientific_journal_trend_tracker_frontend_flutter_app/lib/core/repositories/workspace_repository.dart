@@ -96,7 +96,7 @@ class WorkspaceRepository {
         // External paper: Import it first via the dedicated import endpoint
         // which properly processes external authors and journals into ObjectIds.
         final paperJson = paper.toJson();
-        final importResponse = await _dio.post('/api/papers/import', data: paperJson);
+        final importResponse = await _dio.post(ApiConstants.importPaper, data: paperJson);
         paperId = importResponse.data['_id'];
       }
       

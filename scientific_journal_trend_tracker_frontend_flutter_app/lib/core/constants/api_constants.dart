@@ -25,6 +25,7 @@ class ApiConstants {
   static const String papers = '/api/papers';
   static const String searchPapers = '/api/papers/search/query';
   static const String searchExternalPapers = '/api/papers/external/search';
+  static const String importPaper = '/api/papers/import';
 
   // Keywords
   static const String keywords = '/api/keywords';
@@ -77,4 +78,8 @@ class ApiConstants {
 
   // Workspaces
   static const String workspaces = '/api/workspaces';
+
+  // Chat
+  static const String chatSessions = '/api/chat/sessions';
+  static const String chatAsk = '/api/chat/ask';
 }
