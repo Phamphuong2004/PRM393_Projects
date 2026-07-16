@@ -129,7 +129,9 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
   }
 
   void _showRoleDialog(User user) {
-    String selectedRole = user.role;
+    final validRoles = ['student', 'researcher', 'admin'];
+    String selectedRole = validRoles.contains(user.role) ? user.role : 'student';
+    
     showDialog(
       context: context,
       builder: (context) {
@@ -141,7 +143,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                 initialValue: selectedRole,
                 decoration: const InputDecoration(labelText: 'Select Role'),
                 items: const [
-                  DropdownMenuItem(value: 'user', child: Text('User')),
+                  DropdownMenuItem(value: 'student', child: Text('Student')),
                   DropdownMenuItem(value: 'researcher', child: Text('Researcher')),
                   DropdownMenuItem(value: 'admin', child: Text('Admin')),
                 ],
