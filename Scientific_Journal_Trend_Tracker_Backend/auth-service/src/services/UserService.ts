@@ -36,6 +36,16 @@ export class UserService {
     return user;
   }
 
+  static async getUserByEmail(email: string) {
+    const user = await User.findOne({ email }).select("-password");
+
+    if (!user) {
+      throw { status: 404, message: "User not found" };
+    }
+
+    return user;
+  }
+
   static async updateUserProfile(
     id: string,
     userData: any,

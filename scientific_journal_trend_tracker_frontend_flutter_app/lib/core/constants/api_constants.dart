@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 
 class ApiConstants {
   // Đặt là true để dùng hệ thống Microservices backend mới đang chạy local
-  static const bool useLocal = false;
+  static const bool useLocal = true;
 
   static String get baseUrl {
     if (!useLocal) {

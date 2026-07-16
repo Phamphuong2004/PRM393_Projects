@@ -57,6 +57,12 @@ app.use(
   })
 );
 
+const interactionProxy = createProxyMiddleware({
+  target: INTERACTION_SERVICE_URL,
+  changeOrigin: true,
+  ws: true, // Enable WebSocket proxying
+});
+
 // 3. Interaction Service & Socket.io Routes
 app.use(
   [
@@ -66,11 +72,7 @@ app.use(
     "/api/analysis-runs",
     "/socket.io"
   ],
-  createProxyMiddleware({
-    target: INTERACTION_SERVICE_URL,
-    changeOrigin: true,
-    ws: true, // Enable WebSocket proxying
-  })
+  interactionProxy
 );
 
 // 4. Admin & Notification Service Routes
@@ -88,7 +90,7 @@ app.get("/health", (req, res) => {
 });
 
 // Start Gateway
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`\n🚀 API Gateway running on port ${PORT}`);
   console.log(`Routes mapping:`);
   console.log(`- Auth -> ${AUTH_SERVICE_URL}`);
@@ -96,3 +98,8 @@ app.listen(PORT, () => {
   console.log(`- Interaction -> ${INTERACTION_SERVICE_URL}`);
   console.log(`- Admin -> ${ADMIN_SERVICE_URL}\n`);
 });
+
+// VERY IMPORTANT: Forward WebSocket upgrade events to the proxy
+if (interactionProxy.upgrade) {
+  server.on("upgrade", interactionProxy.upgrade);
+}
