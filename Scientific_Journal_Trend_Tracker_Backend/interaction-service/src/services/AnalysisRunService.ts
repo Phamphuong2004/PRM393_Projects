@@ -82,6 +82,17 @@ export class AnalysisRunService {
     return runs;
   }
 
+  static async getPendingAnalysisRuns(limit: number = 10) {
+    const runs = await AnalysisRun.find({ status: "pending" })
+      .populate("keywordId")
+      .populate("syncLogId")
+      .populate("topicId")
+      .sort({ createdAt: 1 }) // oldest first
+      .limit(limit);
+
+    return runs;
+  }
+
   static async getCompletedAnalysisRuns(limit: number = 10) {
     const runs = await AnalysisRun.find({ status: "completed" })
       .populate("keywordId")

@@ -17,7 +17,7 @@ const syncLogSchema = new Schema<ISyncLog>(
     apiSource: {
       type: Schema.Types.ObjectId,
       ref: "ApiSource",
-      required: true,
+      required: false,
     },
     seedKeyword: String,
     startedAt: {

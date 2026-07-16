@@ -1,4 +1,6 @@
 import { Request, Response } from "express";
+import ApiSource from "../models/ApiSource";
+import SyncLog from "../models/SyncLog";
 
 export class AdminController {
   static async getDashboardStats(req: Request, res: Response): Promise<void> {
@@ -66,22 +68,81 @@ export class AdminController {
   }
 
   static async getAllSources(req: Request, res: Response): Promise<void> {
-    res.json([]);
+    try {
+      const sources = await ApiSource.find().sort({ createdAt: -1 });
+      res.json(sources);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Server error" });
+    }
   }
 
   static async createSource(req: Request, res: Response): Promise<void> {
-    res.json({});
+    try {
+      const newSource = new ApiSource(req.body);
+      await newSource.save();
+      res.status(201).json(newSource);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Server error" });
+    }
   }
 
   static async updateSource(req: Request, res: Response): Promise<void> {
-    res.json({});
+    try {
+      const updatedSource = await ApiSource.findByIdAndUpdate(
+        req.params.id,
+        req.body,
+        { new: true }
+      );
+      if (!updatedSource) {
+        res.status(404).json({ message: "Source not found" });
+        return;
+      }
+      res.json(updatedSource);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Server error" });
+    }
   }
 
   static async deleteSource(req: Request, res: Response): Promise<void> {
-    res.json({ message: "Deleted" });
+    try {
+      const deletedSource = await ApiSource.findByIdAndDelete(req.params.id);
+      if (!deletedSource) {
+        res.status(404).json({ message: "Source not found" });
+        return;
+      }
+      res.json({ message: "Deleted" });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Server error" });
+    }
   }
 
   static async triggerManualSync(req: Request, res: Response): Promise<void> {
-    res.json({ message: "Triggered" });
+    try {
+      // Just mock logging it to the sync logs table for now
+      const log = new SyncLog({
+        apiSource: null, // Indicates manual trigger not tied to specific source
+        startedAt: new Date(),
+        status: "running",
+        seedKeyword: "MANUAL_TRIGGER"
+      });
+      await log.save();
+      
+      // Simulate sync taking a bit of time and succeeding
+      setTimeout(async () => {
+        log.status = "success";
+        log.finishedAt = new Date();
+        log.papersAdded = Math.floor(Math.random() * 10);
+        await log.save();
+      }, 5000);
+
+      res.json({ message: "Triggered" });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Server error" });
+    }
   }
 }

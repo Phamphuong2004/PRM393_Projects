@@ -17,7 +17,7 @@ const analysisRunSchema = new Schema<IAnalysisRun>(
     keywordId: {
       type: Schema.Types.ObjectId,
       ref: "Keyword",
-      required: true,
+      required: false,
     },
     syncLogId: {
       type: Schema.Types.ObjectId,
