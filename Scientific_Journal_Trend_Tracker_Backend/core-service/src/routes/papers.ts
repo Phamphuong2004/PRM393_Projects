@@ -18,15 +18,19 @@ const router = Router();
 // Apply rate limiting
 router.use(rateLimit(rateLimits.read));
 
-// Get all papers with pagination
+// Get all papers with pagination and optional filters
 router.get("/", async (req: Request, res: Response): Promise<void> => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
+    const year = req.query.year ? parseInt(req.query.year as string) : undefined;
+    const sort = req.query.sort as string;
 
     const { papers, total, pages } = await PaperService.getAllPapers(
       page,
       limit,
+      year,
+      sort
     );
 
     res.json({
@@ -51,7 +55,7 @@ router.get(
   "/external/search",
   async (req: Request, res: Response): Promise<void> => {
     try {
-      const { q, limit, source } = req.query;
+      const { q, limit, source, page, year, sort } = req.query;
 
       if (!q || !String(q).trim()) {
         res.status(400).json({ message: "Search query is required" });
@@ -59,7 +63,9 @@ router.get(
       }
 
       const parsedLimit = limit ? parseInt(limit as string) : 10;
-      const result = await PaperService.searchExternalPapers(String(q), parsedLimit, source as string);
+      const parsedPage = page ? parseInt(page as string) : 1;
+      const parsedYear = year ? parseInt(year as string) : undefined;
+      const result = await PaperService.searchExternalPapers(String(q), parsedLimit, source as string, parsedPage, parsedYear, sort as string);
 
       res.json(result);
     } catch (error: any) {
