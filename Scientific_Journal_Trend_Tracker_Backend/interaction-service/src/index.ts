@@ -13,6 +13,7 @@ import workspacesRoutes from "./routes/workspaces";
 import chatRoutes from "./routes/chat";
 import analysisRunsRoutes from "./routes/analysisRuns";
 import dashboardRoutes from "./routes/dashboard";
+import { AnalysisWorker } from "./workers/AnalysisWorker";
 
 const app = express();
 const server = http.createServer(app);
@@ -61,6 +62,9 @@ app.use(errorLogger);
 // Error handling
 app.use(notFoundHandler);
 app.use(errorHandler);
+
+// Start Background Workers
+AnalysisWorker.start();
 
 // Start server
 server.listen(PORT, () => {

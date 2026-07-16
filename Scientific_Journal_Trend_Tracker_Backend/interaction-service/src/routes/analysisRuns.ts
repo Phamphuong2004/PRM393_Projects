@@ -59,6 +59,9 @@ router.post(
   validateInputs,
   async (req: Request, res: Response): Promise<void> => {
     try {
+      if (req.body.keywordId && !req.body.keywordId.match(/^[0-9a-fA-F]{24}$/)) {
+        delete req.body.keywordId;
+      }
       const run = await AnalysisRunService.createAnalysisRun(req.body);
       res.status(201).json(run);
     } catch (error: any) {

@@ -10,6 +10,7 @@ import http from "http";
 // Import routes
 import adminRoutes from "./routes/admin";
 import notificationsRoutes from "./routes/notifications";
+import syncLogsRoutes from "./routes/syncLogs";
 
 const app = express();
 const server = http.createServer(app);
@@ -46,6 +47,7 @@ app.get("/health", (req, res) => {
 // API Routes
 app.use("/api/admin", adminRoutes);
 app.use("/api/notifications", notificationsRoutes);
+app.use("/api/sync-logs", syncLogsRoutes);
 
 // Error logging middleware
 app.use(errorLogger);
