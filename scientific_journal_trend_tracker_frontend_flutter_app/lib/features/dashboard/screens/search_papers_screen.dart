@@ -31,7 +31,7 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
   int _totalResults = 0;
   bool _loading = false;
   String? _error;
-  String _sort = '-publicationYear';
+  String _sort = 'relevance';
   String _selectedSource = 'Local Database';
   String _selectedYear = 'All Years';
   int _limit = 10;
@@ -47,6 +47,7 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
   static final _objectIdRegex = RegExp(r'^[0-9a-fA-F]{24}$');
 
   static const _sortOptions = [
+    ('relevance', 'Relevance'),
     ('-publicationYear', 'Newest first'),
     ('publicationYear', 'Oldest first'),
     ('-citationCount', 'Most cited'),
