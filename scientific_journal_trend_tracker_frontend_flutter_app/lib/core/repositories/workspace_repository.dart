@@ -26,6 +26,26 @@ class WorkspaceRepository {
     }
   }
 
+  Future<List<Workspace>> getPendingInvitations() async {
+    try {
+      final response = await _dio.get('${ApiConstants.workspaces}/invitations/pending');
+      final data = response.data['data'] as List;
+      return data.map((e) => Workspace.fromJson(e)).toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> respondToInvite(String workspaceId, String action) async {
+    try {
+      await _dio.post('${ApiConstants.workspaces}/$workspaceId/invitations/respond', data: {
+        'action': action,
+      });
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<Workspace> createWorkspace(String name, String description, String visibility) async {
     try {
       final response = await _dio.post(ApiConstants.workspaces, data: {

@@ -43,6 +43,25 @@ export class WorkspaceController {
     }
   }
 
+  static async getPendingInvitations(req: Request, res: Response) {
+    try {
+      const result = await WorkspaceService.getPendingInvitations(req.userId as string);
+      res.json({ success: true, data: result });
+    } catch (error: any) {
+      res.status(error.status || 500).json({ success: false, message: error.message });
+    }
+  }
+
+  static async respondToInvite(req: Request, res: Response) {
+    try {
+      const { action } = req.body;
+      const result = await WorkspaceService.respondToInvite(req.params.id, req.userId as string, action);
+      res.json({ success: true, data: result });
+    } catch (error: any) {
+      res.status(error.status || 500).json({ success: false, message: error.message });
+    }
+  }
+
   static async getWorkspaceById(req: Request, res: Response) {
     try {
       const result = await WorkspaceService.getWorkspaceById(req.params.id, req.userId as string, req.headers.authorization);
