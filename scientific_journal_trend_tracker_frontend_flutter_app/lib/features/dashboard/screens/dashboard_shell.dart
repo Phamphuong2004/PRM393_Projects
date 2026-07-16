@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/theme.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/notification_provider.dart';
 
 class DashboardShell extends ConsumerWidget {
   final Widget child;
@@ -10,6 +11,39 @@ class DashboardShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(notificationProvider, (previous, next) {
+      if (previous != null && next.latestNotification != null && next.latestNotification != previous.latestNotification) {
+        final newNotif = next.latestNotification;
+        final title = newNotif is Map ? newNotif['title'] : (newNotif as dynamic).title;
+        final message = newNotif is Map ? newNotif['message'] : (newNotif as dynamic).message;
+
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(title?.toString() ?? 'New Notification', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                if (message != null)
+                  Text(message.toString(), maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white70)),
+              ],
+            ),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.only(bottom: 24, left: 16, right: 16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            backgroundColor: AppColors.primary,
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'VIEW',
+              textColor: Colors.white,
+              onPressed: () => context.push('/app/notifications'),
+            ),
+          ),
+        );
+      }
+    });
+
     final authState = ref.watch(authProvider);
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth > 800;
@@ -38,17 +72,26 @@ class DashboardShell extends ConsumerWidget {
               elevation: 0,
               centerTitle: false,
               actions: [
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: AppColors.bg,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: IconButton(
-                    icon: const Icon(Icons.notifications_none_rounded, color: AppColors.primary),
-                    onPressed: () => context.push('/app/notifications'),
-                    tooltip: 'Notifications',
-                  ),
+                Consumer(
+                  builder: (context, ref, child) {
+                    final unreadCount = ref.watch(notificationProvider).unreadCount;
+                    return Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.bg,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: IconButton(
+                        icon: Badge(
+                          isLabelVisible: unreadCount > 0,
+                          label: Text(unreadCount.toString()),
+                          child: const Icon(Icons.notifications_none_rounded, color: AppColors.primary),
+                        ),
+                        onPressed: () => context.push('/app/notifications'),
+                        tooltip: 'Notifications',
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
@@ -125,21 +168,36 @@ class DashboardShell extends ConsumerWidget {
           ),
           
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-              children: authState.isAdmin
-                  ? [
-                      _buildSideMenuItem(context, 'Overview Dashboard', Icons.dashboard_outlined, Icons.dashboard_rounded, '/app', location),
-                      _buildSideMenuItem(context, 'User Management', Icons.manage_accounts_outlined, Icons.manage_accounts_rounded, '/app/admin/users', location),
-                      _buildSideMenuItem(context, 'Trend Analysis', Icons.insights_outlined, Icons.insights_rounded, '/app/admin/analytics', location),
-                      _buildSideMenuItem(context, 'API Sources Settings', Icons.settings_input_component_outlined, Icons.settings_input_component_rounded, '/app/admin/settings', location),
-                      _buildSideMenuItem(context, 'Background Sync Logs', Icons.receipt_long_outlined, Icons.receipt_long_rounded, '/app/admin/sync-logs', location),
-                      _buildSideMenuItem(context, 'Profile Settings', Icons.person_outline_rounded, Icons.person_rounded, '/app/profile', location),
-                    ]
-                  : [
-                      _buildSideMenuItem(context, 'Workspaces', Icons.workspaces_outline, Icons.workspaces, '/app/workspaces', location),
-                      _buildSideMenuItem(context, 'Profile Settings', Icons.person_outline_rounded, Icons.person_rounded, '/app/profile', location),
-                    ],
+            child: Consumer(
+              builder: (context, ref, child) {
+                final unreadCount = ref.watch(notificationProvider).unreadCount;
+                final badge = unreadCount > 0 
+                  ? Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(color: AppColors.error, borderRadius: BorderRadius.circular(10)),
+                      child: Text(unreadCount.toString(), style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                    ) 
+                  : null;
+
+                return ListView(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                  children: authState.isAdmin
+                      ? [
+                          _buildSideMenuItem(context, 'Overview Dashboard', Icons.dashboard_outlined, Icons.dashboard_rounded, '/app', location),
+                          _buildSideMenuItem(context, 'Notifications', Icons.notifications_none_rounded, Icons.notifications_rounded, '/app/notifications', location, trailing: badge),
+                          _buildSideMenuItem(context, 'User Management', Icons.manage_accounts_outlined, Icons.manage_accounts_rounded, '/app/admin/users', location),
+                          _buildSideMenuItem(context, 'Trend Analysis', Icons.insights_outlined, Icons.insights_rounded, '/app/admin/analytics', location),
+                          _buildSideMenuItem(context, 'API Sources Settings', Icons.settings_input_component_outlined, Icons.settings_input_component_rounded, '/app/admin/settings', location),
+                          _buildSideMenuItem(context, 'Background Sync Logs', Icons.receipt_long_outlined, Icons.receipt_long_rounded, '/app/admin/sync-logs', location),
+                          _buildSideMenuItem(context, 'Profile Settings', Icons.person_outline_rounded, Icons.person_rounded, '/app/profile', location),
+                        ]
+                      : [
+                          _buildSideMenuItem(context, 'Workspaces', Icons.workspaces_outline, Icons.workspaces, '/app/workspaces', location),
+                          _buildSideMenuItem(context, 'Notifications', Icons.notifications_none_rounded, Icons.notifications_rounded, '/app/notifications', location, trailing: badge),
+                          _buildSideMenuItem(context, 'Profile Settings', Icons.person_outline_rounded, Icons.person_rounded, '/app/profile', location),
+                        ],
+                );
+              },
             ),
           ),
           
@@ -168,7 +226,7 @@ class DashboardShell extends ConsumerWidget {
     ));
   }
 
-  Widget _buildSideMenuItem(BuildContext context, String title, IconData icon, IconData activeIcon, String path, String currentLocation) {
+  Widget _buildSideMenuItem(BuildContext context, String title, IconData icon, IconData activeIcon, String path, String currentLocation, {Widget? trailing}) {
     final isSelected = path == '/app' ? currentLocation == '/app' : currentLocation.startsWith(path);
     
     return Container(
@@ -176,6 +234,7 @@ class DashboardShell extends ConsumerWidget {
       child: ListTile(
         leading: Icon(isSelected ? activeIcon : icon, color: isSelected ? AppColors.primary : AppColors.textSecondary),
         title: Text(title, style: TextStyle(color: isSelected ? AppColors.primary : AppColors.textPrimary, fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600, fontSize: 15)),
+        trailing: trailing,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         tileColor: isSelected ? AppColors.primaryLight.withValues(alpha: 0.1) : Colors.transparent,
         hoverColor: isSelected ? null : AppColors.bg,
@@ -235,20 +294,33 @@ class DashboardShell extends ConsumerWidget {
             child: Divider(color: AppColors.border, height: 1),
           ),
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-              children: [
-                if (authState.isAdmin) ...[
-                  _buildDrawerItem(context, icon: Icons.dashboard_outlined, activeIcon: Icons.dashboard_rounded, title: 'Overview Dashboard', path: '/app'),
-                  _buildDrawerItem(context, icon: Icons.manage_accounts_outlined, activeIcon: Icons.manage_accounts_rounded, title: 'User Management', path: '/app/admin/users'),
-                  _buildDrawerItem(context, icon: Icons.insights_rounded, activeIcon: Icons.insights_rounded, title: 'Trend Analysis', path: '/app/admin/analytics'),
-                  _buildDrawerItem(context, icon: Icons.settings_input_component_outlined, activeIcon: Icons.settings_input_component_rounded, title: 'API Sources Settings', path: '/app/admin/settings'),
-                  _buildDrawerItem(context, icon: Icons.receipt_long_rounded, activeIcon: Icons.receipt_long_rounded, title: 'Background Sync Logs', path: '/app/admin/sync-logs'),
-                ] else ...[
-                  _buildDrawerItem(context, icon: Icons.workspaces_outline, activeIcon: Icons.workspaces, title: 'Workspaces', path: '/app/workspaces'),
-                ],
-                _buildDrawerItem(context, icon: Icons.person_outline_rounded, activeIcon: Icons.person_rounded, title: 'Profile Settings', path: '/app/profile'),
-                const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Divider(color: AppColors.border)),
+            child: Consumer(
+              builder: (context, ref, child) {
+                final unreadCount = ref.watch(notificationProvider).unreadCount;
+                final badge = unreadCount > 0 
+                  ? Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(color: AppColors.error, borderRadius: BorderRadius.circular(10)),
+                      child: Text(unreadCount.toString(), style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                    ) 
+                  : null;
+
+                return ListView(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                  children: [
+                    if (authState.isAdmin) ...[
+                      _buildDrawerItem(context, icon: Icons.dashboard_outlined, activeIcon: Icons.dashboard_rounded, title: 'Overview Dashboard', path: '/app'),
+                      _buildDrawerItem(context, icon: Icons.notifications_none_rounded, activeIcon: Icons.notifications_rounded, title: 'Notifications', path: '/app/notifications', trailing: badge),
+                      _buildDrawerItem(context, icon: Icons.manage_accounts_outlined, activeIcon: Icons.manage_accounts_rounded, title: 'User Management', path: '/app/admin/users'),
+                      _buildDrawerItem(context, icon: Icons.insights_rounded, activeIcon: Icons.insights_rounded, title: 'Trend Analysis', path: '/app/admin/analytics'),
+                      _buildDrawerItem(context, icon: Icons.settings_input_component_outlined, activeIcon: Icons.settings_input_component_rounded, title: 'API Sources Settings', path: '/app/admin/settings'),
+                      _buildDrawerItem(context, icon: Icons.receipt_long_rounded, activeIcon: Icons.receipt_long_rounded, title: 'Background Sync Logs', path: '/app/admin/sync-logs'),
+                    ] else ...[
+                      _buildDrawerItem(context, icon: Icons.workspaces_outline, activeIcon: Icons.workspaces, title: 'Workspaces', path: '/app/workspaces'),
+                      _buildDrawerItem(context, icon: Icons.notifications_none_rounded, activeIcon: Icons.notifications_rounded, title: 'Notifications', path: '/app/notifications', trailing: badge),
+                    ],
+                    _buildDrawerItem(context, icon: Icons.person_outline_rounded, activeIcon: Icons.person_rounded, title: 'Profile Settings', path: '/app/profile'),
+                    const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Divider(color: AppColors.border)),
                 
                 ListTile(
                   leading: const Icon(Icons.logout_rounded, color: AppColors.error),
@@ -260,14 +332,16 @@ class DashboardShell extends ConsumerWidget {
                   },
                 ),
               ],
-            ),
-          ),
-        ],
+            );
+          },
+        ),
       ),
-    );
+    ],
+  ),
+);
   }
 
-  Widget _buildDrawerItem(BuildContext context, {required IconData icon, required IconData activeIcon, required String title, required String path}) {
+  Widget _buildDrawerItem(BuildContext context, {required IconData icon, required IconData activeIcon, required String title, required String path, Widget? trailing}) {
     final location = GoRouterState.of(context).matchedLocation;
     final isSelected = path == '/app' ? location == '/app' : location.startsWith(path);
     
@@ -276,6 +350,7 @@ class DashboardShell extends ConsumerWidget {
       child: ListTile(
         leading: Icon(isSelected ? activeIcon : icon, color: isSelected ? AppColors.primary : AppColors.textSecondary),
         title: Text(title, style: TextStyle(color: isSelected ? AppColors.primary : AppColors.textPrimary, fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600, fontSize: 15)),
+        trailing: trailing,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         tileColor: isSelected ? AppColors.primary.withValues(alpha: 0.08) : Colors.transparent,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
@@ -289,43 +364,6 @@ class DashboardShell extends ConsumerWidget {
 
   Widget _buildModernBottomNav(BuildContext context, AuthState authState) {
     final String location = GoRouterState.of(context).matchedLocation;
-
-    if (authState.isAdmin) {
-      int currentIndex = 0;
-      if (location.startsWith('/app/admin/users')) {
-        currentIndex = 1;
-      } else if (location.startsWith('/app/admin/analytics')) {
-        currentIndex = 2;
-      } else if (location.startsWith('/app/admin/settings') || location.startsWith('/app/admin/sync-logs')) {
-        currentIndex = 3;
-      }
-
-      return Container(
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          boxShadow: AppColors.glassShadow,
-        ),
-        child: NavigationBar(
-          height: 80,
-          selectedIndex: currentIndex,
-          elevation: 0,
-          onDestinationSelected: (index) {
-            switch (index) {
-              case 0: context.go('/app'); break;
-              case 1: context.go('/app/admin/users'); break;
-              case 2: context.go('/app/admin/analytics'); break;
-              case 3: context.go('/app/admin/settings'); break;
-            }
-          },
-          destinations: const [
-            NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard_rounded), label: 'Overview'),
-            NavigationDestination(icon: Icon(Icons.manage_accounts_outlined), selectedIcon: Icon(Icons.manage_accounts_rounded), label: 'Users'),
-            NavigationDestination(icon: Icon(Icons.insights_outlined), selectedIcon: Icon(Icons.insights_rounded), label: 'Analytics'),
-            NavigationDestination(icon: Icon(Icons.settings_input_component_outlined), selectedIcon: Icon(Icons.settings_input_component_rounded), label: 'Settings'),
-          ],
-        ),
-      );
-    }
 
     int currentIndex = 0;
     if (location.startsWith('/app/workspaces')) {

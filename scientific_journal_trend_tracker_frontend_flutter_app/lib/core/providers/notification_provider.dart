@@ -1,30 +1,36 @@
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../repositories/notification_repository.dart';
+import '../models/notification.dart';
 import '../constants/api_constants.dart';
 
 class NotificationState {
   final List<dynamic> notifications;
   final int unreadCount;
   final bool isLoading;
+  final dynamic latestNotification; // To trigger snackbar
 
   const NotificationState({
     this.notifications = const [],
     this.unreadCount = 0,
     this.isLoading = false,
+    this.latestNotification,
   });
 
   NotificationState copyWith({
     List<dynamic>? notifications,
     int? unreadCount,
     bool? isLoading,
+    dynamic latestNotification,
   }) {
     return NotificationState(
       notifications: notifications ?? this.notifications,
       unreadCount: unreadCount ?? this.unreadCount,
       isLoading: isLoading ?? this.isLoading,
+      latestNotification: latestNotification ?? this.latestNotification,
     );
   }
 }
@@ -58,10 +64,13 @@ class NotificationNotifier extends Notifier<NotificationState> {
     final token = await _storage.read(key: 'jwt_token');
     if (token == null) return;
 
-    _socket = io.io(ApiConstants.baseUrl, <String, dynamic>{
-      'transports': ['websocket'],
-      'autoConnect': true,
-    });
+    _socket = io.io(
+      ApiConstants.baseUrl,
+      io.OptionBuilder()
+          .setTransports(['websocket', 'polling'])
+          .enableAutoConnect()
+          .build(),
+    );
 
     _socket?.onConnect((_) {
       debugPrint('Socket connected');
@@ -70,9 +79,31 @@ class NotificationNotifier extends Notifier<NotificationState> {
 
     _socket?.on('new_notification', (data) {
       debugPrint('New notification received via socket: $data');
+      
+      dynamic parsedData = data;
+      if (data is String) {
+        try {
+          parsedData = jsonDecode(data);
+        } catch (e) {
+          debugPrint('Error decoding notification string: $e');
+        }
+      }
+
+      dynamic notificationObj = parsedData;
+      if (parsedData is Map<String, dynamic>) {
+        try {
+          // Some backends nest it under a key
+          final mapToParse = parsedData.containsKey('notification') ? parsedData['notification'] : parsedData;
+          notificationObj = NotificationModel.fromJson(mapToParse as Map<String, dynamic>);
+        } catch (e) {
+          debugPrint('Error parsing notification to model: $e');
+        }
+      }
+
       state = state.copyWith(
-        notifications: [data, ...state.notifications],
+        notifications: [notificationObj, ...state.notifications],
         unreadCount: state.unreadCount + 1,
+        latestNotification: notificationObj, // Save to trigger UI
       );
     });
 

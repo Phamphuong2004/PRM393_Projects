@@ -230,3 +230,10 @@ Authorization: Bearer {jwt_token}
 - `403` - Forbidden
 - `404` - Not Found
 - `500` - Server Error
+
+## Chat (AI Assistant)
+
+- `GET /api/chat/sessions` - Get all chat sessions (auth required)
+- `GET /api/chat/sessions/:id` - Get chat session by ID (auth required)
+- `DELETE /api/chat/sessions/:id` - Delete chat session (auth required)
+- `POST /api/chat/ask` - Ask a question to the AI (auth required)
