@@ -68,7 +68,7 @@ export class WorkspaceService {
     const { workspace, role } = await this.checkRole(workspaceId, userId, ["owner", "editor", "viewer"]);
     const workspaceObj = workspace.toObject();
     
-    const { createInternalClient, SERVICES } = require("../../shared/src/utils/internalApiClient");
+    const { createInternalClient, SERVICES } = require("../utils/internalApiClient");
     const authClient = createInternalClient(SERVICES.AUTH, jwtToken);
     const coreClient = createInternalClient(SERVICES.CORE, jwtToken);
 
@@ -117,10 +117,23 @@ export class WorkspaceService {
     };
   }
 
-  static async addMember(workspaceId: string, ownerId: string, email: string, role: string) {
+  static async addMember(workspaceId: string, ownerId: string, email: string, role: string, jwtToken?: string) {
     await this.checkRole(workspaceId, ownerId, ["owner"]);
-    const User = mongoose.model("user");
-    const user = await User.findOne({ email });
+    
+    const { createInternalClient, SERVICES } = require("../utils/internalApiClient");
+    const authClient = createInternalClient(SERVICES.AUTH, jwtToken);
+    
+    let user;
+    try {
+      const response = await authClient.get(`/api/users/search/email?email=${encodeURIComponent(email)}`);
+      user = response.data;
+    } catch (err: any) {
+      if (err.response && err.response.status === 404) {
+        throw { status: 404, message: "User not found" };
+      }
+      throw { status: 500, message: "Error looking up user" };
+    }
+
     if (!user) throw { status: 404, message: "User not found" };
 
     const workspace = await Workspace.findById(workspaceId);
@@ -266,7 +279,7 @@ export class WorkspaceService {
     try {
       const paperIds = rawPapers.map(p => p.paper.toString());
       if (paperIds.length > 0) {
-        const { createInternalClient, SERVICES } = require("../../shared/src/utils/internalApiClient");
+        const { createInternalClient, SERVICES } = require("../utils/internalApiClient");
         const coreClient = createInternalClient(SERVICES.CORE, jwtToken);
         const res = await coreClient.post("/api/papers/batch", { ids: paperIds });
         const corePapers = res.data;

@@ -31,9 +31,10 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
   int _totalResults = 0;
   bool _loading = false;
   String? _error;
-  String _sort = '-publicationYear';
+  String _sort = 'relevance';
   String _selectedSource = 'Local Database';
   String _selectedYear = 'All Years';
+  int _limit = 10;
 
   // Bookmark UI state
   final Set<String> _savedIds = {};
@@ -46,6 +47,7 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
   static final _objectIdRegex = RegExp(r'^[0-9a-fA-F]{24}$');
 
   static const _sortOptions = [
+    ('relevance', 'Relevance'),
     ('-publicationYear', 'Newest first'),
     ('publicationYear', 'Oldest first'),
     ('-citationCount', 'Most cited'),
@@ -123,10 +125,10 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
           });
           return;
         }
-        res = await paperRepo.searchExternalPapers(q, limit: 15, source: _selectedSource);
+        res = await paperRepo.searchExternalPapers(q, limit: _limit, source: _selectedSource, page: _page, year: year, sort: _sort);
       } else {
         if (q.isNotEmpty) {
-          res = await paperRepo.searchPapers(q, year: year);
+          res = await paperRepo.searchPapers(q, year: year, page: _page, limit: _limit, sort: _sort);
         } else {
           if (widget.isPublic) {
             setState(() {
@@ -137,7 +139,7 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
             });
             return;
           }
-          res = await paperRepo.getPapers(page: _page, limit: 10);
+          res = await paperRepo.getPapers(page: _page, limit: _limit, year: year, sort: _sort);
         }
       }
 
@@ -161,6 +163,7 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
     setState(() {
       _sort = '-publicationYear';
       _page = 1;
+      _limit = 10;
       _selectedSource = 'Local Database';
       _selectedYear = 'All Years';
     });
@@ -382,10 +385,11 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Source Dropdown + Reset
+              // Source Dropdown, Limit Dropdown + Reset
               Row(
                 children: [
                   Expanded(
+                    flex: 2,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                       decoration: BoxDecoration(
@@ -415,14 +419,46 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 1,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<int>(
+                          value: _limit,
+                          isExpanded: true,
+                          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.primary),
+                          style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600, fontSize: 13),
+                          items: [10, 20, 50, 100]
+                              .map((l) => DropdownMenuItem(value: l, child: Text('$l / page', overflow: TextOverflow.ellipsis)))
+                              .toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() {
+                                _limit = val;
+                                _page = 1;
+                              });
+                              _fetchPapers();
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
                   TextButton.icon(
                     onPressed: _reset,
                     icon: const Icon(Icons.filter_alt_off_rounded, size: 18),
                     label: const Text('Reset'),
                     style: TextButton.styleFrom(
                       foregroundColor: AppColors.textSecondary,
-                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       backgroundColor: AppColors.surface,
                       side: BorderSide(color: AppColors.border.withValues(alpha: 0.4)),
@@ -812,8 +848,8 @@ class _SearchPapersScreenState extends ConsumerState<SearchPapersScreen> {
                     ],
                   ),
 
-                  // Sort chips (only for Local Database)
-                  if (_selectedSource == 'Local Database') ...[
+                  // Sort chips
+                  if (_selectedSource != 'Semantic Scholar') ...[
                     const SizedBox(height: 24),
                     const Text('SORT BY', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.8, color: Colors.grey)),
                     const SizedBox(height: 12),
