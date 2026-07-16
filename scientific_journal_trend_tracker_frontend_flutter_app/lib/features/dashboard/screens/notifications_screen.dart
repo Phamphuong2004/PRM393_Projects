@@ -4,6 +4,7 @@ import '../../../core/constants/theme.dart';
 import '../../../core/models/notification.dart';
 import '../../../core/repositories/notification_repository.dart';
 import '../../../core/widgets/animated_background.dart';
+import '../../../core/providers/notification_provider.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});

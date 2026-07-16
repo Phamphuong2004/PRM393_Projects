@@ -10,9 +10,7 @@
     "test": "jest",
     "lint": "eslint src/**/*.ts",
     "seed": "ts-node-dev src/scripts/seed.ts",
-    "seed:institutions": "ts-node-dev src/scripts/seedInstitutions.ts",
-    "sync": "node sync-shared.js",
-    "install:all": "npm install --prefix api-gateway && npm install --prefix auth-service && npm install --prefix core-service && npm install --prefix interaction-service && npm install --prefix admin-service"
+    "seed:institutions": "ts-node-dev src/scripts/seedInstitutions.ts"
   },
   "keywords": [],
   "author": "",
