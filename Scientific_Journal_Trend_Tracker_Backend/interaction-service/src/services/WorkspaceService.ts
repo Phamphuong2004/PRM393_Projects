@@ -7,6 +7,7 @@ import WorkspaceAlert from "../models/WorkspaceAlert";
 // import Notification from "../models/Notification"; // Needs cross-service call
 
 import { SocketService } from "./SocketService";
+import axios from "axios";
 
 export class WorkspaceService {
   static async checkRole(workspaceId: string, userId: string, requiredRoles: string[]) {
@@ -212,8 +213,20 @@ export class WorkspaceService {
 
     // Check alerts and notify members
     const workspace = await Workspace.findById(workspaceId);
-    // TODO: Cross-service call to Paper
-    const paperObj: any = true; // await Paper.findById(paperId);
+    
+    // Cross-service call to core-service to get Paper details
+    let paperObj: any = null;
+    try {
+      const CORE_SERVICE_URL = process.env.CORE_SERVICE_URL || "http://core-service:5002";
+      // This endpoint doesn't require auth since we just get public paper data, or we could pass internal token if needed.
+      // The current core-service GET /:id requires auth, but if it fails we just gracefully skip alerts.
+      // Wait, core-service GET /api/papers/:id DOES NOT require auth according to its routes (line 92: no authMiddleware)!
+      const res = await axios.get(`${CORE_SERVICE_URL}/api/papers/${paperId}`);
+      paperObj = res.data;
+    } catch (err: any) {
+      console.error("[WorkspaceService] Failed to fetch paper from core-service:", err.message);
+    }
+
     if (workspace && paperObj) {
       const alerts = await WorkspaceAlert.find({ workspace: workspaceId });
       let matchedQuery = "";
@@ -233,21 +246,22 @@ export class WorkspaceService {
         const titleText = `New Papers Found!`;
         const messageText = `We found a new paper matching your alert keyword "${matchedQuery}" in workspace "${workspace.name}".`;
         
-        const notifications = workspace.members.map((member: any) => ({
-          userId: member.user,
-          title: titleText,
-          message: messageText,
-          type: "alert",
-          refId: workspaceId,
-          refType: "Workspace",
-        }));
+        const userIds = workspace.members.map((member: any) => member.user.toString());
         
-        // TODO: Call Admin Service to create notifications
-        // const createdNotifications = await Notification.insertMany(notifications);
-        
-        // Broadcast via Socket.IO to each member
-        for (const notif of notifications) {
-          SocketService.sendNotificationToUser(notif.userId.toString(), notif);
+        // Cross-service call to Admin Service to create notifications
+        try {
+          const ADMIN_SERVICE_URL = process.env.ADMIN_SERVICE_URL || "http://admin-service:5004";
+          await axios.post(`${ADMIN_SERVICE_URL}/api/notifications/internal/bulk`, {
+            internalSecret: process.env.INTERNAL_API_SECRET,
+            userIds,
+            title: titleText,
+            message: messageText,
+            type: "alert",
+            refId: workspaceId,
+            refType: "Workspace"
+          });
+        } catch (err: any) {
+          console.error("[WorkspaceService] Failed to call admin-service for notifications:", err.message);
         }
       }
     }
