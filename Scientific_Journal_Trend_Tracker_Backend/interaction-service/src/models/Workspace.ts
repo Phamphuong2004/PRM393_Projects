@@ -3,6 +3,7 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface IWorkspaceMember {
   user: mongoose.Types.ObjectId;
   role: "owner" | "editor" | "viewer";
+  status?: "pending" | "accepted";
   addedAt: Date;
 }
 
@@ -19,6 +20,7 @@ export interface IWorkspace extends Document {
 const workspaceMemberSchema = new Schema<IWorkspaceMember>({
   user: { type: Schema.Types.ObjectId, ref: "user", required: true },
   role: { type: String, enum: ["owner", "editor", "viewer"], default: "viewer" },
+  status: { type: String, enum: ["pending", "accepted"], default: "accepted" },
   addedAt: { type: Date, default: Date.now },
 }, { _id: false });
 

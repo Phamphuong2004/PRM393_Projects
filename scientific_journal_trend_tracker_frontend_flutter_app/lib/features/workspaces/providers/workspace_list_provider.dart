@@ -36,3 +36,32 @@ class CreateWorkspaceNotifier extends Notifier<WorkspaceListState> {
 final createWorkspaceStateProvider = NotifierProvider<CreateWorkspaceNotifier, WorkspaceListState>(() {
   return CreateWorkspaceNotifier();
 });
+
+final pendingInvitationsProvider = FutureProvider.autoDispose<List<Workspace>>((ref) async {
+  final repository = ref.watch(workspaceRepositoryProvider);
+  return repository.getPendingInvitations();
+});
+
+class WorkspaceInviteNotifier extends Notifier<WorkspaceListState> {
+  @override
+  WorkspaceListState build() {
+    return WorkspaceListState();
+  }
+
+  Future<void> respondToInvite(String workspaceId, String action) async {
+    state = WorkspaceListState(isLoading: true);
+    try {
+      final repository = ref.read(workspaceRepositoryProvider);
+      await repository.respondToInvite(workspaceId, action);
+      ref.invalidate(workspacesProvider);
+      ref.invalidate(pendingInvitationsProvider);
+      state = WorkspaceListState(isLoading: false);
+    } catch (e) {
+      state = WorkspaceListState(isLoading: false, error: e.toString());
+    }
+  }
+}
+
+final workspaceInviteStateProvider = NotifierProvider<WorkspaceInviteNotifier, WorkspaceListState>(() {
+  return WorkspaceInviteNotifier();
+});

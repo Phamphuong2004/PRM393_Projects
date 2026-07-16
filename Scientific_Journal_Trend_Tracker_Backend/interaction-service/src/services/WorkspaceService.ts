@@ -18,6 +18,7 @@ export class WorkspaceService {
 
     const member = workspace.members.find((m: any) => m.user.toString() === userId);
     if (!member) throw { status: 403, message: "Not a member of this workspace" };
+    if (member.status === "pending") throw { status: 403, message: "Invitation pending" };
 
     if (!requiredRoles.includes(member.role)) {
       throw { status: 403, message: `Role ${requiredRoles.join(" or ")} required` };
@@ -30,7 +31,7 @@ export class WorkspaceService {
     const workspace = new Workspace({
       ...data,
       owner: userId,
-      members: [{ user: userId, role: "owner" }],
+      members: [{ user: userId, role: "owner", status: "accepted" }],
     });
     await workspace.save();
     return workspace;
@@ -59,10 +60,34 @@ export class WorkspaceService {
 
   static async getWorkspaces(userId: string, page: number, limit: number) {
     const skip = (page - 1) * limit;
-    const query = { $or: [{ owner: userId }, { "members.user": userId }] };
+    const query = { $or: [{ owner: userId }, { members: { $elemMatch: { user: userId, status: { $ne: "pending" } } } }] };
     const workspaces = await Workspace.find(query).skip(skip).limit(limit).lean();
     const total = await Workspace.countDocuments(query);
     return { data: workspaces, total, page, limit, pages: Math.ceil(total / limit) };
+  }
+
+  static async getPendingInvitations(userId: string) {
+    const query = { members: { $elemMatch: { user: userId, status: "pending" } } };
+    const workspaces = await Workspace.find(query).lean();
+    return workspaces;
+  }
+
+  static async respondToInvite(workspaceId: string, userId: string, action: "accept" | "reject") {
+    const workspace = await Workspace.findById(workspaceId);
+    if (!workspace) throw { status: 404, message: "Workspace not found" };
+
+    const memberIndex = workspace.members.findIndex((m: any) => m.user.toString() === userId);
+    if (memberIndex === -1) throw { status: 404, message: "Invitation not found" };
+
+    if (action === "accept") {
+      workspace.members[memberIndex].status = "accepted";
+      await workspace.save();
+      return workspace;
+    } else {
+      workspace.members.splice(memberIndex, 1);
+      await workspace.save();
+      return { message: "Invitation rejected" };
+    }
   }
 
   static async getWorkspaceById(workspaceId: string, userId: string, jwtToken?: string) {
@@ -144,7 +169,7 @@ export class WorkspaceService {
     if (memberIndex >= 0) {
       workspace.members[memberIndex].role = role as any;
     } else {
-      workspace.members.push({ user: user._id as any, role: role as any, addedAt: new Date() });
+      workspace.members.push({ user: user._id as any, role: role as any, status: "pending", addedAt: new Date() });
     }
     await workspace.save();
     return workspace;
@@ -228,7 +253,7 @@ export class WorkspaceService {
     }
 
     if (workspace && paperObj) {
-      const alerts = await WorkspaceAlert.find({ workspace: workspaceId });
+      const alerts = await WorkspaceAlert.find({ workspace: workspaceId, notifyEnabled: true });
       let matchedQuery = "";
       for (const alert of alerts) {
         const query = (alert.query || "").toLowerCase();
