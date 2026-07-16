@@ -237,7 +237,11 @@ class _BookmarksScreenState extends ConsumerState<BookmarksScreen> {
               MaterialPageRoute(
                 builder: (context) => PaperDetailScreen(paper: paper),
               ),
-            );
+            ).then((_) {
+              if (mounted) {
+                _fetchBookmarks();
+              }
+            });
           },
           child: Padding(
             padding: const EdgeInsets.all(20),

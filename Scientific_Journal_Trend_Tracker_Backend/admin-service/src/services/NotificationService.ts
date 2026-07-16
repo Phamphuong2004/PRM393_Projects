@@ -1,6 +1,7 @@
 import Notification from "../models/Notification";
 // import User from "../models/User";
 import { sendEmail } from "../utils/mailer";
+import redisClient from "../config/redis";
 
 
 export class NotificationService {
@@ -100,8 +101,12 @@ export class NotificationService {
 
     await notification.save();
 
-    // Send real-time notification
-    // SocketService.sendNotificationToUser(userId, notification);
+    // Send real-time notification via Redis Pub/Sub
+    try {
+      redisClient.publish("realtime_notifications", JSON.stringify({ userId: userId.toString(), notification }));
+    } catch (err) {
+      console.error("Redis publish error:", err);
+    }
 
     return notification;
   }
@@ -127,9 +132,13 @@ export class NotificationService {
 
     const result = await Notification.insertMany(notifications);
 
-    // Send real-time notifications to all users
+    // Send real-time notifications to all users via Redis Pub/Sub
     result.forEach((notification) => {
-      // SocketService.sendNotificationToUser(notification.userId.toString(), notification);
+      try {
+        redisClient.publish("realtime_notifications", JSON.stringify({ userId: notification.userId.toString(), notification }));
+      } catch (err) {
+        console.error("Redis publish error in bulk:", err);
+      }
     });
 
     return result;

@@ -13,12 +13,12 @@ export class BookmarkController {
       let populatedBookmarks = [];
       if (user.bookmarks.length > 0) {
         try {
-          const { createInternalClient, SERVICES } = require("../../shared/src/utils/internalApiClient");
-          const internalClient = createInternalClient(SERVICES.CORE, req.headers.authorization);
-          const response = await internalClient.post("/api/papers/batch", { ids: user.bookmarks });
+          const axios = require("axios");
+          const CORE_SERVICE_URL = process.env.CORE_SERVICE_URL || "http://core-service:5002";
+          const response = await axios.post(`${CORE_SERVICE_URL}/api/papers/batch`, { ids: user.bookmarks });
           populatedBookmarks = response.data;
-        } catch (err) {
-          console.error("Failed to fetch papers from core-service:", err);
+        } catch (err: any) {
+          console.error("Failed to fetch papers from core-service:", err.message);
           // Fallback to just IDs if core-service fails
           populatedBookmarks = user.bookmarks.map((id) => ({ _id: id }));
         }

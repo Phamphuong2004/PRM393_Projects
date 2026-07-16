@@ -13,8 +13,8 @@ export class FollowController {
       let populatedFollows = [];
       if (user.follows.length > 0) {
         try {
-          const { createInternalClient, SERVICES } = require("../../shared/src/utils/internalApiClient");
-          const internalClient = createInternalClient(SERVICES.CORE, req.headers.authorization);
+          const axios = require("axios");
+          const CORE_SERVICE_URL = process.env.CORE_SERVICE_URL || "http://core-service:5002";
           
           populatedFollows = await Promise.all(user.follows.map(async (f) => {
             try {
@@ -24,17 +24,17 @@ export class FollowController {
               else if (f.targetType === "Author") endpoint = `/api/authors/${f.targetId}`;
               
               if (endpoint) {
-                const res = await internalClient.get(endpoint);
+                const res = await axios.get(`${CORE_SERVICE_URL}${endpoint}`, { headers: { Authorization: req.headers.authorization } });
                 const rawF = (f as any).toObject ? (f as any).toObject() : f;
                 return { ...rawF, targetDetails: res.data };
               }
-            } catch (err) {
-              console.error(`Failed to fetch details for ${f.targetType} ${f.targetId}`);
+            } catch (err: any) {
+              console.error(`Failed to fetch details for ${f.targetType} ${f.targetId}:`, err.message);
             }
             return f;
           }));
-        } catch (err) {
-          console.error("Failed to setup internal client:", err);
+        } catch (err: any) {
+          console.error("Failed to setup internal client:", err.message);
           populatedFollows = user.follows;
         }
       }

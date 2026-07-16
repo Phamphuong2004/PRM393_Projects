@@ -169,7 +169,11 @@ router.get(
         return;
       }
 
-      const sortValue = (sort as string) || "-publicationYear";
+      let sortValue = (sort as string) || "-publicationYear";
+      if (sortValue === "relevance") {
+        sortValue = "-publicationYear"; // Local DB doesn't have regex relevance, fallback to newest
+      }
+      
       const sortField = sortValue.replace(/^-/, "");
       const sortDirection = sortValue.startsWith("-") ? -1 : 1;
       const normalizedSortField =
