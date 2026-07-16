@@ -20,16 +20,29 @@ function reconstructOpenAlexAbstract(invertedIndex: any): string | null {
 }
 
 export class PaperService {
-  static async getAllPapers(page: number, limit: number) {
+  static async getAllPapers(page: number, limit: number, year?: number, sortValue?: string) {
     const skip = (page - 1) * limit;
 
-    const papers = await Paper.find()
+    const query: any = {};
+    if (year) {
+      query.publicationYear = year;
+    }
+
+    let sort: any = { publicationYear: -1 };
+    if (sortValue) {
+      const sortField = sortValue.replace(/^-/, "");
+      const sortDirection = sortValue.startsWith("-") ? -1 : 1;
+      const normalizedSortField = sortField === "citationCount" ? "citationCount" : "publicationYear";
+      sort = { [normalizedSortField]: sortDirection };
+    }
+
+    const papers = await Paper.find(query)
       .populate(["authors", "journalId", "keywords"])
       .skip(skip)
       .limit(limit)
-      .sort({ publicationYear: -1 });
+      .sort(sort);
 
-    const total = await Paper.countDocuments();
+    const total = await Paper.countDocuments(query);
 
     return {
       papers,
@@ -163,11 +176,20 @@ export class PaperService {
     return papers;
   }
 
-  static async searchExternalPapers(query: string, limit: number = 10, source: string = "Semantic Scholar") {
+  static async searchExternalPapers(query: string, limit: number = 10, source: string = "Semantic Scholar", page: number = 1, year?: number, sortValue?: string) {
     if (source === "OpenAlex") {
       try {
+        const params: any = { search: query, "per-page": limit, page };
+        if (year) params.filter = `publication_year:${year}`;
+        if (sortValue) {
+          if (sortValue === "-publicationYear") params.sort = "publication_year:desc";
+          else if (sortValue === "publicationYear") params.sort = "publication_year:asc";
+          else if (sortValue === "-citationCount") params.sort = "cited_by_count:desc";
+          else if (sortValue === "citationCount") params.sort = "cited_by_count:asc";
+        }
+
         const response = await axios.get(`https://api.openalex.org/works`, {
-          params: { search: query, "per-page": limit }
+          params
         });
         
         const papers = response.data.results.map((item: any) => ({
@@ -186,15 +208,23 @@ export class PaperService {
         return {
           papers,
           total: response.data.meta.count || papers.length,
-          pages: 1
+          pages: Math.ceil((response.data.meta.count || papers.length) / limit)
         };
       } catch (error: any) {
         throw { status: 500, message: "Failed to fetch from OpenAlex: " + error.message };
       }
     } else if (source === "Crossref") {
       try {
+        const params: any = { query, rows: limit, offset: (page - 1) * limit };
+        if (year) params.filter = `from-pub-date:${year}-01-01,until-pub-date:${year}-12-31`;
+        if (sortValue) {
+          params.order = sortValue.startsWith("-") ? "desc" : "asc";
+          if (sortValue.includes("publicationYear")) params.sort = "published";
+          else if (sortValue.includes("citationCount")) params.sort = "is-referenced-by-count";
+        }
+
         const response = await axios.get(`https://api.crossref.org/works`, {
-          params: { query, rows: limit }
+          params
         });
         
         const items = response.data.message.items || [];
@@ -213,7 +243,7 @@ export class PaperService {
         return {
           papers,
           total: response.data.message["total-results"] || papers.length,
-          pages: 1
+          pages: Math.ceil((response.data.message["total-results"] || papers.length) / limit)
         };
       } catch (error: any) {
         throw { status: 500, message: "Failed to fetch from Crossref: " + error.message };
@@ -229,12 +259,16 @@ export class PaperService {
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        const response = await axios.get(`https://api.semanticscholar.org/graph/v1/paper/search`, {
-          params: {
+        const params: any = {
             query,
             limit,
+            offset: (page - 1) * limit,
             fields: "title,abstract,url,year,externalIds,authors,citationCount,venue"
-          },
+        };
+        if (year) params.year = year;
+
+        const response = await axios.get(`https://api.semanticscholar.org/graph/v1/paper/search`, {
+          params,
           headers: {
             ...(apiKey && { "x-api-key": apiKey })
           },
@@ -273,7 +307,7 @@ export class PaperService {
         return {
           papers,
           total: response.data.total || papers.length,
-          pages: 1
+          pages: Math.ceil((response.data.total || papers.length) / limit)
         };
       } catch (error: any) {
         if (error.status) throw error;
