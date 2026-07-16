@@ -13,6 +13,32 @@ const router = Router();
 router.use(authMiddleware);
 router.use(rateLimit(rateLimits.api));
 
+// Internal API for cross-service bulk notification creation
+router.post("/internal/bulk", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { internalSecret, userIds, title, message, type, refId, refType } = req.body;
+    
+    // Verify internal secret
+    if (internalSecret !== process.env.INTERNAL_API_SECRET) {
+      res.status(401).json({ message: "Unauthorized internal API call" });
+      return;
+    }
+
+    if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+      res.status(400).json({ message: "userIds array is required" });
+      return;
+    }
+
+    const result = await NotificationService.bulkCreateNotifications(
+      userIds, title, message, type, refId, refType
+    );
+    
+    res.json({ success: true, count: result.length });
+  } catch (error: any) {
+    res.status(error.status || 500).json({ message: error.message });
+  }
+});
+
 // Test Real-time Notification
 router.post("/test-realtime", async (req: Request, res: Response): Promise<void> => {
   try {
