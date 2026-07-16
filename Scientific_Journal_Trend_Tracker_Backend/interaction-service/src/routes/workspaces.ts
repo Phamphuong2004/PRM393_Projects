@@ -9,6 +9,8 @@ router.use(authMiddleware);
 
 router.post("/", WorkspaceController.createWorkspace);
 router.get("/", WorkspaceController.getWorkspaces);
+router.get("/invitations/pending", WorkspaceController.getPendingInvitations);
+router.post("/:id/invitations/respond", WorkspaceController.respondToInvite);
 router.put("/:id", WorkspaceController.updateWorkspace);
 router.delete("/:id", WorkspaceController.deleteWorkspace);
 router.get("/:id", WorkspaceController.getWorkspaceById);
