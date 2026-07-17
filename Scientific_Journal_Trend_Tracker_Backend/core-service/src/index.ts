@@ -49,6 +49,8 @@ app.get("/health", (req, res) => {
 });
 
 // API Routes
+import dashboardRoutes from "./routes/dashboard";
+
 app.use("/api/papers", papersRoutes);
 app.use("/api/keywords", keywordsRoutes);
 app.use("/api/journals", journalsRoutes);
@@ -56,6 +58,7 @@ app.use("/api/institutions", institutionsRoutes);
 app.use("/api/topics", topicsRoutes);
 app.use("/api/publication-trends", publicationTrendsRoutes);
 app.use("/api/authors", authorsRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 // Error logging middleware
 app.use(errorLogger);

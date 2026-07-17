@@ -96,6 +96,15 @@ export class WorkspaceController {
     }
   }
 
+  static async leaveWorkspace(req: Request, res: Response) {
+    try {
+      const workspace = await WorkspaceService.removeMember(req.params.id, req.userId as string, req.userId as string);
+      res.json({ success: true, data: workspace });
+    } catch (error: any) {
+      res.status(error.status || 500).json({ success: false, message: error.message });
+    }
+  }
+
   static async addPaper(req: Request, res: Response) {
     try {
       const wp = await WorkspaceService.addPaper(req.params.id, req.userId as string, req.body);

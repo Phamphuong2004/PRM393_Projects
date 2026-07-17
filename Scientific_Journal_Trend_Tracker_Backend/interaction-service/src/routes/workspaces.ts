@@ -16,6 +16,7 @@ router.delete("/:id", WorkspaceController.deleteWorkspace);
 router.get("/:id", WorkspaceController.getWorkspaceById);
 router.post("/:id/members", WorkspaceController.addMember);
 router.delete("/:id/members/:userId", WorkspaceController.removeMember);
+router.delete("/:id/leave", WorkspaceController.leaveWorkspace);
 router.post("/:id/papers", WorkspaceController.addPaper);
 router.delete("/:id/papers/:paperId", WorkspaceController.removePaper);
 router.post("/:id/papers/:paperId/pdf", uploadPaperPdf.single("pdf"), WorkspaceController.uploadPdf);

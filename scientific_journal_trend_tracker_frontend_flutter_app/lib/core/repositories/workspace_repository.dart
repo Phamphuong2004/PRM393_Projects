@@ -155,6 +155,14 @@ class WorkspaceRepository {
     }
   }
 
+  Future<void> leaveWorkspace(String id) async {
+    try {
+      await _dio.delete('${ApiConstants.workspaces}/$id/leave');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<Map<String, dynamic>> getWorkspaceNotes(String id) async {
     try {
       final response = await _dio.get('${ApiConstants.workspaces}/$id/notes');
