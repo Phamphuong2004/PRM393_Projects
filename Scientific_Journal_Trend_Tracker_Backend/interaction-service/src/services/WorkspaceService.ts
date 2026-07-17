@@ -202,7 +202,7 @@ export class WorkspaceService {
         }
       }
 
-      let existingPaper = null;
+      const existingPaper = null;
       // TODO: Call core-service to find paper by DOI or OpenAlex ID
       // if (paperData.doi) { ... }
 
