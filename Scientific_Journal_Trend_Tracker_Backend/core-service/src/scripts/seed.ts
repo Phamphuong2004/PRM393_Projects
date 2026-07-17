@@ -16,9 +16,21 @@ const MONGODB_URI = process.env.MONGODB_URI
   ? process.env.MONGODB_URI.replace("/JournalTrackerDB?", "/core_db?").replace("/?", "/core_db?")
   : "mongodb+srv://thanhtu_user:Thanhtu%40204@cluster0.h3nsaiz.mongodb.net/core_db?appName=Cluster0";
 
-const SEED_QUERIES = ["IoT", "Mamba Architecture", "iPhone", "Samsung"];
-const PER_PAGE_OPENALEX = 10; // per topic to save time
-const PER_PAGE_ARXIV = 5; // per topic to save time
+const SEED_QUERIES = [
+  "Machine Learning", 
+  "Quantum Computing", 
+  "CRISPR", 
+  "Blockchain", 
+  "Data Science", 
+  "Computer Vision", 
+  "Natural Language Processing",
+  "IoT", 
+  "Mamba Architecture", 
+  "iPhone", 
+  "Samsung"
+];
+const PER_PAGE_OPENALEX = 10;
+const PER_PAGE_ARXIV = 5;
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -70,7 +82,13 @@ const seedRealData = async () => {
     await mongoose.connect(MONGODB_URI);
     console.log("Connected to MongoDB successfully.");
 
-    console.log("Adding new topics without clearing old data...");
+    console.log("Clearing old data to re-scrape from scratch...");
+    await Keyword.deleteMany({});
+    await Topic.deleteMany({});
+    await PublicationTrend.deleteMany({});
+    await Paper.deleteMany({});
+    await Journal.deleteMany({});
+    await Author.deleteMany({});
 
     const dummyAnalysisRunId = new mongoose.Types.ObjectId();
     const currentYear = new Date().getFullYear();
@@ -86,10 +104,35 @@ const seedRealData = async () => {
 
       // --- 1. OPENALEX DATA ---
       console.log(`[OpenAlex] Fetching...`);
-      const url = `https://api.openalex.org/works?search=${encodeURIComponent(query)}&per-page=${PER_PAGE_OPENALEX}&sort=publication_date:desc`;
-      const oaResponse = await axios.get(url);
-      const works = oaResponse.data.results;
+      let works: any[] = [];
+      try {
+        const url = `https://api.openalex.org/works?search=${encodeURIComponent(query)}&per-page=${PER_PAGE_OPENALEX}&sort=publication_date:desc`;
+        const oaResponse = await axios.get(url);
+        works = oaResponse.data.results;
+      } catch (e: any) {
+        console.log(`[OpenAlex] Error fetching (maybe 429 Rate Limit): ${e.message}. Using fallback data generation.`);
+      }
       
+      // Fallback: If OpenAlex failed, let's create a synthetic keyword for the query so PublicationTrends are still generated.
+      if (works.length === 0) {
+        const keywordName = query;
+        const keyword = await Keyword.findOneAndUpdate(
+          { name: keywordName },
+          {
+            $inc: { paperCount: Math.floor(Math.random() * 20) + 5 },
+            $setOnInsert: {
+              normalizedText: keywordName.toLowerCase(),
+              openalexId: `fallback-${Date.now()}`,
+              workCount: Math.floor(Math.random() * 1000) + 100,
+              trendScore: Math.random() * 10,
+              growthRate: Math.random() * 15 - 5
+            }
+          },
+          { upsert: true, new: true }
+        );
+        keywordsMap.set(keywordName, keyword);
+      }
+
       for (const work of works) {
         // Process Journal
         let journalId = null;
@@ -182,17 +225,20 @@ const seedRealData = async () => {
       console.log(`[arXiv] Fetching...`);
       const arxivPapers = await fetchArxivPapers(query);
       
-      // Ensure we have an arXiv journal
-      let arxivJournal = await Journal.findOne({ name: "arXiv" });
-      if (!arxivJournal) {
-        arxivJournal = await Journal.create({
-          name: "arXiv",
-          issn: "2331-8422", // arXiv generic ISSN
-          impactFactor: 5,
-          field: "Multidisciplinary",
+      // Create a topic-specific journal instead of a single global arXiv journal
+      let topicJournal = await Journal.findOne({ name: `Journal of ${query}` });
+      if (!topicJournal) {
+        topicJournal = await Journal.create({
+          name: `Journal of ${query}`,
+          issn: `2331-${Math.floor(Math.random() * 9000) + 1000}`,
+          impactFactor: Math.floor(Math.random() * 10) + 1,
+          field: query,
           paperCount: 0
         });
       }
+
+      // Get the synthetic keyword we generated earlier
+      const syntheticKeyword = keywordsMap.get(query);
 
       for (const p of arxivPapers) {
         const authorIds = [];
@@ -222,26 +268,37 @@ const seedRealData = async () => {
             publicationYear: p.year,
             citationCount: Math.floor(Math.random() * 10),
             authors: authorIds,
-            journalId: arxivJournal._id,
-            keywords: [], // arXiv doesn't give explicit concepts cleanly, so we leave empty
+            journalId: topicJournal._id,
+            keywords: syntheticKeyword ? [syntheticKeyword._id] : [], // Map the synthetic keyword
             source: "arxiv"
           });
-          arxivJournal.paperCount += 1;
+          topicJournal.paperCount += 1;
         }
         topicPapers.push(paper._id);
       }
-      await arxivJournal.save();
+      await topicJournal.save();
 
       // --- 3. CREATE TOPIC ---
       console.log(`Creating Topic: ${query}...`);
-      await Topic.create({
-        name: `${query} Research Trends`,
-        seedKeyword: query,
-        analysisRunId: dummyAnalysisRunId,
-        trendStatus: "emerging",
-        isEmerging: true,
-        papers: topicPapers
-      });
+      const topic = await Topic.findOneAndUpdate(
+        { name: `${query} Research Trends` },
+        {
+          $set: {
+            seedKeyword: query,
+            analysisRunId: dummyAnalysisRunId,
+            trendStatus: "emerging",
+            isEmerging: true,
+            papers: topicPapers
+          }
+        },
+        { upsert: true, new: true }
+      );
+
+      // UPDATE PAPERS WITH TOPIC ID (Two-way binding)
+      await Paper.updateMany(
+        { _id: { $in: topicPapers } },
+        { $addToSet: { topics: topic._id } }
+      );
 
       // --- 4. CREATE PUBLICATION TRENDS ---
       console.log(`Generating Publication Trends for keywords...`);
