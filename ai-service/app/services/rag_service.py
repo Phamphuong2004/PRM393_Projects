@@ -5,7 +5,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.agents import create_tool_calling_agent, AgentExecutor
 from langchain_core.tools import tool
-from app.utils.mongodb_client import get_db
+from app.utils.mongodb_client import get_core_db, get_interaction_db, get_auth_db
 import base64
 import io
 from PyPDF2 import PdfReader
@@ -136,12 +136,12 @@ async def search_database_papers(query: str, limit: int = 5) -> str:
     Use this first to find papers already in the system.
     Pass `limit` to control how many papers to return (default 5).
     """
-    db = await get_db()
+    core_db = await get_core_db()
     limit = max(1, min(limit, 25))  # clamp to a sane range
 
     papers = []
     try:
-        cursor = db.paper.find(
+        cursor = core_db.papers.find(
             {"$text": {"$search": query}},
             {"score": {"$meta": "textScore"}, "title": 1, "abstract": 1, "publicationYear": 1, "doi": 1, "url": 1}
         ).sort([("score", {"$meta": "textScore"})]).limit(limit)
@@ -153,7 +153,7 @@ async def search_database_papers(query: str, limit: int = 5) -> str:
     if not papers:
         # Fallback to regex if text index is missing or no results
         try:
-            cursor = db.paper.find(
+            cursor = core_db.papers.find(
                 {"title": {"$regex": query, "$options": "i"}},
                 {"title": 1, "abstract": 1, "publicationYear": 1, "doi": 1, "url": 1}
             ).limit(limit)
@@ -273,9 +273,9 @@ async def get_user_workspaces(dummy: str = None) -> str:
     oid = get_clean_object_id()
     if not oid:
         return "You must be logged in to access personal workspaces."
-    db = await get_db()
+    interaction_db = await get_interaction_db()
     try:
-        cursor = db.workspaces.find({"$or": [{"owner": oid}, {"members.user": oid}]}, {"name": 1, "description": 1, "visibility": 1})
+        cursor = interaction_db.workspaces.find({"$or": [{"owner": oid}, {"members.user": oid}]}, {"name": 1, "description": 1, "visibility": 1})
         workspaces = await cursor.to_list(length=10)
         if not workspaces:
             return "You have no workspaces."
@@ -290,9 +290,9 @@ async def get_user_alerts(dummy: str = None) -> str:
     oid = get_clean_object_id()
     if not oid:
         return "You must be logged in to access alerts."
-    db = await get_db()
+    interaction_db = await get_interaction_db()
     try:
-        cursor = db.workspacealerts.find({"createdBy": oid}, {"keyword": 1, "type": 1, "notifyEnabled": 1})
+        cursor = interaction_db.workspacealerts.find({"createdBy": oid}, {"keyword": 1, "type": 1, "notifyEnabled": 1})
         alerts = await cursor.to_list(length=10)
         if not alerts:
             return "You have no active alerts."
@@ -307,9 +307,9 @@ async def get_user_notes(dummy: str = None) -> str:
     oid = get_clean_object_id()
     if not oid:
         return "You must be logged in to access notes."
-    db = await get_db()
+    interaction_db = await get_interaction_db()
     try:
-        cursor = db.workspacenotes.find({"createdBy": oid}, {"title": 1, "content": 1})
+        cursor = interaction_db.workspacenotes.find({"createdBy": oid}, {"title": 1, "content": 1})
         notes = await cursor.to_list(length=10)
         if not notes:
             return "You have no notes."
@@ -324,14 +324,15 @@ async def get_user_bookmarks(dummy: str = None) -> str:
     oid = get_clean_object_id()
     if not oid:
         return "You must be logged in to access bookmarks."
-    db = await get_db()
+    auth_db = await get_auth_db()
+    core_db = await get_core_db()
     try:
-        user = await db.users.find_one({"_id": oid})
+        user = await auth_db.users.find_one({"_id": oid})
         if not user or not user.get("bookmarks"):
             return "You have no bookmarks."
         
         paper_ids = user.get("bookmarks")
-        cursor = db.paper.find({"_id": {"$in": paper_ids}}, {"title": 1, "doi": 1})
+        cursor = core_db.papers.find({"_id": {"$in": paper_ids}}, {"title": 1, "doi": 1})
         papers = await cursor.to_list(length=10)
         
         if not papers:
@@ -353,10 +354,11 @@ async def get_workspace_papers(workspace_name: str) -> str:
     oid = get_clean_object_id()
     if not oid:
         return "You must be logged in."
-    db = await get_db()
+    interaction_db = await get_interaction_db()
+    core_db = await get_core_db()
     try:
         # Find the workspace by name
-        workspace = await db.workspaces.find_one({
+        workspace = await interaction_db.workspaces.find_one({
             "name": {"$regex": f"^{workspace_name}$", "$options": "i"},
             "$or": [{"owner": oid}, {"members.user": oid}]
         })
@@ -366,7 +368,7 @@ async def get_workspace_papers(workspace_name: str) -> str:
         workspace_id = workspace["_id"]
         
         # Get papers linked to this workspace
-        cursor = db.workspacepapers.find({"workspace": workspace_id})
+        cursor = interaction_db.workspacepapers.find({"workspace": workspace_id})
         workspace_papers = await cursor.to_list(length=50)
         
         if not workspace_papers:
@@ -376,7 +378,7 @@ async def get_workspace_papers(workspace_name: str) -> str:
         if not paper_ids:
              return f"Workspace '{workspace_name}' is empty."
              
-        p_cursor = db.paper.find({"_id": {"$in": paper_ids}}, {"title": 1, "doi": 1})
+        p_cursor = core_db.papers.find({"_id": {"$in": paper_ids}}, {"title": 1, "doi": 1})
         papers = await p_cursor.to_list(length=50)
         
         res = [f"- Paper '{p.get('title')}': (DOI: {p.get('doi', 'N/A')})" for p in papers]
