@@ -5,6 +5,7 @@ import '../../../core/constants/theme.dart';
 import '../../../core/models/paper.dart';
 import '../../../core/repositories/bookmark_repository.dart';
 import '../../../core/widgets/animated_background.dart';
+import '../../../core/providers/refresh_providers.dart';
 import 'paper_detail_screen.dart';
 
 class BookmarksScreen extends ConsumerStatefulWidget {
@@ -74,6 +75,8 @@ class _BookmarksScreenState extends ConsumerState<BookmarksScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(bookmarkRefreshProvider, (_, _) => _fetchBookmarks());
+
     return Scaffold(
       backgroundColor: AppColors.bg,
       appBar: AppBar(

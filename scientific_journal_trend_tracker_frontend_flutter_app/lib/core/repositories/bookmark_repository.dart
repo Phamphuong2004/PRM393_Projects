@@ -4,15 +4,18 @@ import '../models/paper.dart';
 import '../providers/network_provider.dart';
 import '../constants/api_constants.dart';
 
+import '../providers/refresh_providers.dart';
+
 final bookmarkRepositoryProvider = Provider<BookmarkRepository>((ref) {
   final dio = ref.watch(dioProvider);
-  return BookmarkRepository(dio);
+  return BookmarkRepository(dio, ref);
 });
 
 class BookmarkRepository {
   final Dio _dio;
+  final Ref _ref;
 
-  BookmarkRepository(this._dio);
+  BookmarkRepository(this._dio, this._ref);
 
   // BE returns { bookmarks: [ ...Paper ], pagination }. The bookmarks array holds
   // populated Paper documents directly (not a Bookmark wrapper).
@@ -38,6 +41,7 @@ class BookmarkRepository {
   Future<void> addBookmark(String paperId) async {
     try {
       await _dio.post('${ApiConstants.bookmarks}/$paperId');
+      _ref.read(bookmarkRefreshProvider.notifier).increment();
     } catch (e) {
       rethrow;
     }
@@ -55,6 +59,7 @@ class BookmarkRepository {
   Future<void> removeBookmark(String paperId) async {
     try {
       await _dio.delete('${ApiConstants.bookmarks}/$paperId');
+      _ref.read(bookmarkRefreshProvider.notifier).increment();
     } catch (e) {
       rethrow;
     }

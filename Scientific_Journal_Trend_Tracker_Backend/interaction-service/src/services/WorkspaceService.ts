@@ -79,13 +79,37 @@ export class WorkspaceService {
     const memberIndex = workspace.members.findIndex((m: any) => m.user.toString() === userId);
     if (memberIndex === -1) throw { status: 404, message: "Invitation not found" };
 
+    let actionMessage = "";
     if (action === "accept") {
       workspace.members[memberIndex].status = "accepted";
-      await workspace.save();
-      return workspace;
+      actionMessage = "accepted";
     } else {
       workspace.members.splice(memberIndex, 1);
-      await workspace.save();
+      actionMessage = "rejected";
+    }
+    await workspace.save();
+
+    // Notify workspace owner
+    try {
+      const { createInternalClient, SERVICES } = require("../utils/internalApiClient");
+      const adminClient = createInternalClient(SERVICES.ADMIN);
+      const titleText = `Workspace Invitation ${action === "accept" ? "Accepted" : "Rejected"}`;
+      const messageText = `A user has ${actionMessage} your invitation to join the workspace "${workspace.name}".`;
+      await adminClient.post(`/api/notifications/internal/bulk`, {
+        userIds: [workspace.owner.toString()],
+        title: titleText,
+        message: messageText,
+        type: "workspace",
+        refId: workspaceId,
+        refType: "Workspace"
+      });
+    } catch (err: any) {
+      console.error("[WorkspaceService] Failed to notify owner about invitation response:", err.message);
+    }
+
+    if (action === "accept") {
+      return workspace;
+    } else {
       return { message: "Invitation rejected" };
     }
   }
