@@ -1,1 +1,37 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"journal-trend-3a6d8","appId":"1:673014775519:android:f70aaa64439fd6c2d2336a","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"journal-trend-3a6d8","configurations":{"android":"1:673014775519:android:f70aaa64439fd6c2d2336a","ios":"1:673014775519:ios:373fb0a5dc0c04ced2336a","web":"1:673014775519:web:3347edc11ff971f8d2336a"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "journal-trend-3a6d8",
+          "appId": "1:673014775519:android:f70aaa64439fd6c2d2336a",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "journal-trend-3a6d8",
+          "configurations": {
+            "android": "1:673014775519:android:f70aaa64439fd6c2d2336a",
+            "ios": "1:673014775519:ios:373fb0a5dc0c04ced2336a",
+            "web": "1:673014775519:web:3347edc11ff971f8d2336a"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}
