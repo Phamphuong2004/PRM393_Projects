@@ -1,0 +1,76 @@
+name: Publish Backend Images
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - "Scientific_Journal_Trend_Tracker_Backend/**"
+      - "ai-service/**"
+      - ".github/workflows/deploy-backend-ghcr.yml"
+
+jobs:
+  publish:
+    name: Publish ${{ matrix.service.name }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - name: api-gateway
+            context: Scientific_Journal_Trend_Tracker_Backend/api-gateway
+            dockerfile: Scientific_Journal_Trend_Tracker_Backend/api-gateway/Dockerfile
+            image: ghcr.io/${{ github.repository_owner }}/scientific-journal-tracker-api-gateway
+          - name: auth-service
+            context: Scientific_Journal_Trend_Tracker_Backend/auth-service
+            dockerfile: Scientific_Journal_Trend_Tracker_Backend/auth-service/Dockerfile
+            image: ghcr.io/${{ github.repository_owner }}/scientific-journal-tracker-auth-service
+          - name: core-service
+            context: Scientific_Journal_Trend_Tracker_Backend/core-service
+            dockerfile: Scientific_Journal_Trend_Tracker_Backend/core-service/Dockerfile
+            image: ghcr.io/${{ github.repository_owner }}/scientific-journal-tracker-core-service
+          - name: interaction-service
+            context: Scientific_Journal_Trend_Tracker_Backend/interaction-service
+            dockerfile: Scientific_Journal_Trend_Tracker_Backend/interaction-service/Dockerfile
+            image: ghcr.io/${{ github.repository_owner }}/scientific-journal-tracker-interaction-service
+          - name: admin-service
+            context: Scientific_Journal_Trend_Tracker_Backend/admin-service
+            dockerfile: Scientific_Journal_Trend_Tracker_Backend/admin-service/Dockerfile
+            image: ghcr.io/${{ github.repository_owner }}/scientific-journal-tracker-admin-service
+          - name: ai-service
+            context: ai-service
+            dockerfile: ai-service/Dockerfile
+            image: ghcr.io/${{ github.repository_owner }}/scientific-journal-tracker-ai-service
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ matrix.service.image }}
+          tags: |
+            type=sha,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.service.context }}
+          file: ${{ matrix.service.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

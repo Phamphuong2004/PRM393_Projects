@@ -41,9 +41,12 @@ export class AdminController {
 
   static async updateUserStatus(req: Request, res: Response): Promise<void> {
     try {
-      const { createInternalClient, SERVICES } = require("../../shared/src/utils/internalApiClient");
-      const authClient = createInternalClient(SERVICES.AUTH, req.headers.authorization);
-      const result = await authClient.put(`/api/users/${req.params.id}`, { isActive: req.body.isActive });
+      const axios = require("axios");
+      const authUrl = process.env.AUTH_SERVICE_URL || "http://auth-service:5001";
+      const result = await axios.put(`${authUrl}/api/users/${req.params.id}`, 
+        { isActive: req.body.isActive },
+        { headers: { Authorization: req.headers.authorization } }
+      );
       res.json(result.data);
     } catch (error: any) {
       console.error(error.response?.data || error.message);
@@ -53,9 +56,12 @@ export class AdminController {
 
   static async updateUserRole(req: Request, res: Response): Promise<void> {
     try {
-      const { createInternalClient, SERVICES } = require("../../shared/src/utils/internalApiClient");
-      const authClient = createInternalClient(SERVICES.AUTH, req.headers.authorization);
-      const result = await authClient.put(`/api/users/${req.params.id}`, { role: req.body.role });
+      const axios = require("axios");
+      const authUrl = process.env.AUTH_SERVICE_URL || "http://auth-service:5001";
+      const result = await axios.put(`${authUrl}/api/users/${req.params.id}`, 
+        { role: req.body.role },
+        { headers: { Authorization: req.headers.authorization } }
+      );
       res.json(result.data);
     } catch (error: any) {
       console.error(error.response?.data || error.message);
