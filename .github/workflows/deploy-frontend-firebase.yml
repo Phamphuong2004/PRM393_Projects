@@ -1,0 +1,49 @@
+name: Deploy Frontend to Firebase
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - "scientific_journal_trend_tracker_frontend_flutter_app/**"
+      - ".github/workflows/deploy-frontend-firebase.yml"
+      - "scientific_journal_trend_tracker_frontend_flutter_app/firebase.json"
+
+jobs:
+  deploy:
+    name: Build and deploy Flutter web
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: scientific_journal_trend_tracker_frontend_flutter_app
+
+    env:
+      FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build web
+        run: flutter build web --release
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Deploy to Firebase Hosting
+        if: env.FIREBASE_TOKEN != ''
+        run: firebase deploy --only hosting --project journal-trend-3a6d8 --token "$FIREBASE_TOKEN"
+
+      - name: Skip deploy when token is missing
+        if: env.FIREBASE_TOKEN == ''
+        run: echo "FIREBASE_TOKEN is not set, so deployment was skipped."
