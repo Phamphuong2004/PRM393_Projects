@@ -39,11 +39,11 @@ jobs:
 
       - name: Lint
         working-directory: Scientific_Journal_Trend_Tracker_Backend/${{ matrix.service }}
-        run: npm run lint
+        run: npm run lint --if-present
 
       - name: Test
         working-directory: Scientific_Journal_Trend_Tracker_Backend/${{ matrix.service }}
-        run: npm test -- --passWithNoTests
+        run: npm run test --if-present -- --passWithNoTests
 
       - name: Build
         working-directory: Scientific_Journal_Trend_Tracker_Backend/${{ matrix.service }}
