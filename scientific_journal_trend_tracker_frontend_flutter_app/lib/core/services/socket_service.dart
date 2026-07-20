@@ -105,10 +105,14 @@ class SocketService {
   void onChatMessage(void Function(Map<String, dynamic> message) callback) {
     _socket?.on('new_chat_message', (data) {
       try {
-        final msg = Map<String, dynamic>.from(data as Map);
+        dynamic payload = data;
+        if (data is List && data.isNotEmpty) {
+          payload = data.first;
+        }
+        final msg = Map<String, dynamic>.from(payload as Map);
         callback(msg);
       } catch (e) {
-        debugPrint('[Socket] Failed to parse chat message: $e');
+        print('[Socket] Failed to parse chat message: $e');
       }
     });
   }
@@ -123,7 +127,11 @@ class SocketService {
   void onNotification(void Function(Map<String, dynamic> data) callback) {
     _socket?.on('new_notification', (data) {
       try {
-        callback(Map<String, dynamic>.from(data as Map));
+        dynamic payload = data;
+        if (data is List && data.isNotEmpty) {
+          payload = data.first;
+        }
+        callback(Map<String, dynamic>.from(payload as Map));
       } catch (e) {
         debugPrint('[Socket] Failed to parse notification: $e');
       }
