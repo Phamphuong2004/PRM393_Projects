@@ -15,6 +15,20 @@ class ApiConstants {
     return 'http://localhost:5000';
   }
 
+  /// Socket.IO connects directly to interaction-service (port 5003)
+  /// because the API gateway may not proxy WebSocket upgrades.
+  static String get socketUrl {
+    if (!useLocal) {
+      // In production, Socket.IO is proxied through the API gateway
+      return 'https://api-gateway-production-db98.up.railway.app';
+    }
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      return 'http://10.0.2.2:5003';
+    }
+    return 'http://localhost:5003';
+  }
+
+
   // Auth
   static const String login = '/api/auth/login';
   static const String googleLogin = '/api/auth/google-login';

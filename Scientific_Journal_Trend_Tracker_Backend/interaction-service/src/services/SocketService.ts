@@ -57,6 +57,9 @@ export class SocketService {
           }
           this.userSockets.get(userId)!.add(socket.id);
           
+          // Store userId on the socket object for later use
+          (socket as any).userId = userId;
+
           console.log(`[Socket] Authenticated user: ${userId}, total devices: ${this.userSockets.get(userId)!.size}`);
           
           socket.emit("authenticated", { status: "success" });
@@ -65,6 +68,23 @@ export class SocketService {
           socket.emit("auth_error", { message: "Invalid token" });
         }
       });
+
+      // ─── Workspace Chat Rooms ──────────────────────────────────────────────────
+
+      socket.on("join_workspace", (workspaceId: string) => {
+        const room = `workspace:${workspaceId}`;
+        socket.join(room);
+        console.log(`[Socket] Socket ${socket.id} joined room ${room}`);
+        socket.emit("joined_workspace", { workspaceId });
+      });
+
+      socket.on("leave_workspace", (workspaceId: string) => {
+        const room = `workspace:${workspaceId}`;
+        socket.leave(room);
+        console.log(`[Socket] Socket ${socket.id} left room ${room}`);
+      });
+
+      // ─────────────────────────────────────────────────────────────────────────
 
       socket.on("disconnect", () => {
         // Remove user from map
@@ -99,5 +119,16 @@ export class SocketService {
       }
       console.log(`[Socket] Sent notification to user ${userId} on ${sockets.size} devices`);
     }
+  }
+
+  /**
+   * Broadcast a new chat message to all sockets in the workspace room.
+   * The sender will also receive it (for multi-device sync).
+   */
+  static broadcastChatMessage(workspaceId: string, message: any) {
+    if (!this.io) return;
+    const room = `workspace:${workspaceId}`;
+    this.io.to(room).emit("new_chat_message", message);
+    console.log(`[Socket] Broadcast chat message to room ${room}`);
   }
 }

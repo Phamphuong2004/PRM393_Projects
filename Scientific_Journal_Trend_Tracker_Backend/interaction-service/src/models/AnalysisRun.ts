@@ -1,5 +1,16 @@
 import mongoose, { Schema, Document } from "mongoose";
 
+// Register dummy models to prevent MissingSchemaError on refs
+if (!mongoose.models.Keyword) {
+  mongoose.model("Keyword", new Schema({}));
+}
+if (!mongoose.models.SyncLog) {
+  mongoose.model("SyncLog", new Schema({}));
+}
+if (!mongoose.models.Topic) {
+  mongoose.model("Topic", new Schema({}));
+}
+
 export interface IAnalysisRun extends Document {
   keywordId: mongoose.Types.ObjectId;
   syncLogId: mongoose.Types.ObjectId;

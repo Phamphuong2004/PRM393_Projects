@@ -31,4 +31,9 @@ router.post("/:id/alerts", WorkspaceController.createAlert);
 router.get("/:id/alerts", WorkspaceController.getAlerts);
 router.delete("/:id/alerts/:alertId", WorkspaceController.deleteAlert);
 
+// Chat
+router.post("/:id/chat", WorkspaceController.sendMessage);
+router.get("/:id/chat", WorkspaceController.getMessages);
+router.delete("/:id/chat/:messageId", WorkspaceController.deleteMessage);
+
 export default router;
