@@ -1,4 +1,4 @@
-﻿import mongoose, { Schema, Document } from "mongoose";
+import mongoose, { Schema, Document } from "mongoose";
 
 export interface TrackedRun {
   analysisRunId: mongoose.Types.ObjectId;
@@ -70,14 +70,12 @@ const userSchema = new Schema<IUser>(
     bookmarks: [
       {
         type: Schema.Types.ObjectId,
-        ref: "Paper",
-      },
+      }
     ],
     trackedRuns: [
       {
         analysisRunId: {
           type: Schema.Types.ObjectId,
-          ref: "AnalysisRun",
         },
         notifyEnabled: {
           type: Boolean,

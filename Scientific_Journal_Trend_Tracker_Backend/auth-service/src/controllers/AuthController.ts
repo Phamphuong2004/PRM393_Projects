@@ -128,10 +128,16 @@ export class AuthController {
       }
 
       const user = await User.findById(req.userId)
-        .select("-password");
+        .select("-password")
+        .lean();
 
       if (!user) {
         res.status(404).json({ message: "User not found" });
+        return;
+      }
+
+      if (!user.isActive) {
+        res.status(403).json({ message: "Account is suspended. Please contact support." });
         return;
       }
 

@@ -72,7 +72,18 @@ router.get("/me", authMiddleware, async (req: Request, res: Response): Promise<v
       return;
     }
     const user = await AuthService.getCurrentUser(req.userId);
-    res.json(user);
+    res.json({
+      id: user._id,
+      email: user.email,
+      fullName: user.fullName,
+      role: user.role,
+      institution: user.institution,
+      avatar: user.avatar,
+      interests: user.interests,
+      bookmarks: user.bookmarks,
+      trackedRuns: user.trackedRuns,
+      follows: user.follows
+    });
   } catch (error: any) {
     res.status(error.status || 500).json({ message: error.message });
   }

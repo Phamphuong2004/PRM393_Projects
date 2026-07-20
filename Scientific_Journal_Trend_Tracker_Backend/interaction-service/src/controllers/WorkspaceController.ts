@@ -107,7 +107,7 @@ export class WorkspaceController {
 
   static async addPaper(req: Request, res: Response) {
     try {
-      const wp = await WorkspaceService.addPaper(req.params.id, req.userId as string, req.body);
+      const wp = await WorkspaceService.addPaper(req.params.id, req.userId as string, req.body, req.headers.authorization);
       res.status(201).json({ success: true, data: wp });
     } catch (error: any) {
       res.status(error.status || 500).json({ success: false, message: error.message });

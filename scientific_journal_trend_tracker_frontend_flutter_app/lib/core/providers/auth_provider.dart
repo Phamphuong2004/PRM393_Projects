@@ -70,32 +70,48 @@ class AuthNotifier extends Notifier<AuthState> {
     } catch (e) {
       bool isUnauthorized = false;
       bool isDeleted = false;
+      bool isSuspended = false;
       
       if (e is DioException) {
         if (e.response?.statusCode == 401) isUnauthorized = true;
+        if (e.response?.statusCode == 403) isSuspended = true;
         if (e.response?.statusCode == 404) isDeleted = true;
       } else {
         final errorStr = e.toString().toLowerCase();
         if (errorStr.contains('unauthorized') || errorStr.contains('401')) {
           isUnauthorized = true;
         }
+        if (errorStr.contains('403')) {
+          isSuspended = true;
+        }
         if (errorStr.contains('404')) {
           isDeleted = true;
         }
       }
 
-      if (isUnauthorized || isDeleted) {
+      if (isUnauthorized || isDeleted || isSuspended) {
+        await _storage.delete(key: 'jwt_token');
+        
+        String? errorMsg;
+        if (isDeleted) errorMsg = 'Your account has been deleted by an administrator.';
+        if (isSuspended) errorMsg = 'Your account has been suspended. Please contact support.';
+
+        state = state.copyWith(
+          clearToken: true,
+          clearUser: true,
+          isLoading: false,
+          error: errorMsg,
+        );
+      } else {
+        // If it's a network error or unknown error, we should NOT leave the user in a zombied state.
+        // We will log them out to be safe, or at least clear the state so they go to login.
         await _storage.delete(key: 'jwt_token');
         state = state.copyWith(
           clearToken: true,
           clearUser: true,
           isLoading: false,
-          error: isDeleted ? 'Your account has been deleted by an administrator.' : null,
+          error: 'A network or system error occurred. Please log in again.',
         );
-      } else {
-        // If network timeout or backend sleep, keep the token so user stays logged in
-        final token = await _storage.read(key: 'jwt_token');
-        state = state.copyWith(token: token, isLoading: false);
       }
     }
   }
