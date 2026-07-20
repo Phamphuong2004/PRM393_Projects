@@ -13,12 +13,18 @@ class SocketService {
 
   IO.Socket? _socket;
   final _storage = const FlutterSecureStorage();
+  String? _currentWorkspaceId;
 
   bool get isConnected => _socket?.connected ?? false;
 
   /// Connect and authenticate with the backend Socket.IO server.
   Future<void> connect() async {
-    if (isConnected) return;
+    if (_socket != null) {
+      if (!_socket!.connected) {
+        _socket!.connect();
+      }
+      return;
+    }
 
     final token = await _storage.read(key: 'jwt_token');
     if (token == null) return;
@@ -48,6 +54,10 @@ class SocketService {
 
     _socket!.on('authenticated', (data) {
       print('[Socket] Authenticated successfully');
+      if (_currentWorkspaceId != null) {
+        _socket!.emit('join_workspace', _currentWorkspaceId);
+        print('[Socket] Re-joining workspace room: $_currentWorkspaceId');
+      }
     });
 
     _socket!.on('auth_error', (data) {
@@ -71,16 +81,22 @@ class SocketService {
 
   /// Join a workspace room to receive real-time chat messages.
   void joinWorkspace(String workspaceId) {
-    if (_socket == null) return;
-    _socket!.emit('join_workspace', workspaceId);
-    print('[Socket] Joining workspace room: $workspaceId');
+    _currentWorkspaceId = workspaceId;
+    if (_socket?.connected == true) {
+      _socket!.emit('join_workspace', workspaceId);
+      print('[Socket] Joining workspace room: $workspaceId');
+    }
   }
 
   /// Leave a workspace room.
   void leaveWorkspace(String workspaceId) {
-    if (_socket == null) return;
-    _socket!.emit('leave_workspace', workspaceId);
-    print('[Socket] Leaving workspace room: $workspaceId');
+    if (_currentWorkspaceId == workspaceId) {
+      _currentWorkspaceId = null;
+    }
+    if (_socket?.connected == true) {
+      _socket!.emit('leave_workspace', workspaceId);
+      print('[Socket] Leaving workspace room: $workspaceId');
+    }
   }
 
   /// Listen for new chat messages in the current workspace room.
