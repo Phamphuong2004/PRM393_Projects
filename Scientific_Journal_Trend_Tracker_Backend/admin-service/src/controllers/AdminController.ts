@@ -1,85 +1,11 @@
 import { Request, Response } from "express";
 import ApiSource from "../models/ApiSource";
 import SyncLog from "../models/SyncLog";
+import Notification from "../models/Notification";
+import axios from "axios";
 
 export class AdminController {
-  static async getDashboardStats(req: Request, res: Response): Promise<void> {
-    try {
-      const { createInternalClient, SERVICES } = require("../../shared/src/utils/internalApiClient");
-      const authClient = createInternalClient(SERVICES.AUTH, req.headers.authorization);
-      const coreClient = createInternalClient(SERVICES.CORE, req.headers.authorization);
 
-      const [usersRes, papersRes, journalsRes] = await Promise.allSettled([
-        authClient.get("/api/users?limit=1"),
-        coreClient.get("/api/papers?limit=1"),
-        coreClient.get("/api/journals?limit=1"),
-      ]);
-
-      const totalUsers = usersRes.status === "fulfilled" ? usersRes.value.data.pagination.total : 0;
-      const totalPapers = papersRes.status === "fulfilled" ? papersRes.value.data.pagination.total : 0;
-      const totalJournals = journalsRes.status === "fulfilled" ? journalsRes.value.data.pagination.total : 0;
-
-      res.json({
-        totalUsers,
-        totalPapers,
-        totalJournals,
-        recentActivity: [],
-      });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Server error" });
-    }
-  }
-
-  static async getUsersList(req: Request, res: Response): Promise<void> {
-    try {
-      res.json([]);
-    } catch (error) {
-      res.status(500).json({ message: "Server error" });
-    }
-  }
-
-  static async updateUserStatus(req: Request, res: Response): Promise<void> {
-    try {
-      const axios = require("axios");
-      const authUrl = process.env.AUTH_SERVICE_URL || "http://auth-service:5001";
-      const result = await axios.put(`${authUrl}/api/users/${req.params.id}`, 
-        { isActive: req.body.isActive },
-        { headers: { Authorization: req.headers.authorization } }
-      );
-      res.json(result.data);
-    } catch (error: any) {
-      console.error(error.response?.data || error.message);
-      res.status(error.response?.status || 500).json({ message: error.response?.data?.message || "Server error" });
-    }
-  }
-
-  static async updateUserRole(req: Request, res: Response): Promise<void> {
-    try {
-      const axios = require("axios");
-      const authUrl = process.env.AUTH_SERVICE_URL || "http://auth-service:5001";
-      const result = await axios.put(`${authUrl}/api/users/${req.params.id}`, 
-        { role: req.body.role },
-        { headers: { Authorization: req.headers.authorization } }
-      );
-      res.json(result.data);
-    } catch (error: any) {
-      console.error(error.response?.data || error.message);
-      res.status(error.response?.status || 500).json({ message: error.response?.data?.message || "Server error" });
-    }
-  }
-  
-  static async changeUserRole(req: Request, res: Response): Promise<void> {
-    this.updateUserRole(req, res);
-  }
-
-  static async getSystemLogs(req: Request, res: Response): Promise<void> {
-    try {
-      res.json({ message: "Logs to be fetched from monitoring system." });
-    } catch (error) {
-      res.status(500).json({ message: "Server error" });
-    }
-  }
 
   static async getAllSources(req: Request, res: Response): Promise<void> {
     try {
@@ -136,24 +62,70 @@ export class AdminController {
 
   static async triggerManualSync(req: Request, res: Response): Promise<void> {
     try {
-      // Just mock logging it to the sync logs table for now
+      const source = await ApiSource.findOne();
       const log = new SyncLog({
-        apiSource: null, // Indicates manual trigger not tied to specific source
+        apiSource: source ? source._id : null,
         startedAt: new Date(),
         status: "running",
-        seedKeyword: "MANUAL_TRIGGER"
+        seedKeyword: "Artificial Intelligence"
       });
       await log.save();
       
-      // Simulate sync taking a bit of time and succeeding
-      setTimeout(async () => {
-        log.status = "success";
-        log.finishedAt = new Date();
-        log.papersAdded = Math.floor(Math.random() * 10);
-        await log.save();
-      }, 5000);
+      // Fire and forget background process (Ponytail ultra mode)
+      (async () => {
+        try {
+          const CORE_URL = process.env.CORE_SERVICE_URL || "http://core-service:5002";
+          const searchRes = await axios.get(`${CORE_URL}/api/papers/external/search`, {
+            params: { q: "Artificial Intelligence", limit: 3, source: "Semantic Scholar" }
+          });
+          
+          let added = 0;
+          for (const paper of searchRes.data.papers || []) {
+             try {
+                await axios.post(`${CORE_URL}/api/papers/import`, paper, {
+                   headers: { Authorization: req.headers.authorization }
+                });
+                added++;
+             } catch (e) { /* ignore duplicate/error */ }
+          }
+          
+          log.status = "success";
+          log.papersAdded = added;
+          log.finishedAt = new Date();
+          await log.save();
+          
+          // Create notification
+          const userId = (req as any).userId || (req as any).user?.id;
+          if (userId) {
+            await new Notification({
+              userId,
+              title: "ETL Sync Completed",
+              message: `Successfully synchronized and imported ${added} papers.`,
+              type: "system",
+              isRead: false
+            }).save();
+          }
+        } catch (e: any) {
+          log.status = "failed";
+          log.errorMessage = e.message;
+          log.finishedAt = new Date();
+          await log.save();
+          
+          // Create error notification
+          const userId = (req as any).userId || (req as any).user?.id;
+          if (userId) {
+            await new Notification({
+              userId,
+              title: "ETL Sync Failed",
+              message: `Sync failed: ${e.message}`,
+              type: "error",
+              isRead: false
+            }).save();
+          }
+        }
+      })();
 
-      res.json({ message: "Triggered" });
+      res.json({ message: "ETL Sync Triggered" });
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: "Server error" });

@@ -55,8 +55,8 @@ class UserRepository {
 
   Future<void> updateUserStatus(String id, bool isActive) async {
     try {
-      await _dio.patch(
-        '${ApiConstants.adminUsers}/$id/status',
+      await _dio.put(
+        '${ApiConstants.users}/$id',
         data: {'isActive': isActive},
       );
     } catch (e) {
@@ -66,8 +66,8 @@ class UserRepository {
 
   Future<void> updateUserRole(String id, String role) async {
     try {
-      await _dio.patch(
-        '${ApiConstants.adminUsers}/$id/role',
+      await _dio.put(
+        '${ApiConstants.users}/$id',
         data: {'role': role},
       );
     } catch (e) {

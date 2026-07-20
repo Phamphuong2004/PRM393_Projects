@@ -1,4 +1,4 @@
-﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -46,7 +46,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
       }
     } catch (e) {
       setState(() {
-        _errorMessage = e.toString();
+        _errorMessage = ref.read(authProvider).error ?? e.toString();
       });
     } finally {
       if (mounted) {
@@ -68,7 +68,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
       }
     } catch (e) {
       setState(() {
-        _errorMessage = e.toString();
+        _errorMessage = ref.read(authProvider).error ?? e.toString();
       });
     } finally {
       if (mounted) {

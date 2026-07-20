@@ -66,7 +66,7 @@ class ApiConstants {
   static const String analysisRuns = '/api/analysis-runs';
 
   // Admin
-  static const String adminUsers = '/api/admin/users';
+
   static const String adminSources = '/api/admin/sources';
   static const String adminSync = '/api/admin/sync';
 

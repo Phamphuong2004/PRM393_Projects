@@ -8,9 +8,7 @@ const router = express.Router();
 router.use(authMiddleware);
 router.use(roleMiddleware(["admin"]));
 
-// User Management
-router.patch("/users/:id/status", AdminController.updateUserStatus);
-router.patch("/users/:id/role", AdminController.updateUserRole);
+
 
 // Api Source Management
 router.get("/sources", AdminController.getAllSources);
