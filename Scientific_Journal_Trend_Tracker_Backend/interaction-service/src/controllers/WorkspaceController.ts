@@ -236,4 +236,36 @@ export class WorkspaceController {
       res.status(error.status || 500).json({ success: false, message: error.message });
     }
   }
+
+  // ─── Chat ────────────────────────────────────────────────────────────────────
+
+  static async sendMessage(req: Request, res: Response) {
+    try {
+      const msg = await WorkspaceService.sendMessage(req.params.id, req.userId as string, req.body.content);
+      res.status(201).json({ success: true, data: msg });
+    } catch (error: any) {
+      res.status(error.status || 500).json({ success: false, message: error.message });
+    }
+  }
+
+  static async getMessages(req: Request, res: Response) {
+    try {
+      const limit = parseInt(req.query.limit as string) || 50;
+      const before = req.query.before as string | undefined;
+      const messages = await WorkspaceService.getMessages(req.params.id, req.userId as string, limit, before);
+      res.json({ success: true, data: messages });
+    } catch (error: any) {
+      res.status(error.status || 500).json({ success: false, message: error.message });
+    }
+  }
+
+  static async deleteMessage(req: Request, res: Response) {
+    try {
+      const result = await WorkspaceService.deleteMessage(req.params.id, req.userId as string, req.params.messageId);
+      res.json({ success: true, ...result });
+    } catch (error: any) {
+      res.status(error.status || 500).json({ success: false, message: error.message });
+    }
+  }
 }
+

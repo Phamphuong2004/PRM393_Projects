@@ -10,22 +10,44 @@ import '../../../core/models/paper.dart';
 import '../../dashboard/screens/paper_detail_screen.dart';
 import '../../../core/providers/notification_provider.dart';
 import '../../../core/widgets/animated_background.dart';
+import '../../../core/providers/auth_provider.dart';
+import '../../../core/network/dio_client.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../../../core/services/socket_service.dart';
+import '../../../core/providers/fab_provider.dart';
 
-class WorkspaceDetailScreen extends ConsumerWidget {
+class WorkspaceDetailScreen extends ConsumerStatefulWidget {
   final String workspaceId;
 
   const WorkspaceDetailScreen({super.key, required this.workspaceId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<WorkspaceDetailScreen> createState() => _WorkspaceDetailScreenState();
+}
+
+class _WorkspaceDetailScreenState extends ConsumerState<WorkspaceDetailScreen> {
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     ref.listen(notificationProvider, (previous, next) {
-      final latest = next.latestNotification;
-      if (latest != null && latest.type == 'workspace' && latest.relatedId == workspaceId) {
-        ref.invalidate(workspaceDetailProvider(workspaceId));
+      if (previous != null && next.latestNotification != null && next.latestNotification != previous.latestNotification) {
+        final notif = next.latestNotification;
+        if (notif['type'] == 'workspace_alert' && notif['data']['workspaceId'] == widget.workspaceId) {
+          ref.invalidate(workspaceDetailProvider(widget.workspaceId));
+        }
       }
     });
 
-    final detailAsync = ref.watch(workspaceDetailProvider(workspaceId));
+    final detailAsync = ref.watch(workspaceDetailProvider(widget.workspaceId));
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
@@ -78,7 +100,7 @@ class WorkspaceDetailScreen extends ConsumerWidget {
           final members = workspace['members'] as List<dynamic>? ?? [];
 
           return DefaultTabController(
-            length: 4,
+            length: 5,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -142,16 +164,18 @@ class WorkspaceDetailScreen extends ConsumerWidget {
                       Tab(text: 'Notes'),
                       Tab(text: 'Members'),
                       Tab(text: 'Alerts'),
+                      Tab(text: 'Chat'),
                     ],
                   ),
                 ),
                 Expanded(
                   child: TabBarView(
                     children: [
-                      WorkspacePapersTab(workspaceId: workspaceId, role: role),
-                      WorkspaceNotesTab(workspaceId: workspaceId, role: role),
-                      WorkspaceMembersTab(workspaceId: workspaceId, members: members, role: role),
-                      WorkspaceAlertsTab(workspaceId: workspaceId, role: role),
+                      WorkspacePapersTab(workspaceId: widget.workspaceId, role: role),
+                      WorkspaceNotesTab(workspaceId: widget.workspaceId, role: role),
+                      WorkspaceMembersTab(workspaceId: widget.workspaceId, members: members, role: role),
+                      WorkspaceAlertsTab(workspaceId: widget.workspaceId, role: role),
+                      WorkspaceChatTab(workspaceId: widget.workspaceId, members: members),
                     ],
                   ),
                 ),
@@ -199,8 +223,8 @@ class WorkspaceDetailScreen extends ConsumerWidget {
             onPressed: () async {
               if (nameCtrl.text.isNotEmpty) {
                 try {
-                  await ref.read(workspaceRepositoryProvider).updateWorkspace(workspaceId, name: nameCtrl.text, description: descCtrl.text, visibility: visibility);
-                  ref.invalidate(workspaceDetailProvider(workspaceId));
+                  await ref.read(workspaceRepositoryProvider).updateWorkspace(widget.workspaceId, name: nameCtrl.text, description: descCtrl.text, visibility: visibility);
+                  ref.invalidate(workspaceDetailProvider(widget.workspaceId));
                   ref.invalidate(workspacesProvider);
                   if (context.mounted) Navigator.pop(ctx);
                 } catch (e) {
@@ -227,7 +251,7 @@ class WorkspaceDetailScreen extends ConsumerWidget {
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
             onPressed: () async {
               try {
-                await ref.read(workspaceRepositoryProvider).deleteWorkspace(workspaceId);
+                await ref.read(workspaceRepositoryProvider).deleteWorkspace(widget.workspaceId);
                 ref.invalidate(workspacesProvider);
                 if (context.mounted) {
                   Navigator.pop(ctx);
@@ -256,7 +280,7 @@ class WorkspaceDetailScreen extends ConsumerWidget {
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
             onPressed: () async {
               try {
-                await ref.read(workspaceRepositoryProvider).leaveWorkspace(workspaceId);
+                await ref.read(workspaceRepositoryProvider).leaveWorkspace(widget.workspaceId);
                 ref.invalidate(workspacesProvider);
                 if (context.mounted) {
                   Navigator.pop(ctx);
@@ -1063,4 +1087,365 @@ Widget _buildEmptyState(IconData icon, String title, String subtitle) {
       ],
     ),
   );
+}
+
+// ======================= WORKSPACE CHAT TAB =======================
+
+class WorkspaceChatTab extends ConsumerStatefulWidget {
+  final String workspaceId;
+  final List<dynamic> members;
+  const WorkspaceChatTab({super.key, required this.workspaceId, required this.members});
+
+  @override
+  ConsumerState<WorkspaceChatTab> createState() => _WorkspaceChatTabState();
+}
+
+class _WorkspaceChatTabState extends ConsumerState<WorkspaceChatTab> {
+  final _messageController = TextEditingController();
+  final _scrollController = ScrollController();
+  List<Map<String, dynamic>> _messages = [];
+  bool _loading = true;
+  bool _sending = false;
+  String? _error;
+
+  late final DioClient _dioClient;
+
+  @override
+  void initState() {
+    super.initState();
+    _dioClient = DioClient(const FlutterSecureStorage());
+    _fetchMessages();
+    _initSocket();
+  }
+
+  Future<void> _initSocket() async {
+    await SocketService.instance.connect();
+    SocketService.instance.joinWorkspace(widget.workspaceId);
+    SocketService.instance.onChatMessage(_onSocketMessage);
+  }
+
+  void _onSocketMessage(Map<String, dynamic> msg) {
+    if (!mounted) return;
+    // Avoid duplicate: the sender already appended locally
+    final id = msg['_id']?.toString();
+    final alreadyExists = _messages.any((m) => m['_id']?.toString() == id);
+    if (!alreadyExists) {
+      setState(() => _messages.add(msg));
+      _scrollToBottom();
+    }
+  }
+
+  @override
+  void dispose() {
+    SocketService.instance.leaveWorkspace(widget.workspaceId);
+    SocketService.instance.offChatMessage();
+    _messageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchMessages() async {
+    try {
+      setState(() { _loading = true; _error = null; });
+      final resp = await _dioClient.dio.get('${ApiConstants.workspaces}/${widget.workspaceId}/chat');
+      final data = (resp.data['data'] as List<dynamic>? ?? []);
+      setState(() {
+        _messages = data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        _loading = false;
+      });
+      _scrollToBottom();
+    } catch (e) {
+      setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
+
+  Future<void> _sendMessage() async {
+    final text = _messageController.text.trim();
+    if (text.isEmpty || _sending) return;
+
+    setState(() { _sending = true; });
+    _messageController.clear();
+
+    try {
+      // Send via HTTP – Socket.IO will broadcast back to everyone in the room
+      // including the sender, so we do NOT append locally here.
+      await _dioClient.dio.post(
+        '${ApiConstants.workspaces}/${widget.workspaceId}/chat',
+        data: {'content': text},
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to send: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() { _sending = false; });
+    }
+  }
+
+  Future<void> _deleteMessage(String messageId) async {
+    try {
+      await _dioClient.dio.delete('${ApiConstants.workspaces}/${widget.workspaceId}/chat/$messageId');
+      setState(() {
+        _messages.removeWhere((m) => m['_id'] == messageId);
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  String _formatTime(String? isoStr) {
+    if (isoStr == null) return '';
+    try {
+      final dt = DateTime.parse(isoStr).toLocal();
+      final h = dt.hour.toString().padLeft(2, '0');
+      final m = dt.minute.toString().padLeft(2, '0');
+      return '$h:$m';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final authState = ref.watch(authProvider);
+    final myId = authState.user?['id']?.toString() ?? authState.user?['_id']?.toString() ?? '';
+
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+            const SizedBox(height: 12),
+            Text(_error!, textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            ElevatedButton(onPressed: _fetchMessages, child: const Text('Retry')),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        // Messages list
+        Expanded(
+          child: _messages.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.chat_bubble_outline_rounded, size: 64, color: Colors.grey.shade300),
+                      const SizedBox(height: 16),
+                      const Text('No messages yet', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey)),
+                      const SizedBox(height: 6),
+                      Text('Be the first to say something!', style: TextStyle(color: Colors.grey.shade500)),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  itemCount: _messages.length,
+                  itemBuilder: (ctx, index) {
+                    final msg = _messages[index];
+                    final senderId = msg['sender']?.toString() ?? '';
+                    final isMe = senderId == myId;
+                    final time = _formatTime(msg['createdAt'] as String?);
+
+                    return Align(
+                      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                      child: GestureDetector(
+                        onLongPress: isMe
+                            ? () => showDialog(
+                                  context: context,
+                                  builder: (ctx) => AlertDialog(
+                                    title: const Text('Delete message?'),
+                                    content: const Text('This will permanently delete your message.'),
+                                    actions: [
+                                      TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+                                      ElevatedButton(
+                                        style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                                        onPressed: () {
+                                          Navigator.pop(ctx);
+                                          _deleteMessage(msg['_id'] as String);
+                                        },
+                                        child: const Text('Delete', style: TextStyle(color: Colors.white)),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                            : null,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            if (!isMe) ...[
+                              _buildAvatar(senderId),
+                              const SizedBox(width: 8),
+                            ],
+                            Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.72),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: isMe ? const Color(0xFF1E3A8A) : Colors.white,
+                                borderRadius: BorderRadius.only(
+                                  topLeft: const Radius.circular(16),
+                                  topRight: const Radius.circular(16),
+                                  bottomLeft: Radius.circular(isMe ? 16 : 4),
+                                  bottomRight: Radius.circular(isMe ? 4 : 16),
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.06),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  )
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    msg['content'] as String? ?? '',
+                                    style: TextStyle(
+                                      color: isMe ? Colors.white : const Color(0xFF0F172A),
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    time,
+                                    style: TextStyle(
+                                      color: isMe ? Colors.white54 : Colors.grey.shade400,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (isMe) ...[
+                              const SizedBox(width: 8),
+                              _buildAvatar(senderId),
+                            ],
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+
+        // Input bar
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, -2))
+            ],
+          ),
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+          child: SafeArea(
+            top: false,
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _messageController,
+                    textCapitalization: TextCapitalization.sentences,
+                    maxLines: null,
+                    decoration: InputDecoration(
+                      hintText: 'Type a message...',
+                      hintStyle: TextStyle(color: Colors.grey.shade400),
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                    onSubmitted: (_) => _sendMessage(),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  child: Material(
+                    color: const Color(0xFF1E3A8A),
+                    borderRadius: BorderRadius.circular(50),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(50),
+                      onTap: _sending ? null : _sendMessage,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: _sending
+                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            : const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAvatar(String senderId) {
+    String name = 'User';
+    for (var member in widget.members) {
+      final u = member['user'];
+      if (u is Map && u['_id'] == senderId) {
+        name = u['fullName'] ?? u['email'] ?? 'User';
+        break;
+      } else if (u == senderId) {
+        // fallback if user is just ID
+        break;
+      }
+    }
+    final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Tooltip(
+        message: name,
+        child: CircleAvatar(
+          radius: 14,
+          backgroundColor: Colors.blue.shade100,
+          child: Text(
+            initial,
+            style: TextStyle(
+              color: Colors.blue.shade900,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

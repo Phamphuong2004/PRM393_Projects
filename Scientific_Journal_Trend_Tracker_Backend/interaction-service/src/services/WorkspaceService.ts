@@ -3,6 +3,7 @@ import Workspace from "../models/Workspace";
 import WorkspacePaper from "../models/WorkspacePaper";
 import WorkspaceNote from "../models/WorkspaceNote";
 import WorkspaceAlert from "../models/WorkspaceAlert";
+import WorkspaceChatMessage from "../models/WorkspaceChat";
 // import Paper from "../models/Paper"; // Needs cross-service fetch
 // import Notification from "../models/Notification"; // Needs cross-service call
 
@@ -437,5 +438,51 @@ export class WorkspaceService {
     const result = await WorkspaceAlert.findOneAndDelete({ _id: alertId, workspace: workspaceId });
     if (!result) throw { status: 404, message: "Alert not found" };
     return { message: "Alert deleted" };
+  }
+
+  // ─── Chat ────────────────────────────────────────────────────────────────────
+
+  static async sendMessage(workspaceId: string, userId: string, content: string) {
+    await this.checkRole(workspaceId, userId, ["owner", "editor", "viewer"]);
+    if (!content || content.trim().length === 0) {
+      throw { status: 400, message: "Message content cannot be empty" };
+    }
+    const msg = new WorkspaceChatMessage({
+      workspace: workspaceId,
+      sender: userId,
+      content: content.trim(),
+    });
+    await msg.save();
+
+    // Broadcast real-time to all members in the workspace room
+    SocketService.broadcastChatMessage(workspaceId, msg.toObject());
+
+    return msg;
+  }
+
+  static async getMessages(workspaceId: string, userId: string, limit = 50, before?: string) {
+    await this.checkRole(workspaceId, userId, ["owner", "editor", "viewer"]);
+    const query: any = { workspace: workspaceId };
+    if (before) {
+      query._id = { $lt: before };
+    }
+    const messages = await WorkspaceChatMessage.find(query)
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean();
+    return messages.reverse();
+  }
+
+  static async deleteMessage(workspaceId: string, userId: string, messageId: string) {
+    await this.checkRole(workspaceId, userId, ["owner", "editor", "viewer"]);
+    const msg = await WorkspaceChatMessage.findOne({ _id: messageId, workspace: workspaceId });
+    if (!msg) throw { status: 404, message: "Message not found" };
+    if (msg.sender.toString() !== userId) {
+      // only owner of workspace can delete others' messages
+      const { role } = await this.checkRole(workspaceId, userId, ["owner"]);
+      if (role !== "owner") throw { status: 403, message: "Cannot delete other users' messages" };
+    }
+    await msg.deleteOne();
+    return { message: "Message deleted" };
   }
 }
