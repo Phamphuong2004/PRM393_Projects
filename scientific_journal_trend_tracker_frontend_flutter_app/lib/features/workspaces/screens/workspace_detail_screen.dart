@@ -14,7 +14,7 @@ import '../../../core/providers/auth_provider.dart';
 import '../../../core/network/dio_client.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../core/services/socket_service.dart';
-import '../../../core/providers/fab_provider.dart';
+
 
 class WorkspaceDetailScreen extends ConsumerStatefulWidget {
   final String workspaceId;

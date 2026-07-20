@@ -1,4 +1,5 @@
-import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:socket_io_client/socket_io_client.dart' as io;
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../constants/api_constants.dart';
 
@@ -11,7 +12,7 @@ class SocketService {
   SocketService._();
   static final SocketService instance = SocketService._();
 
-  IO.Socket? _socket;
+  io.Socket? _socket;
   final _storage = const FlutterSecureStorage();
   String? _currentWorkspaceId;
 
@@ -33,9 +34,9 @@ class SocketService {
     // because the API gateway may not proxy WebSocket upgrades for all routes.
     final socketUrl = ApiConstants.socketUrl;
 
-    _socket = IO.io(
+    _socket = io.io(
       socketUrl,
-      IO.OptionBuilder()
+      io.OptionBuilder()
           .setTransports(['websocket'])
           .disableAutoConnect()
           .enableReconnection()
@@ -47,29 +48,29 @@ class SocketService {
     _socket!.connect();
 
     _socket!.onConnect((_) {
-      print('[Socket] Connected: ${_socket!.id}');
+      debugPrint('[Socket] Connected: ${_socket!.id}');
       // Authenticate immediately after connecting
       _socket!.emit('authenticate', token);
     });
 
     _socket!.on('authenticated', (data) {
-      print('[Socket] Authenticated successfully');
+      debugPrint('[Socket] Authenticated successfully');
       if (_currentWorkspaceId != null) {
         _socket!.emit('join_workspace', _currentWorkspaceId);
-        print('[Socket] Re-joining workspace room: $_currentWorkspaceId');
+        debugPrint('[Socket] Re-joining workspace room: $_currentWorkspaceId');
       }
     });
 
     _socket!.on('auth_error', (data) {
-      print('[Socket] Auth error: $data');
+      debugPrint('[Socket] Auth error: $data');
     });
 
     _socket!.onDisconnect((_) {
-      print('[Socket] Disconnected');
+      debugPrint('[Socket] Disconnected');
     });
 
     _socket!.onError((err) {
-      print('[Socket] Error: $err');
+      debugPrint('[Socket] Error: $err');
     });
   }
 
@@ -84,7 +85,7 @@ class SocketService {
     _currentWorkspaceId = workspaceId;
     if (_socket?.connected == true) {
       _socket!.emit('join_workspace', workspaceId);
-      print('[Socket] Joining workspace room: $workspaceId');
+      debugPrint('[Socket] Joining workspace room: $workspaceId');
     }
   }
 
@@ -95,7 +96,7 @@ class SocketService {
     }
     if (_socket?.connected == true) {
       _socket!.emit('leave_workspace', workspaceId);
-      print('[Socket] Leaving workspace room: $workspaceId');
+      debugPrint('[Socket] Leaving workspace room: $workspaceId');
     }
   }
 
@@ -107,7 +108,7 @@ class SocketService {
         final msg = Map<String, dynamic>.from(data as Map);
         callback(msg);
       } catch (e) {
-        print('[Socket] Failed to parse chat message: $e');
+        debugPrint('[Socket] Failed to parse chat message: $e');
       }
     });
   }
@@ -124,7 +125,7 @@ class SocketService {
       try {
         callback(Map<String, dynamic>.from(data as Map));
       } catch (e) {
-        print('[Socket] Failed to parse notification: $e');
+        debugPrint('[Socket] Failed to parse notification: $e');
       }
     });
   }
