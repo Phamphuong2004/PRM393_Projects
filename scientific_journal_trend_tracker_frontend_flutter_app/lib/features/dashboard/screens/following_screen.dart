@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/theme.dart';
 import '../../../core/repositories/follow_repository.dart';
 import '../../../core/widgets/animated_background.dart';
+import '../../../core/providers/refresh_providers.dart';
 
 class FollowingScreen extends ConsumerStatefulWidget {
   const FollowingScreen({super.key});
@@ -108,6 +109,7 @@ class _FollowingScreenState extends ConsumerState<FollowingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(followRefreshProvider, (_, _) => _fetchData());
     return DefaultTabController(
       length: 3,
       child: Scaffold(

@@ -8,6 +8,7 @@ import '../../../core/repositories/workspace_repository.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/models/paper.dart';
 import '../../dashboard/screens/paper_detail_screen.dart';
+import '../../../core/providers/notification_provider.dart';
 import '../../../core/widgets/animated_background.dart';
 
 class WorkspaceDetailScreen extends ConsumerWidget {
@@ -17,6 +18,13 @@ class WorkspaceDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(notificationProvider, (previous, next) {
+      final latest = next.latestNotification;
+      if (latest != null && latest.type == 'workspace' && latest.relatedId == workspaceId) {
+        ref.invalidate(workspaceDetailProvider(workspaceId));
+      }
+    });
+
     final detailAsync = ref.watch(workspaceDetailProvider(workspaceId));
 
     return Scaffold(
@@ -787,24 +795,26 @@ class WorkspaceMembersTab extends ConsumerWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Add Team Member'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: emailCtrl,
-              decoration: const InputDecoration(labelText: 'User Email', border: OutlineInputBorder()),
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              initialValue: selectedRole,
-              decoration: const InputDecoration(labelText: 'Role', border: OutlineInputBorder()),
-              items: const [
-                DropdownMenuItem(value: 'viewer', child: Text('Viewer')),
-                DropdownMenuItem(value: 'editor', child: Text('Editor')),
-              ],
-              onChanged: (val) => selectedRole = val ?? 'viewer',
-            ),
-          ],
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: emailCtrl,
+                decoration: const InputDecoration(labelText: 'User Email', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                initialValue: selectedRole,
+                decoration: const InputDecoration(labelText: 'Role', border: OutlineInputBorder()),
+                items: const [
+                  DropdownMenuItem(value: 'viewer', child: Text('Viewer')),
+                  DropdownMenuItem(value: 'editor', child: Text('Editor')),
+                ],
+                onChanged: (val) => selectedRole = val ?? 'viewer',
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
@@ -819,7 +829,10 @@ class WorkspaceMembersTab extends ConsumerWidget {
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Member added!')));
                   }
                 } catch (e) {
-                  if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                  if (context.mounted) {
+                    final errorMsg = e.toString().replaceAll('Exception: ', '');
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $errorMsg')));
+                  }
                 }
               }
             },

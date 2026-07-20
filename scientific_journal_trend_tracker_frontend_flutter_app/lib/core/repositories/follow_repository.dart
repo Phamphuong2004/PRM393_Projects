@@ -3,15 +3,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/network_provider.dart';
 import '../constants/api_constants.dart';
 
+import '../providers/refresh_providers.dart';
+
 final followRepositoryProvider = Provider<FollowRepository>((ref) {
   final dio = ref.watch(dioProvider);
-  return FollowRepository(dio);
+  return FollowRepository(dio, ref);
 });
 
 class FollowRepository {
   final Dio _dio;
+  final Ref _ref;
 
-  FollowRepository(this._dio);
+  FollowRepository(this._dio, this._ref);
 
   // BE returns a bare JSON array (e.g. user.follows / user.trackedRuns), but some
   // endpoints may wrap it. Handle both shapes safely.
@@ -40,6 +43,7 @@ class FollowRepository {
         'targetId': targetId,
         'notifyEnabled': true,
       });
+      _ref.read(followRefreshProvider.notifier).increment();
     } catch (e) {
       rethrow;
     }
@@ -48,6 +52,7 @@ class FollowRepository {
   Future<void> unfollow(String targetId) async {
     try {
       await _dio.delete('${ApiConstants.follows}/$targetId');
+      _ref.read(followRefreshProvider.notifier).increment();
     } catch (e) {
       rethrow;
     }
@@ -67,6 +72,7 @@ class FollowRepository {
       await _dio.post('${ApiConstants.follows}/tracked-runs/$analysisRunId', data: {
         'notifyEnabled': true,
       });
+      _ref.read(followRefreshProvider.notifier).increment();
     } catch (e) {
       rethrow;
     }
@@ -75,6 +81,7 @@ class FollowRepository {
   Future<void> untrackRun(String analysisRunId) async {
     try {
       await _dio.delete('${ApiConstants.follows}/tracked-runs/$analysisRunId');
+      _ref.read(followRefreshProvider.notifier).increment();
     } catch (e) {
       rethrow;
     }

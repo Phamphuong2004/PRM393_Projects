@@ -142,6 +142,11 @@ class WorkspaceRepository {
   Future<void> addWorkspaceMember(String id, String email, String role) async {
     try {
       await _dio.post('${ApiConstants.workspaces}/$id/members', data: {'email': email, 'role': role});
+    } on DioException catch (e) {
+      if (e.response != null) {
+        throw Exception(e.response?.data['message'] ?? 'Failed to add member');
+      }
+      throw Exception('Network error while adding member');
     } catch (e) {
       rethrow;
     }
@@ -150,6 +155,11 @@ class WorkspaceRepository {
   Future<void> removeWorkspaceMember(String id, String userId) async {
     try {
       await _dio.delete('${ApiConstants.workspaces}/$id/members/$userId');
+    } on DioException catch (e) {
+      if (e.response != null) {
+        throw Exception(e.response?.data['message'] ?? 'Failed to remove member');
+      }
+      throw Exception('Network error while removing member');
     } catch (e) {
       rethrow;
     }
