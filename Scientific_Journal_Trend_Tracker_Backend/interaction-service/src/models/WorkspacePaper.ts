@@ -6,6 +6,7 @@ export interface IWorkspacePaper extends Document {
   tags: string[];
   note?: string;
   source: string;
+  pdfUrl?: string;
   addedBy: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -18,6 +19,7 @@ const workspacePaperSchema = new Schema<IWorkspacePaper>(
     tags: [{ type: String, trim: true }],
     note: { type: String, trim: true },
     source: { type: String, default: "manual" },
+    pdfUrl: { type: String },
     addedBy: { type: Schema.Types.ObjectId, ref: "user", required: true },
   },
   { timestamps: true }

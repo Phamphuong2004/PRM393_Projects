@@ -60,13 +60,18 @@ export class AuthService {
     // Check if user exists
     const user = await User.findOne({ email });
     if (!user) {
-      throw { status: 400, message: "Invalid email or password" };
+      throw { status: 404, message: "Account not found. It may have been deleted by an administrator." };
     }
 
     // Check password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       throw { status: 400, message: "Invalid email or password" };
+    }
+
+    // Check if user is suspended
+    if (user.isActive === false) {
+      throw { status: 403, message: "Account is suspended. Please contact support." };
     }
 
     // Update last login
@@ -147,6 +152,11 @@ export class AuthService {
       });
       await user.save();
     } else {
+      // Check if user is suspended
+      if (user.isActive === false) {
+        throw { status: 403, message: "Account is suspended. Please contact support." };
+      }
+
       // Update avatar if provided and verify email
       if (picture && !user.avatar) {
         user.avatar = picture;
