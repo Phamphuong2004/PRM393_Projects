@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:convert';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../repositories/auth_repository.dart';
@@ -59,10 +60,25 @@ class AuthNotifier extends Notifier<AuthState> {
 
     try {
       final token = await _storage.read(key: 'jwt_token');
+      final userDataStr = await _storage.read(key: 'user_data');
 
       if (token != null && token.isNotEmpty) {
+        Map<String, dynamic>? cachedUser;
+        if (userDataStr != null) {
+          try {
+            cachedUser = jsonDecode(userDataStr);
+          } catch (_) {}
+        }
+        
+        // Instantly show the app using cached data
+        if (cachedUser != null) {
+          state = state.copyWith(token: token, user: cachedUser, isLoading: false);
+        }
+
         final authRepo = ref.read(authRepositoryProvider);
         final userData = await authRepo.me();
+        
+        await _storage.write(key: 'user_data', value: jsonEncode(userData));
         state = state.copyWith(token: token, user: userData, isLoading: false);
       } else {
         state = state.copyWith(isLoading: false);
@@ -91,6 +107,7 @@ class AuthNotifier extends Notifier<AuthState> {
 
       if (isUnauthorized || isDeleted || isSuspended) {
         await _storage.delete(key: 'jwt_token');
+        await _storage.delete(key: 'user_data');
         
         String? errorMsg;
         if (isDeleted) errorMsg = 'Your account has been deleted by an administrator.';
@@ -103,15 +120,19 @@ class AuthNotifier extends Notifier<AuthState> {
           error: errorMsg,
         );
       } else {
-        // If it's a network error or unknown error, we should NOT leave the user in a zombied state.
-        // We will log them out to be safe, or at least clear the state so they go to login.
-        await _storage.delete(key: 'jwt_token');
-        state = state.copyWith(
-          clearToken: true,
-          clearUser: true,
-          isLoading: false,
-          error: 'A network or system error occurred. Please log in again.',
-        );
+        // Network error. If we already loaded cached data, just ignore it and stay logged in.
+        if (state.isAuthenticated && state.user != null) {
+          // Keep the cached state, do nothing
+        } else {
+          await _storage.delete(key: 'jwt_token');
+          await _storage.delete(key: 'user_data');
+          state = state.copyWith(
+            clearToken: true,
+            clearUser: true,
+            isLoading: false,
+            error: 'A network or system error occurred. Please log in again.',
+          );
+        }
       }
     }
   }
@@ -123,11 +144,14 @@ class AuthNotifier extends Notifier<AuthState> {
       final authRepo = ref.read(authRepositoryProvider);
       final response = await authRepo.login(email, password);
       final token = response['token'];
+      final user = response['user'];
       
       await _storage.write(key: 'jwt_token', value: token);
+      await _storage.write(key: 'user_data', value: jsonEncode(user));
+      
       state = state.copyWith(
         token: token,
-        user: response['user'],
+        user: user,
         isLoading: false,
       );
     } on DioException catch (e) {
@@ -174,11 +198,14 @@ class AuthNotifier extends Notifier<AuthState> {
       final authRepo = ref.read(authRepositoryProvider);
       final response = await authRepo.googleLogin(idToken);
       final token = response['token'];
+      final user = response['user'];
 
       await _storage.write(key: 'jwt_token', value: token);
+      await _storage.write(key: 'user_data', value: jsonEncode(user));
+      
       state = state.copyWith(
         token: token,
-        user: response['user'],
+        user: user,
         isLoading: false,
       );
     } catch (e) {
@@ -202,6 +229,7 @@ class AuthNotifier extends Notifier<AuthState> {
 
   Future<void> logout() async {
     await _storage.delete(key: 'jwt_token');
+    await _storage.delete(key: 'user_data');
     state = state.copyWith(
       clearToken: true,
       clearUser: true,

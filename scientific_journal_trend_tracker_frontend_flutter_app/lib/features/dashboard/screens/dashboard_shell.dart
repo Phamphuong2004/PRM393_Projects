@@ -5,6 +5,7 @@ import '../../../core/constants/theme.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/notification_provider.dart';
 
+
 class DashboardShell extends ConsumerWidget {
   final Widget child;
   const DashboardShell({super.key, required this.child});
@@ -114,12 +115,24 @@ class DashboardShell extends ConsumerWidget {
             )
           : child,
       bottomNavigationBar: isDesktop ? null : _buildModernBottomNav(context, authState),
-      floatingActionButton: (isDesktop || authState.isAdmin) ? null : FloatingActionButton(
-        backgroundColor: AppColors.primary,
-        onPressed: () => context.push('/app/chat'),
-        elevation: 4,
-        child: const Icon(Icons.auto_awesome_rounded, color: Colors.white),
-      ),
+      floatingActionButton: _buildFab(context, authState, isDesktop, ref),
+    );
+  }
+
+  Widget? _buildFab(BuildContext context, AuthState authState, bool isDesktop, WidgetRef ref) {
+    if (isDesktop || authState.isAdmin) return null;
+
+    final location = GoRouterState.of(context).uri.path;
+    // Hide FAB on workspace detail screens (e.g. /app/workspaces/123)
+    if (location.startsWith('/app/workspaces/') && location.length > '/app/workspaces/'.length) {
+      return null;
+    }
+
+    return FloatingActionButton(
+      backgroundColor: AppColors.primary,
+      onPressed: () => context.push('/app/chat'),
+      elevation: 4,
+      child: const Icon(Icons.auto_awesome_rounded, color: Colors.white),
     );
   }
 
