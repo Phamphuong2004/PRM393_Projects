@@ -69,18 +69,28 @@ class AuthNotifier extends Notifier<AuthState> {
       }
     } catch (e) {
       bool isUnauthorized = false;
-      if (e is DioException && e.response?.statusCode == 401) {
-        isUnauthorized = true;
-      } else if (e.toString().toLowerCase().contains('unauthorized') || e.toString().contains('401')) {
-        isUnauthorized = true;
+      bool isDeleted = false;
+      
+      if (e is DioException) {
+        if (e.response?.statusCode == 401) isUnauthorized = true;
+        if (e.response?.statusCode == 404) isDeleted = true;
+      } else {
+        final errorStr = e.toString().toLowerCase();
+        if (errorStr.contains('unauthorized') || errorStr.contains('401')) {
+          isUnauthorized = true;
+        }
+        if (errorStr.contains('404')) {
+          isDeleted = true;
+        }
       }
 
-      if (isUnauthorized) {
+      if (isUnauthorized || isDeleted) {
         await _storage.delete(key: 'jwt_token');
         state = state.copyWith(
           clearToken: true,
           clearUser: true,
           isLoading: false,
+          error: isDeleted ? 'Your account has been deleted by an administrator.' : null,
         );
       } else {
         // If network timeout or backend sleep, keep the token so user stays logged in
@@ -105,8 +115,16 @@ class AuthNotifier extends Notifier<AuthState> {
         isLoading: false,
       );
     } on DioException catch (e) {
-      final msg = e.response?.data?['message'] ?? 'Network error or invalid credentials';
-      state = state.copyWith(error: msg.toString(), isLoading: false);
+      final statusCode = e.response?.statusCode;
+      String msg;
+      if (statusCode == 404) {
+        msg = 'Account not found. It may have been deleted by an administrator.';
+      } else if (statusCode == 403) {
+        msg = 'Your account has been suspended. Please contact support.';
+      } else {
+        msg = e.response?.data?['message'] ?? 'A network error occurred. Please try again.';
+      }
+      state = state.copyWith(error: msg, isLoading: false);
       rethrow;
     } catch (e) {
       state = state.copyWith(error: e.toString(), isLoading: false);

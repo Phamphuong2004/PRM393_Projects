@@ -23,6 +23,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final error = ref.read(authProvider).error;
+      if (error != null) {
+        setState(() {
+          _errorMessage = error;
+        });
+      }
+    });
   }
 
   Future<void> _handleLogin() async {

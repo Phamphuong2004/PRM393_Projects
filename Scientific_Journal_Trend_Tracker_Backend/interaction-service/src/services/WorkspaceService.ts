@@ -348,7 +348,12 @@ export class WorkspaceService {
         const corePapers = res.data;
         papers = rawPapers.map(wp => {
           const cp = corePapers.find((p: any) => p._id === wp.paper.toString());
-          return { ...wp, paper: cp || { _id: wp.paper } };
+          const mergedPaper = cp ? { ...cp } : { _id: wp.paper };
+          // If WorkspacePaper has a pdfUrl, inject it into the paper object
+          if (wp.pdfUrl) {
+            mergedPaper.pdfUrl = wp.pdfUrl;
+          }
+          return { ...wp, paper: mergedPaper };
         });
       }
     } catch (err) {
@@ -364,11 +369,9 @@ export class WorkspaceService {
     const wp = await WorkspacePaper.findOne({ workspace: workspaceId, paper: paperId });
     if (!wp) throw { status: 404, message: "Paper not found in this workspace" };
 
-    // TODO: Cross-service update
-    // const paper = await Paper.findById(paperId);
-    // if (!paper) throw { status: 404, message: "Paper not found" };
-    // paper.pdfUrl = filePath;
-    // await paper.save();
+    // Save pdfUrl in WorkspacePaper
+    wp.pdfUrl = filePath;
+    await wp.save();
 
     return { paper: { _id: paperId }, workspaceId };
   }
@@ -379,11 +382,9 @@ export class WorkspaceService {
     const wp = await WorkspacePaper.findOne({ workspace: workspaceId, paper: paperId });
     if (!wp) throw { status: 404, message: "Paper not found in this workspace" };
 
-    // TODO: Cross-service update
-    // const paper = await Paper.findById(paperId);
-    // if (!paper) throw { status: 404, message: "Paper not found" };
-    // paper.pdfUrl = undefined; // Unset the PDF URL
-    // await paper.save();
+    // Clear pdfUrl in WorkspacePaper
+    wp.pdfUrl = undefined;
+    await wp.save();
 
     return { message: "PDF removed successfully", paper: { _id: paperId }, workspaceId };
   }

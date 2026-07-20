@@ -87,6 +87,12 @@ export class AuthController {
         return;
       }
 
+      // Check if user is suspended
+      if (!user.isActive) {
+        res.status(403).json({ message: "Account is suspended. Please contact support." });
+        return;
+      }
+
       // Update last login
       user.lastLogin = new Date();
       await user.save();
