@@ -23,17 +23,51 @@ export class AnalysisWorker {
           // 2. Simulate processing delay (e.g. calling external APIs)
           await new Promise((resolve) => setTimeout(resolve, 3000));
 
-          // 3. Generate mock yearly data
+          // 3. Generate real yearly data from Semantic Scholar
           const startYear = run.startYear || 2015;
           const endYear = run.endYear || new Date().getFullYear();
           const yearlyData: Record<string, number> = {};
+          const axios = require('axios');
+          const apiKey = process.env.SEMANTIC_SCHOLAR_API_KEY;
           
-          let baseCount = Math.floor(Math.random() * 50) + 10;
           for (let year = startYear; year <= endYear; year++) {
-            // Simulate trend growth/decline
-            const change = Math.floor(Math.random() * 20) - 5; // -5 to +15
-            baseCount = Math.max(0, baseCount + change);
-            yearlyData[year.toString()] = baseCount;
+            let success = false;
+            let retries = 5;
+            
+            while (!success && retries > 0) {
+              try {
+                const res = await axios.get(`https://api.semanticscholar.org/graph/v1/paper/search`, {
+                  params: { query: run.seedKeyword, year: year, limit: 1 },
+                  headers: apiKey ? { "x-api-key": apiKey } : {},
+                  validateStatus: () => true
+                });
+                
+                if (res.status === 200 && res.data) {
+                  yearlyData[year.toString()] = res.data.total || 0;
+                  success = true;
+                } else if (res.status === 429) {
+                  console.log(`[Worker] Rate limited for ${year}, retrying... (${retries} left)`);
+                  retries--;
+                  await new Promise(r => setTimeout(r, 5000)); // Wait 5s before retry
+                  continue;
+                } else {
+                  console.log(`[Worker] API returned ${res.status} for ${year}`);
+                  yearlyData[year.toString()] = 0;
+                  success = true;
+                }
+              } catch (err) {
+                console.error(`[Worker] Error fetching data for ${year}:`, err);
+                retries--;
+                await new Promise(r => setTimeout(r, 5000));
+              }
+            }
+            
+            if (!success) {
+               yearlyData[year.toString()] = 0;
+            }
+
+            // Normal rate limit protection (2s to be safe on free tier)
+            await new Promise(r => setTimeout(r, 2000));
           }
 
           // 4. Mark as completed

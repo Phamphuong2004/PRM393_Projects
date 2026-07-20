@@ -229,7 +229,7 @@ export class PaperService {
         
         const items = response.data.message.items || [];
         const papers = items.map((item: any) => ({
-          _id: item.DOI || Math.random().toString(),
+          _id: item.DOI || require("crypto").randomUUID(),
           title: item.title?.[0] || "Unknown Title",
           abstract: item.abstract?.replace(/<[^>]*>?/gm, ''), // strip xml/html tags
           doi: item.DOI,

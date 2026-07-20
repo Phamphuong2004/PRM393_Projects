@@ -211,7 +211,7 @@ export class WorkspaceService {
     return workspace;
   }
 
-  static async addPaper(workspaceId: string, userId: string, data: any) {
+  static async addPaper(workspaceId: string, userId: string, data: any, jwtToken?: string) {
     await this.checkRole(workspaceId, userId, ["owner", "editor"]);
     let paperId = data.paperId;
 
@@ -227,23 +227,20 @@ export class WorkspaceService {
       }
 
       const existingPaper = null;
-      // TODO: Call core-service to find paper by DOI or OpenAlex ID
-      // if (paperData.doi) { ... }
-
       if (existingPaper) {
         paperId = (existingPaper as any)._id;
       } else {
         try {
-          // TODO: Call core-service to create a new paper
-          // const newPaper = new Paper(paperData);
-          // await newPaper.save();
-          // paperId = newPaper._id;
-          paperId = new mongoose.Types.ObjectId().toString(); // Dummy for now
+          const CORE_SERVICE_URL = process.env.CORE_SERVICE_URL || "http://core-service:5002";
+          const res = await axios.post(`${CORE_SERVICE_URL}/api/papers/import`, data.paper, {
+            headers: jwtToken ? { Authorization: jwtToken } : {}
+          });
+          paperId = res.data._id;
         } catch (error: any) {
-          if (error.code === 11000) {
+          if (error.response?.status === 409) {
             throw { status: 409, message: "Paper already exists in the database. Please try adding from Local Database." };
           }
-          throw error;
+          throw { status: error.response?.status || 500, message: "Failed to import paper to core service" };
         }
       }
     }
