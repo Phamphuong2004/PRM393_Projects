@@ -420,14 +420,6 @@ class AnalysisRunsApi {
 // ADMIN
 // ─────────────────────────────────────────────────────────
 class AdminApi {
-  static Future<dynamic> updateUserStatus(String id, String status) {
-    return api.patch('${ApiConstants.adminUsers}/$id/status', {'status': status});
-  }
-
-  static Future<dynamic> updateUserRole(String id, String role) {
-    return api.patch('${ApiConstants.adminUsers}/$id/role', {'role': role});
-  }
-
   static Future<dynamic> getSources() {
     return api.get(ApiConstants.adminSources);
   }

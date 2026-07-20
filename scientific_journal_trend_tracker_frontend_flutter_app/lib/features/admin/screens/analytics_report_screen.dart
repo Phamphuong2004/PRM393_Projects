@@ -113,6 +113,7 @@ class _AnalyticsReportScreenState extends ConsumerState<AnalyticsReportScreen> {
                       )
                     else
                       DropdownButtonFormField<Keyword>(
+                        isExpanded: true,
                         initialValue: selectedKeyword,
                         decoration: const InputDecoration(labelText: 'Select Keyword'),
                         items: keywords.map((k) {

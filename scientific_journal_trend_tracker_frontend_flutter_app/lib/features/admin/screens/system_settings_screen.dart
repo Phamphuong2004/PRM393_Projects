@@ -220,7 +220,7 @@ class _SystemSettingsScreenState extends ConsumerState<SystemSettingsScreen> {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.settings_suggest_rounded, color: Colors.white, size: 28),
+                    Icon(Icons.settings_rounded, color: Colors.white, size: 28),
                     SizedBox(width: 12),
                     Text(
                       'System Settings',

@@ -21,7 +21,6 @@ const apiSourceSchema = new Schema<IApiSource>(
     },
     baseUrl: {
       type: String,
-      required: true,
     },
     apiKeyHash: String,
     fieldScope: String,

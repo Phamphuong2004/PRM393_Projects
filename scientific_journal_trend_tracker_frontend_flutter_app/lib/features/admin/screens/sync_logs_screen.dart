@@ -334,12 +334,16 @@ class _SyncLogsScreenState extends State<SyncLogsScreen> {
                             : Column(
                                 children: [
                                   Expanded(
-                                    child: ListView.builder(
-                                      itemCount: _logs.length,
-                                      itemBuilder: (context, index) {
-                                        final log = _logs[index];
-                                        return _buildLogCard(log);
-                                      },
+                                    child: RefreshIndicator(
+                                      onRefresh: () => _fetchSyncLogs(page: _currentPage),
+                                      child: ListView.builder(
+                                        physics: const AlwaysScrollableScrollPhysics(),
+                                        itemCount: _logs.length,
+                                        itemBuilder: (context, index) {
+                                          final log = _logs[index];
+                                          return _buildLogCard(log);
+                                        },
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(height: 16),

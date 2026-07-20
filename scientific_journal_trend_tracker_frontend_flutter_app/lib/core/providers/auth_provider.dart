@@ -104,6 +104,10 @@ class AuthNotifier extends Notifier<AuthState> {
         user: response['user'],
         isLoading: false,
       );
+    } on DioException catch (e) {
+      final msg = e.response?.data?['message'] ?? 'Network error or invalid credentials';
+      state = state.copyWith(error: msg.toString(), isLoading: false);
+      rethrow;
     } catch (e) {
       state = state.copyWith(error: e.toString(), isLoading: false);
       rethrow;

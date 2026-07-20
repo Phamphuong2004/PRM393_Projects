@@ -5,9 +5,7 @@ export class AnalysisRunService {
     const skip = (page - 1) * limit;
 
     const runs = await AnalysisRun.find()
-      .populate("keywordId")
-      .populate("syncLogId")
-      .populate("topicId")
+
       .skip(skip)
       .limit(limit)
       .sort({ createdAt: -1 });
@@ -23,9 +21,7 @@ export class AnalysisRunService {
 
   static async getAnalysisRunById(id: string) {
     const run = await AnalysisRun.findById(id)
-      .populate("keywordId")
-      .populate("syncLogId")
-      .populate("topicId");
+;
 
     if (!run) {
       throw { status: 404, message: "Analysis run not found" };
@@ -37,14 +33,14 @@ export class AnalysisRunService {
   static async createAnalysisRun(runData: any) {
     const run = new AnalysisRun(runData);
     await run.save();
-    await run.populate(["keywordId", "syncLogId", "topicId"]);
+    await run;
     return run;
   }
 
   static async updateAnalysisRun(id: string, runData: any) {
     const run = await AnalysisRun.findByIdAndUpdate(id, runData, {
       new: true,
-    }).populate(["keywordId", "syncLogId", "topicId"]);
+    });
 
     if (!run) {
       throw { status: 404, message: "Analysis run not found" };
@@ -65,9 +61,7 @@ export class AnalysisRunService {
 
   static async getAnalysisRunsByKeyword(keywordId: string) {
     const runs = await AnalysisRun.find({ keywordId })
-      .populate("keywordId")
-      .populate("syncLogId")
-      .populate("topicId")
+
       .sort({ createdAt: -1 });
 
     return runs;
@@ -75,18 +69,14 @@ export class AnalysisRunService {
 
   static async getActiveAnalysisRuns() {
     const runs = await AnalysisRun.find({ status: "running" })
-      .populate("keywordId")
-      .populate("syncLogId")
-      .populate("topicId");
+;
 
     return runs;
   }
 
   static async getPendingAnalysisRuns(limit: number = 10) {
     const runs = await AnalysisRun.find({ status: "pending" })
-      .populate("keywordId")
-      .populate("syncLogId")
-      .populate("topicId")
+
       .sort({ createdAt: 1 }) // oldest first
       .limit(limit);
 
@@ -95,9 +85,7 @@ export class AnalysisRunService {
 
   static async getCompletedAnalysisRuns(limit: number = 10) {
     const runs = await AnalysisRun.find({ status: "completed" })
-      .populate("keywordId")
-      .populate("syncLogId")
-      .populate("topicId")
+
       .sort({ createdAt: -1 })
       .limit(limit);
 
@@ -109,7 +97,7 @@ export class AnalysisRunService {
       id,
       { status: "running", startedAt: new Date() },
       { new: true },
-    ).populate(["keywordId", "syncLogId", "topicId"]);
+    );
 
     if (!run) {
       throw { status: 404, message: "Analysis run not found" };
@@ -127,7 +115,7 @@ export class AnalysisRunService {
         yearlyData: results.yearlyData,
       },
       { new: true },
-    ).populate(["keywordId", "syncLogId", "topicId"]);
+    );
 
     if (!run) {
       throw { status: 404, message: "Analysis run not found" };

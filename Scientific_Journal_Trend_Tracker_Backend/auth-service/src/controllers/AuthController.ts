@@ -122,10 +122,7 @@ export class AuthController {
       }
 
       const user = await User.findById(req.userId)
-        .select("-password")
-        .populate("bookmarks")
-        .populate("trackedRuns.analysisRunId")
-        .populate("follows");
+        .select("-password");
 
       if (!user) {
         res.status(404).json({ message: "User not found" });
