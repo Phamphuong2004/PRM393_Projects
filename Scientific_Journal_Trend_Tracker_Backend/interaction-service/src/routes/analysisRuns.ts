@@ -53,7 +53,6 @@ router.get(
 router.post(
   "/",
   authMiddleware,
-  roleMiddleware(["admin", "researcher"]),
   rateLimit(rateLimits.write),
   [body("keywordId").notEmpty(), body("seedKeyword").notEmpty()],
   validateInputs,

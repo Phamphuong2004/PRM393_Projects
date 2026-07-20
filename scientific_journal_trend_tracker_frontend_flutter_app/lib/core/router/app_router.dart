@@ -195,7 +195,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               builder: (context, state) => const UserManagementScreen(),
             ),
             GoRoute(
-              path: '/app/admin/analytics',
+              path: '/app/analytics',
               builder: (context, state) => const AnalyticsReportScreen(),
             ),
             GoRoute(
