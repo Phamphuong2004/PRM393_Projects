@@ -112,7 +112,7 @@ class SocketService {
         final msg = Map<String, dynamic>.from(payload as Map);
         callback(msg);
       } catch (e) {
-        print('[Socket] Failed to parse chat message: $e');
+        debugPrint('[Socket] Failed to parse chat message: $e');
       }
     });
   }
